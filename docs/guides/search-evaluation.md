@@ -12,7 +12,7 @@ DB에 직접 연결하지 않으며 문서 저장/수정/폐기 작업을 하지
 JSONL의 각 줄은 다음 구조이다. 아래 UUID를 실제 문서/현재 revision ID로 바꾼다.
 
 ```json
-{"id":"q001","search":{"query":"지식 저장 여부는 어떤 모델이 판단하나요?","scopes":["global","project:vector_knowledge"]},"expected":[{"knowledge_id":"00000000-0000-0000-0000-000000000001","revision_id":"00000000-0000-0000-0000-000000000002"}],"forbidden":[],"split":"dev","origin":"agent-authored; source inspected; 2026-10-15"}
+{"id":"q001","search":{"query":"지식 저장 여부는 어떤 모델이 판단하나요?","scopes":["global","project:my-project"]},"expected":[{"knowledge_id":"00000000-0000-0000-0000-000000000001","revision_id":"00000000-0000-0000-0000-000000000002"}],"forbidden":[],"split":"dev","origin":"agent-authored; source inspected; 2026-10-15"}
 ```
 
 - 원문을 읽고 정답 문서들을 라벨링한다. 같은 문서의 패러프레이즈는 같은 split에 둔다.

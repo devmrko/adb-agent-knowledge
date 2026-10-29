@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "vector_knowledge": {
-      "command": "/absolute/path/to/vector-knowledge/scripts/run_knowledge_mcp.sh",
+      "command": "/absolute/path/to/adb-agent-knowledge/scripts/run_configured_knowledge_mcp.sh",
       "args": []
     }
   }

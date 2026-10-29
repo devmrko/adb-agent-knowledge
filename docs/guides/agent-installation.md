@@ -1,4 +1,7 @@
-# Codex / Claude 공통 스킬 설치
+# adb-agent-knowledge: Codex / Claude 연결
+
+공개 저장소와 설치 폴더는 `adb-agent-knowledge`입니다. 호환성을 위해 MCP 등록명은
+`vector_knowledge`, 스킬명은 `vector-knowledge`를 사용합니다.
 
 먼저 README대로 서비스와 .env를 구성하고 API/worker를 실행한다.
 스킬은 사용 방법이고 MCP는 실제 도구 연결이다. 두 가지를 함께 설정해야 한다.

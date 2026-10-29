@@ -1,4 +1,6 @@
-# Agent Knowledge for Oracle ADB
+# adb-agent-knowledge
+
+Agent Knowledge for Oracle ADB
 
 **Codex·Claude 등 AI 에이전트를 위한 지식 저장소 — Kev 판단, 벡터·그래프 검색, 근거와 변경 이력.**
 
@@ -55,6 +57,18 @@ cd adb-agent-knowledge
 
 ## Codex / Claude에서 사용하기
 
+공개 저장소 이름과 연결 식별자는 다음처럼 구분합니다. 기존 사용자 연결을 유지하기 위해
+MCP·스킬 이름은 변경하지 않았습니다. 이름이 다르다고 다른 프로젝트를 설치하는 것은 아닙니다.
+
+| 구분 | 이름 |
+|---|---|
+| Git 저장소 · 체크아웃 폴더 · Python 프로젝트 | `adb-agent-knowledge` |
+| 제품 설명 | Agent Knowledge for Oracle ADB |
+| MCP 서버 등록명 | `vector_knowledge` |
+| 스킬 이름 · 폴더 | `vector-knowledge` |
+| Python 애플리케이션 모듈 | `knowledge_app` |
+
+
 서비스를 실행한 상태에서 원하는 클라이언트를 연결합니다.
 
 ```sh
@@ -98,5 +112,3 @@ pyproject.toml / uv.lock       서비스 의존성 + 로컬 workspace
 ## 라이선스
 
 프로젝트 코드는 [MIT](LICENSE)입니다. 모델 가중치, 외부 서비스와 의존성은 각자의 라이선스·이용 조건을 따릅니다. [외부 구성 요소](THIRD_PARTY.md)를 참고하세요.
-
-MCP 등록명 `vector_knowledge`, 스킬명 `vector-knowledge`, API 경로와 DB 식별자는 기존 연결 호환성을 위해 유지합니다.

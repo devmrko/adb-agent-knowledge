@@ -33,7 +33,7 @@
 MCP에는 knowledge_recall, knowledge_prepare_save, knowledge_index_list/get/create/update/link/entries/history, knowledge_get_summary, knowledge_references가 대응합니다. 실행 예:
 
 ```json
-{"text":"지난번 Oracle 접속을 어떻게 해결했지?","scopes":["global","project:vector_knowledge"],"mode":"auto","top_k":5}
+{"text":"지난번 Oracle 접속을 어떻게 해결했지?","scopes":["global","project:my-project"],"mode":"auto","top_k":5}
 ```
 
 모델 경로를 강제하지 않고 `mode=direct/index/both`, 명시적 index_ids, catalog_offset으로 직접 탐색할 수도 있습니다. 카탈로그 20개, 선택 인덱스 최대 3개, 각 8개 요약, 요약 본문 총 6000자까지 미리 봅니다. 카탈로그 설명/메타데이터는 이 요약 예산과 별도입니다. 반환된 페이지와 next_offset을 따라가야 전체 구성을 확인할 수 있습니다. 모델 실패/모호함에는 양쪽 경로, 빈 결과에는 다른 경로로 보완합니다. 비어 있지 않아도 관련 없는 결과일 수 있으므로 에이전트가 실제 내용을 판단해야 합니다.

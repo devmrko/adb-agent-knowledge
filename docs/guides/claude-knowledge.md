@@ -1,38 +1,48 @@
-# Claude Code에서 지식 저장·검색
+# adb-agent-knowledge를 Claude Code에서 사용하기
 
-## 설치된 연결
-저장소 루트 `.mcp.json`에 `vector_knowledge` stdio MCP를 프로젝트 범위로 등록했다.
-명령은 상대 경로 `./scripts/run_knowledge_mcp.sh`이며 Claude Code가 저장소 루트에서 시작한다.
-토큰은 Codex와 동일하게 프로젝트 `.env`의 KNOWLEDGE_API_TOKEN 또는 DEV_API_TOKEN을 읽고
-`.mcp.json`에는 비밀값을 넣지 않는다.
+설치 폴더는 `adb-agent-knowledge`, MCP 등록명은 `vector_knowledge`, 스킬명은
+`vector-knowledge`다. 기존 연결과 호환되는 이름을 사용한다.
 
-`CLAUDE.md`는 `AGENTS.md`를 import하므로 "Personal knowledge tools" 규칙이 매 세션 적용된다.
-프로젝트 MCP 승인은 로컬 `.claude/settings.local.json`의
-`enabledMcpjsonServers: ["vector_knowledge"]`로 처리하며 이 파일은 커밋하지 않는다.
-다른 체크아웃에서는 첫 세션에서 승인 프롬프트가 뜨거나 같은 설정을 추가한다.
+## 연결 방법 선택
 
-## 사용
-도구 이름은 `mcp__vector_knowledge__knowledge_save`, `_save_url`, `_search`, `_list`,
-`_get_content`, `_job_status`. 동작 규칙은 [Codex 가이드](codex-knowledge.md)와 같다.
-저장은 QUEUED를 반환하므로 READY 확인 전에는 검색 가능하다고 판단하지 않는다.
+먼저 [서비스 설치와 모델 선택](portable-setup.md)을 완료한다. 다음 두 방식 중 하나를
+선택해 같은 서버가 프로젝트 범위와 사용자 범위에 중복 연결되지 않게 한다.
 
-## 프로세스와 확인
-MCP는 Claude Code가 시작하지만 API/worker는 별도로 실행해야 한다.
+### 이 저장소에서만 사용
+
+저장소 루트의 `.mcp.json`은 `./scripts/run_configured_knowledge_mcp.sh`를 실행하도록
+준비돼 있다. 저장소 루트에서 Claude Code를 시작하고 클라이언트의 MCP 승인 절차를 따른다.
+스킬 설치는 MCP를 다시 등록하지 않고 실행한다.
 
 ```sh
-./scripts/run_knowledge_api.sh
-# 다른 터미널
-./scripts/run_knowledge_worker.sh
+./.venv/bin/python scripts/install_agent.py claude
 ```
+
+### 다른 프로젝트에서도 사용
 
 ```sh
-claude mcp get vector_knowledge   # Scope: Project config, Status: Connected
+./.venv/bin/python scripts/install_agent.py claude --register-mcp
 ```
 
-세션 안에서는 `/mcp`로 상태를 확인한다. 연결 해제는 `.mcp.json`에서 항목을 제거한다.
+스킬은 `~/.claude/skills/vector-knowledge`에 설치하고 MCP는 사용자 범위에 현재 체크아웃의
+실행 파일을 등록한다. 같은 이름의 연결이 이미 있으면 먼저 설정을 확인하고
+[공통 설치 안내](agent-installation.md)에 따라 갱신한다.
 
-## 검증 — 2026-10-15
-- `claude mcp get vector_knowledge`: 프로젝트 범위, stdio 연결 성공.
-- 실제 저장/검색 왕복은 새 Claude Code 세션에서 API/worker 실행 후 확인 필요.
+두 방식 모두 `.env`의 `KNOWLEDGE_SSH_HOST` 유무로 SSH/로컬 MCP를 선택한다.
+API와 worker는 서비스를 설치한 머신에서 실행해야 한다. `.mcp.json`에는 비밀값을 넣지 않는다.
 
-공통 관계·프로젝트 연결·시점 조회는 [공통 RDF 가이드](shared-graph.md)를 따른다. 공유 스킬은 knowledge_graph_* 도구를 우선 사용하며 기존 원문별 workflow 도구는 호환용이다.
+## 확인과 사용
+
+```sh
+claude mcp get vector_knowledge
+```
+
+세션의 `/mcp`에서 상태를 확인한다. 도구 이름은 클라이언트에 따라 접두어가 붙을 수 있으며
+실제 연결된 서버의 목록을 기준으로 삼는다. `/vector-knowledge`로 스킬을 사용할 수 있다.
+
+“이전 결정을 찾아줘”, “이 내용을 기존 지식에 보충해줘”, “연결된 프로젝트와 근거를 보여줘”처럼
+요청한다. 저장 후 `READY`를 확인하고, 보충 전에는 원문과 이력을 확인한다.
+자동 저장은 사용자가 선택적으로 허용해야 하며 스킬 설치 자체가 동의는 아니다.
+
+[공통 사용 규칙](codex-knowledge.md#사용과-확인), [관계·근거 검색](related-retrieval.md),
+[검증 범위](../reference/public-release-validation.md)를 참고한다.

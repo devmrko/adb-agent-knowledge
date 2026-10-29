@@ -1,6 +1,6 @@
 # Repository development rules
 
-- Root is the vector-knowledge service. Keep Foundation library/example/tests isolated in packages/python-foundation; preserve its distributable wheel contract.
+- Root is adb-agent-knowledge (Agent Knowledge for Oracle ADB). Keep Foundation library/example/tests isolated in packages/python-foundation; preserve its distributable wheel contract.
 - Write/update docs/design before changing public contracts; document validation and limitations.
 - Use Router -> Service -> Repository. Never commit from a repository or share Sessions across tasks.
 - Use typed DTOs and safe ErrorSpec/BusinessError. Never expose credentials, SQL or raw provider messages.
@@ -13,7 +13,7 @@
 
 ## Knowledge scope
 
-- Use `project:vector_knowledge` plus `global` for relevant retrieval. Discover indexes by scope/key on each service; do not hardcode another user’s index IDs.
+- For this public repository use `project:adb-agent-knowledge` plus `global`. Existing deployments may retain their confirmed legacy scope; do not rename or migrate stored scopes automatically. Discover indexes by scope/key on each service; do not hardcode another user’s index IDs.
 - Detailed memory workflow: `skills/vector-knowledge/SKILL.md`. Connection help: `docs/guides/agent-installation.md`.
 
 <!-- BEGIN vector-knowledge-memory-policy -->
