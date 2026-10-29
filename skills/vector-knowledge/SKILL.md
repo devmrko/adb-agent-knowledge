@@ -1,12 +1,14 @@
 ---
 name: vector-knowledge
-description: Retrieve personal or project knowledge and maintain durable memories through the vector_knowledge MCP. Use for prior decisions, preferences, troubleshooting history, requested saves, or user-authorized automatic memory capture, with optional local Kev routing.
+description: Retrieve personal or project knowledge and maintain durable memories through the configured knowledge MCP. Use for prior decisions, preferences, troubleshooting history, requested saves, or user-authorized automatic memory capture, with optional local Kev routing.
 ---
 
 # Agent Knowledge for Oracle ADB
 
-Use the connected `vector_knowledge` MCP tools. Tool names may carry a client prefix
-(e.g. `mcp__vector_knowledge__knowledge_search`). This skill has no database credentials
+Use the configured knowledge MCP registration (default `adb_agent_knowledge`; legacy or custom
+names are supported). A Selected MCP registration section, when present, identifies the target.
+Tool names may carry a client prefix, e.g. `mcp__adb_agent_knowledge__knowledge_search`.
+Discover the actual catalog; do not choose an unrelated service merely because it has knowledge tools. This skill has no database credentials
 and must not connect directly to Oracle. If tools are absent, report that connection is needed.
 
 ## Retrieve

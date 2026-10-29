@@ -1,7 +1,7 @@
 # adb-agent-knowledge를 Codex에서 사용하기
 
-설치 폴더는 `adb-agent-knowledge`, MCP 등록명은 `vector_knowledge`, 스킬명은
-`vector-knowledge`다. MCP·스킬 이름은 기존 연결 호환성을 위해 유지한다.
+설치 폴더는 `adb-agent-knowledge`, MCP 등록명은 `adb_agent_knowledge`, 스킬명은
+`vector-knowledge`다. MCP 이름은 `--mcp-name`으로 선택할 수 있다.
 
 ## 설치
 
@@ -26,7 +26,7 @@
 ## 사용과 확인
 
 ```sh
-codex mcp get vector_knowledge
+codex mcp get adb_agent_knowledge
 ```
 
 새 세션에서 MCP 도구가 보이는지 확인한다. 도구 개수는 버전에 따라 달라지므로 연결된

@@ -1,6 +1,6 @@
 # Personal knowledge routing
 
-- Use the installed vector-knowledge skill and vector_knowledge MCP for durable personal/project knowledge. The DB is the canonical memory store; local Markdown files are bootstrap instructions and references, not parallel knowledge copies.
+- Use the installed vector-knowledge skill and configured knowledge MCP (default adb_agent_knowledge) for durable personal/project knowledge. The DB is the canonical memory store; local Markdown files are bootstrap instructions and references, not parallel knowledge copies.
 - Assess relevance on each request. Use knowledge_decide for optional lookup, then knowledge_recall (or knowledge_search fallback), with global and the confirmed project scope. Explicit retrieval requests and clearly needed past context override a mistaken skip. Do not send full chats or secrets to Kev.
 - {{CAPTURE_POLICY}} Honor opt-outs. Use knowledge_prepare_save for value/duplicate/index candidates; fall back to decide and search. Skip unchanged facts; inspect exact content/history before revising the same fact, preserving history and using the latest revision ID. Do not merge merely similar topics. Retire/restore only on request.
 - Save concise facts in the narrowest scope with date, origin and evidence limits. Exclude credentials, .env/wallet contents, full conversations/private files, unnecessary personal information and speculation. Use stable idempotency keys; check uncertain outcomes before retrying and job status before claiming READY. Report saved/updated/pending/failed accurately.

@@ -6,7 +6,7 @@
 
 ```mermaid
 flowchart LR
-    Agent["Codex · Claude<br/>vector-knowledge 스킬"] --> MCP["vector_knowledge MCP"]
+    Agent["Codex · Claude<br/>vector-knowledge 스킬"] --> MCP["adb_agent_knowledge MCP"]
     MCP --> API["Knowledge API"]
     UI["지식 노트 웹 화면"] --> API
     MCP <--> Kev["로컬 Kev<br/>저장·조회·탐색 경로 판단"]

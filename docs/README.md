@@ -1,7 +1,7 @@
 # adb-agent-knowledge 매뉴얼
 
 제품명: **Agent Knowledge for Oracle ADB**. 저장소·체크아웃 폴더는 `adb-agent-knowledge`이며,
-MCP 등록명 `vector_knowledge`와 스킬명 `vector-knowledge`는 호환성을 위해 유지합니다.
+MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있습니다. 스킬명은 `vector-knowledge`입니다.
 
 ## 처음 사용하는 분
 

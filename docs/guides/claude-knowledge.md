@@ -1,7 +1,7 @@
 # adb-agent-knowledge를 Claude Code에서 사용하기
 
-설치 폴더는 `adb-agent-knowledge`, MCP 등록명은 `vector_knowledge`, 스킬명은
-`vector-knowledge`다. 기존 연결과 호환되는 이름을 사용한다.
+설치 폴더는 `adb-agent-knowledge`, MCP 등록명은 `adb_agent_knowledge`, 스킬명은
+`vector-knowledge`다. MCP 이름은 `--mcp-name`으로 선택할 수 있다.
 
 ## 연결 방법 선택
 
@@ -34,7 +34,7 @@ API와 worker는 서비스를 설치한 머신에서 실행해야 한다. `.mcp.
 ## 확인과 사용
 
 ```sh
-claude mcp get vector_knowledge
+claude mcp get adb_agent_knowledge
 ```
 
 세션의 `/mcp`에서 상태를 확인한다. 도구 이름은 클라이언트에 따라 접두어가 붙을 수 있으며

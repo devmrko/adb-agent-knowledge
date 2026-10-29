@@ -57,14 +57,14 @@ cd adb-agent-knowledge
 
 ## Codex / Claude에서 사용하기
 
-공개 저장소 이름과 연결 식별자는 다음처럼 구분합니다. 기존 사용자 연결을 유지하기 위해
-MCP·스킬 이름은 변경하지 않았습니다. 이름이 다르다고 다른 프로젝트를 설치하는 것은 아닙니다.
+공개 저장소 이름과 연결 식별자는 다음처럼 구분합니다. MCP 이름은 설치 시 선택할 수 있으며 기본값은 `adb_agent_knowledge`입니다.
+스킬 호출명 `vector-knowledge`는 유지합니다.
 
 | 구분 | 이름 |
 |---|---|
 | Git 저장소 · 체크아웃 폴더 · Python 프로젝트 | `adb-agent-knowledge` |
 | 제품 설명 | Agent Knowledge for Oracle ADB |
-| MCP 서버 등록명 | `vector_knowledge` |
+| MCP 서버 등록명 | `adb_agent_knowledge` |
 | 스킬 이름 · 폴더 | `vector-knowledge` |
 | Python 애플리케이션 모듈 | `knowledge_app` |
 
@@ -76,6 +76,9 @@ MCP·스킬 이름은 변경하지 않았습니다. 이름이 다르다고 다�
 # 또는
 ./.venv/bin/python scripts/install_agent.py claude --register-mcp
 ```
+
+다른 MCP 이름은 위 명령에 `--mcp-name personal_knowledge`를 추가해 선택합니다.
+기존 `vector_knowledge` 연결은 자동으로 변경하지 않습니다.
 
 새 세션에서 연결을 확인하세요. 자동 저장은 별도 사용자 동의를 전제로 하며,
 동일 지식의 보충·정정은 에이전트가 원문과 이력을 확인해 기존 항목을 수정합니다.

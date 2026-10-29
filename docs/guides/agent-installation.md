@@ -1,7 +1,7 @@
 # adb-agent-knowledge: Codex / Claude 연결
 
-공개 저장소와 설치 폴더는 `adb-agent-knowledge`입니다. 호환성을 위해 MCP 등록명은
-`vector_knowledge`, 스킬명은 `vector-knowledge`를 사용합니다.
+공개 저장소와 설치 폴더는 `adb-agent-knowledge`입니다. MCP 기본 등록명은
+`adb_agent_knowledge`이며 `--mcp-name`으로 선택할 수 있습니다. 스킬명은 `vector-knowledge`입니다.
 
 먼저 README대로 서비스와 .env를 구성하고 API/worker를 실행한다.
 스킬은 사용 방법이고 MCP는 실제 도구 연결이다. 두 가지를 함께 설정해야 한다.
@@ -23,9 +23,36 @@
 중복 연결하지 않도록 필요한 쪽 하나를 선택한다.
 
 설치 계획만 보기: `--dry-run`. 이미 설치된 스킬 업데이트: `--overwrite`.
-`--register-mcp`는 해당 클라이언트의 vector_knowledge 연결을 현재 체크아웃 절대 경로로 등록한다.
+`--register-mcp`는 해당 클라이언트에 선택한 MCP 이름(기본 `adb_agent_knowledge`)을 현재 체크아웃 절대 경로로 등록한다.
 Claude에 같은 이름의 연결이 이미 있으면 먼저 기존 설정을 확인해 제거/변경한다.
 다른 머신에서는 그 머신의 경로로 설치 명령을 다시 실행한다. 비밀번호는 MCP 설정에 복사하지 않는다.
+
+## MCP 이름 선택
+
+기본값은 `adb_agent_knowledge`다. 두 클라이언트 모두 같은 옵션을 지원한다.
+
+```sh
+./.venv/bin/python scripts/install_agent.py codex --register-mcp --mcp-name personal_knowledge
+./.venv/bin/python scripts/install_agent.py claude --register-mcp --mcp-name personal_knowledge
+```
+
+이름은 영문자로 시작하는 1–64자의 영문·숫자·밑줄·하이픈이다. 설치된 스킬에도 선택한
+이름을 기록하므로 에이전트가 해당 MCP를 찾는다. 도구 함수명 `knowledge_search` 등은
+바뀌지 않으며 클라이언트가 붙이는 서버 접두어만 달라질 수 있다.
+스킬명은 계속 `vector-knowledge`다. 여러 서비스별 스킬을 따로 설치하려면 `--destination`도
+구분한다. 기존 스킬에 `--overwrite`하면 선택된 연결 안내도 새 값으로 갱신된다.
+
+`--mcp-name`은 사용자 범위 등록과 설치된 스킬에 적용되며 저장소 `.mcp.json`은 수정하지 않는다.
+Claude 프로젝트 범위 방식을 선택했다면 `.mcp.json`의 `mcpServers` 키도 원하는 이름으로
+바꾸고, 스킬 설치 시 동일한 `--mcp-name`을 지정한다. 사용자/프로젝트 중 한 방식만 사용한다.
+이 별칭은 DB 사용자·권한·프로젝트 scope를 변경하지 않는다.
+
+### 기존 이름에서 전환
+
+기존 `vector_knowledge` 등록을 자동 삭제하거나 이름 변경하지 않는다. 그대로 쓰려면
+`--mcp-name vector_knowledge`를 지정한다. 새 이름으로 전환하면 새 연결을 검증한 후 기존
+클라이언트 등록만 제거한다. DB 지식이나 API 설정은 바꾸지 않는다.
+현재 연결을 점검할 때도 `codex mcp get personal_knowledge`처럼 선택한 이름을 사용한다.
 
 ## 필요한 경우 매 요청 적용
 스킬 설치만으로 매 요청 실행이 강제되지는 않는다. 필요하면 Codex의 `~/.codex/AGENTS.md` 또는
