@@ -14,7 +14,8 @@ flowchart LR
     Worker["임베딩 워커<br/>한국어 임베딩 모델"] <--> DB
     GraphWorker["자동 관계 워커"] <--> DB
     GraphWorker <--> Kev
-    GraphWorker <--> LLM["설정한 생성 모델<br/>Ollama·Gemma / OpenRouter 등"]
+    GraphWorker <--> Port["CompletionProvider 인터페이스"]
+    Port <--> LLM["HTTP 구현: Ollama·vLLM·OpenRouter 등<br/>SDK·직접 실행은 확장 지점"]
 ```
 
 - **Oracle**이 지식과 이력의 기준 저장소다. 로컬 Markdown은 스킬 지침과 원본 설계 자료 등에 사용한다.
@@ -127,3 +128,5 @@ flowchart TD
 - [인덱스 탐색](index-navigation.md)
 - [변경 이력](change-history.md)
 - [Codex·Claude 설치](agent-installation.md)
+
+[서비스 내부 LLM 인터페이스](llm-providers.md): MCP 서비스 워커가 호출하며 Codex·Claude 모델 공유나 DB 내부 추론이 아니다.

@@ -21,11 +21,12 @@ from knowledge_app.graph_auto_contracts import (
     Extraction,
     ReviewCandidate,
 )
-from knowledge_app.graph_auto_extractor import Extractor, HTTPExtractor
+from knowledge_app.graph_auto_extractor import Extractor, ModelExtractor
 from knowledge_app.graph_auto_models import ExtractionRun, GraphProposal
 from knowledge_app.graph_auto_repository import AutoGraphRepository
 from knowledge_app.graph_contracts import AssertionInput, EntityInput, EvidenceInput
 from knowledge_app.graph_service import GraphService, digest
+from knowledge_app.llm import CompletionProvider
 from knowledge_app.models import GraphClaim, GraphEntity, GraphVersion, Item, now, uid
 from knowledge_app.routing import MemoryDecision, MemoryRouter, RoutingSettings
 from knowledge_app.service import fail, owner_id
@@ -62,16 +63,18 @@ class AutoGraphService:
         config: AutoGraphSettings | None = None,
         extractor: Extractor | None = None,
         router: MemoryRouter | None = None,
+        completion_provider: CompletionProvider | None = None,
     ):
         self.factory, self.settings = factory, settings
         self.config = config or AutoGraphSettings()
-        self.extractor = extractor or HTTPExtractor(self.config)
+        self.extractor = extractor or ModelExtractor(self.config, provider=completion_provider)
         self.router = router or MemoryRouter(RoutingSettings())
 
     def schema(self) -> dict[str, Any]:
         return {
             "version": SCHEMA_VERSION,
             "enabled": self.config.enabled,
+            "provider": self.config.provider,
             "model": self.config.model,
             "policy": self.config.policy,
             "patterns": {k: {"subjects": sorted(v[0]), "objects": sorted(v[1])} for k, v in PATTERNS.items()},

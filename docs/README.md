@@ -17,6 +17,7 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 | 관계·프로젝트·시점별 조회 | [공통 RDF 그래프](guides/shared-graph.md) |
 | 요약·인덱스·근거 탐색 | [인덱스 탐색](guides/index-navigation.md) |
 | 머신과 출처 위치 기록 | [출처 관리](guides/provenance.md) |
+| MCP 서비스의 LLM API·SDK 인터페이스 | [LLM 호출 구조와 확장](guides/llm-providers.md) |
 | Kev·한국어 임베딩·추출 LLM 이해 | [모델 구성](guides/local-models.md) |
 
 ## 운영하거나 개선하는 분

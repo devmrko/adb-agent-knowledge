@@ -125,6 +125,30 @@ flowchart TD
 [관계·경로·근거 검색](docs/guides/related-retrieval.md) ·
 [자동 관계 설정](docs/guides/automatic-graph.md)
 
+## MCP 서비스의 LLM 호출 구조
+
+**MCP 서비스에서 공통 인터페이스를 통해 LLM을 호출합니다.** 관계 추출·의미 검토 로직과
+모델 연결 방식을 분리했습니다. 내부에서 실제 호출하는 프로세스는 관계 추출 워커입니다.
+
+```mermaid
+flowchart LR
+    Agent["Codex · Claude"] --> Service["MCP 서비스<br/>API · 관계 추출 워커"]
+    Service --> Interface["CompletionProvider"]
+    Interface --> HTTP["HTTP API 구현<br/>Ollama · vLLM · OpenRouter"]
+    Interface -. 확장 지점 .-> SDK["제공자 SDK"]
+    Interface -. 확장 지점 .-> Local["로컬 모델 직접 실행"]
+    HTTP --> Validate["서비스가 결과·근거 검증"]
+    SDK -.-> Validate
+    Local -.-> Validate
+    Validate --> Oracle["Oracle DB에 관계·이력 저장"]
+```
+
+현재 포함된 구현체는 **OpenAI 호환 HTTP API**이며 `GRAPH_AUTO_PROVIDER=openai_compatible`로
+선택합니다. 기존 설정은 이 값이 없어도 같은 HTTP 구현을 사용합니다. 로컬 Ollama 역시 이 방식입니다.
+SDK·프로세스 내 직접 실행은 인터페이스를 구현해 추가하는 확장 지점이며 아직 완성된 어댑터는 없습니다.
+어댑터를 바꿔도 추출 규칙·의미 검토·DB 저장 정책은 공통 로직을 사용합니다.
+[인터페이스·설정·확장 방법](docs/guides/llm-providers.md)
+
 ## 설치 전에 준비할 것
 
 `setup.sh`는 Python 환경·의존성과 `.env`를 준비합니다. **DB 생성, RDF 초기화, Kev 설치,
@@ -140,8 +164,10 @@ Ollama 실행까지 한 번에 처리하지는 않습니다.** 필요한 기능�
 | SQL Property Graph | 선택적 그래프 탐색 방식 | 별도 생성 후 `PROPERTY_GRAPH_ENABLED=true` |
 | 관계 추출용 생성 모델 | 자동 그래프 연결 | Ollama/Gemma 별도 실행 또는 OpenRouter 등 호환 API 연결 |
 
-Codex·Claude가 답변을 작성하므로 **기본 저장·검색을 위해 별도 채팅 LLM을 띄울 필요는 없습니다.**
-자동 관계 추출에는 별도의 생성 모델이 필요하며 Kev와 임베딩 모델이 이를 대신하지 않습니다.
+**자동 그래프 연결을 사용하는 MCP 서비스에는 별도의 LLM 실행 환경 또는 API 연결이 필요합니다.**
+서비스의 관계 추출 워커가 이를 호출합니다. Codex·Claude의 모델이나 구독을 자동 재사용하지 않고,
+Oracle DB 내부에서 LLM을 실행하는 것도 아닙니다. 기본 벡터 저장·검색은 임베딩 모델을 사용하며
+Kev 판단과 생성형 관계 추출은 별도 역할입니다.
 모델 가중치는 Git에 포함하지 않습니다. 최초 다운로드에는 인터넷·디스크 공간이 필요하고,
 실행 메모리와 속도는 CPU/GPU 및 동시에 실행하는 모델에 따라 달라집니다.
 

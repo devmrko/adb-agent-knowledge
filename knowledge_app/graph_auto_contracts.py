@@ -61,6 +61,7 @@ PATTERNS: dict[str, tuple[set[str], set[str]]] = {
 class AutoGraphSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ROOT / ".env", extra="ignore", env_prefix="GRAPH_AUTO_")
     enabled: bool = False
+    provider: Literal["openai_compatible"] = "openai_compatible"
     url: str = "http://127.0.0.1:1234/v1"
     model: str = ""
     api_key: SecretStr = Field(

@@ -43,7 +43,7 @@ def test_local_profile_preserves_credentials_and_does_not_send_cloud_key(tmp_pat
         )
 
     client = httpx.Client(transport=httpx.MockTransport(handle))
-    with patch("knowledge_app.graph_auto_extractor.httpx.Client", return_value=client):
+    with patch("knowledge_app.llm_http.httpx.Client", return_value=client):
         assert HTTPExtractor(config).complete("synthetic", {}) == "{}"
 
 

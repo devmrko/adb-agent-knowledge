@@ -1,10 +1,8 @@
-"""Bounded OpenAI-compatible extraction; never writes graph facts itself."""
+"""Provider-independent extraction and semantic review; never writes graph facts itself."""
 
 import json
 from collections import Counter
 from typing import Any, Protocol
-
-import httpx
 
 from knowledge_app.graph_auto_contracts import (
     PATTERNS,
@@ -14,6 +12,8 @@ from knowledge_app.graph_auto_contracts import (
     ExtractedRelation,
     Extraction,
 )
+from knowledge_app.llm import CompletionError, CompletionProvider, CompletionRequest
+from knowledge_app.llm_http import OpenAICompatibleProvider
 
 
 class Extractor(Protocol):
@@ -40,9 +40,22 @@ Never infer a cross-project dependency merely from a shared name, scope or sourc
 """
 
 
-class HTTPExtractor:
-    def __init__(self, settings: AutoGraphSettings):
+def create_completion_provider(settings: AutoGraphSettings) -> CompletionProvider:
+    if settings.provider != "openai_compatible":
+        raise ValueError("Unsupported graph LLM provider")
+    return OpenAICompatibleProvider(
+        url=settings.url,
+        api_key=settings.api_key,
+        allow_remote=settings.allow_remote,
+        structured_output=settings.structured_output,
+        reasoning_effort=settings.reasoning_effort,
+    )
+
+
+class ModelExtractor:
+    def __init__(self, settings: AutoGraphSettings, provider: CompletionProvider | None = None):
         self.settings = settings
+        self.provider = provider if provider is not None else create_completion_provider(settings)
 
     def extract(self, content: str, context: list[dict[str, Any]]) -> Extraction:
         schema = Extraction.model_json_schema()
@@ -87,76 +100,45 @@ class HTTPExtractor:
         return verified_extraction(extracted, verdict)
 
     def complete(self, prompt: str, payload: dict[str, Any]) -> str:
-        body: dict[str, Any] = dict(
-            model=self.settings.model,
-            temperature=0,
-            max_tokens=8000,
-            response_format={"type": "json_object"},
-            messages=[
-                {"role": "system", "content": prompt},
-                {
-                    "role": "user",
-                    "content": json.dumps(
-                        payload,
-                        ensure_ascii=False,
-                    ),
-                },
-            ],
-        )
-        if self.settings.structured_output:
-            schema = payload.get("json_schema") or {
-                "type": "object",
-                "properties": {
-                    "verdicts": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "index": {"type": "integer"},
-                                "verdict": {
-                                    "type": "string",
-                                    "enum": ["supported", "unsupported", "uncertain"],
-                                },
+        schema = payload.get("json_schema") or {
+            "type": "object",
+            "properties": {
+                "verdicts": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "index": {"type": "integer"},
+                            "verdict": {
+                                "type": "string",
+                                "enum": ["supported", "unsupported", "uncertain"],
                             },
-                            "required": ["index", "verdict"],
-                            "additionalProperties": False,
                         },
-                    }
-                },
-                "required": ["verdicts"],
-                "additionalProperties": False,
-            }
-            body["response_format"] = {
-                "type": "json_schema",
-                "json_schema": {"name": "graph_result", "strict": True, "schema": schema},
-            }
-        if self.settings.url.rstrip("/") == "https://openrouter.ai/api/v1":
-            body["provider"] = {"require_parameters": True, "data_collection": "deny"}
-            body["reasoning"] = {"enabled": False}
-        if self.settings.reasoning_effort is not None:
-            body["reasoning_effort"] = self.settings.reasoning_effort
-        headers = (
-            {"Authorization": "Bearer " + self.settings.api_key.get_secret_value()}
-            if self.settings.api_key.get_secret_value()
-            else {}
+                        "required": ["index", "verdict"],
+                        "additionalProperties": False,
+                    },
+                }
+            },
+            "required": ["verdicts"],
+            "additionalProperties": False,
+        }
+        request = CompletionRequest(
+            model=self.settings.model,
+            system=prompt,
+            user=json.dumps(payload, ensure_ascii=False),
+            json_schema=schema,
+            max_output_tokens=8000,
+            timeout_seconds=self.settings.timeout_seconds,
         )
-        with httpx.Client(
-            timeout=self.settings.timeout_seconds, trust_env=False, follow_redirects=False
-        ) as client:
-            with client.stream(
-                "POST", self.settings.url.rstrip("/") + "/chat/completions", json=body, headers=headers
-            ) as response:
-                response.raise_for_status()
-                raw = bytearray()
-                for chunk in response.iter_bytes():
-                    raw.extend(chunk)
-                    if len(raw) > 1_000_000:
-                        raise ValueError("Extraction response too large")
-        data = json.loads(raw)
-        choice = data["choices"][0]
-        if choice.get("finish_reason") not in {None, "stop"}:
-            raise ValueError("Incomplete extraction response")
-        return str(choice["message"]["content"])
+        try:
+            result = self.provider.complete(request)
+            if not isinstance(result, str) or not result.strip() or len(result.encode("utf-8")) > 1_000_000:
+                raise CompletionError("invalid_response")
+            return result
+        except CompletionError:
+            raise
+        except Exception:
+            raise CompletionError("provider_failed") from None
 
 
 def normalize_extraction(content: str) -> Extraction:
@@ -232,3 +214,7 @@ def verified_extraction(extraction: Extraction, content: str) -> Extraction:
         relations=accepted,
         rejected_relations=extraction.rejected_relations + len(extraction.relations) - len(accepted),
     )
+
+
+class HTTPExtractor(ModelExtractor):
+    """Compatibility name; new integrations should use ModelExtractor and a provider."""
