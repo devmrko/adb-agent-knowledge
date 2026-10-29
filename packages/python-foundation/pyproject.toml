@@ -1,0 +1,27 @@
+[build-system]
+requires = ["hatchling>=1.27"]
+build-backend = "hatchling.build"
+
+[project]
+name = "devmrko-python-foundation"
+version = "0.1.0"
+description = "Reusable FastAPI, SQLAlchemy transaction, authentication and operations foundation"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+  "fastapi>=0.115,<1", "pydantic-settings>=2.7,<3", "sqlalchemy>=2.0.38,<2.1",
+  "alembic>=1.14,<2", "jinja2>=3.1.5,<4", "python-multipart>=0.0.20,<1",
+  "httpx>=0.28,<1", "pyjwt[crypto]>=2.10.1,<3", "uvicorn>=0.34,<1",
+]
+
+[project.optional-dependencies]
+oracle = ["oracledb>=3,<5"]
+
+[project.scripts]
+foundation-new = "python_foundation.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/python_foundation"]
+
+[tool.hatch.build.targets.sdist]
+include = ["/src", "/example_app", "/tests", "/scripts", "/docs", "/alembic", "/alembic.ini", "/README.md", "/pyproject.toml", "/CHANGELOG.md"]

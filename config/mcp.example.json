@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "vector_knowledge": {
+      "command": "/absolute/path/to/vector-knowledge/scripts/run_knowledge_mcp.sh",
+      "args": []
+    }
+  }
+}

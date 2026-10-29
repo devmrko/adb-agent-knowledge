@@ -1,0 +1,9 @@
+#!/bin/sh
+# Project-local uv launcher; no global Python installation is modified.
+set -eu
+project_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+if [ ! -x "$project_root/.tools/uv/bin/uv" ]; then
+    python3 -m venv "$project_root/.tools/uv"
+    "$project_root/.tools/uv/bin/python" -m pip install --disable-pip-version-check 'uv==0.13.1'
+fi
+exec "$project_root/.tools/uv/bin/uv" "$@"

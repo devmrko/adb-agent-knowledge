@@ -1,0 +1,6 @@
+interface:
+  display_name: "Agent Knowledge for Oracle ADB"
+  short_description: "Recall project knowledge and maintain durable memories"
+  default_prompt: "Use $vector-knowledge to recall relevant project decisions and save useful confirmed knowledge under my memory preferences."
+policy:
+  allow_implicit_invocation: true

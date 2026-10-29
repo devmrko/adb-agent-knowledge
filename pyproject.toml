@@ -1,0 +1,44 @@
+[project]
+name = "adb-agent-knowledge"
+version = "0.1.0"
+description = "Personal knowledge API, search UI and MCP backed by Oracle Autonomous AI Database"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["devmrko-python-foundation==0.1.0"]
+
+[project.optional-dependencies]
+mcp = ["mcp>=1.26,<2"]
+knowledge = ["oracledb>=3,<27", "pypdf>=6,<7", "sentence-transformers>=5,<6"]
+
+[dependency-groups]
+dev = ["pytest>=8.3,<10", "ruff>=0.11,<1", "mypy>=1.15,<2"]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/python-foundation"]
+
+[tool.uv.sources]
+devmrko-python-foundation = { workspace = true }
+
+[tool.ruff]
+line-length = 110
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["knowledge_app", "python_foundation", "example_app"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["knowledge_app", "packages/python-foundation/src/python_foundation", "packages/python-foundation/example_app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "packages/python-foundation/tests"]
+pythonpath = [".", "packages/python-foundation"]
+addopts = "-q"

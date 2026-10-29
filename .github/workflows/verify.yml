@@ -1,0 +1,24 @@
+name: verify
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.12']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.13.1'
+      - run: uv python install "${{ matrix.python }}"
+      - run: uv sync --locked --python "${{ matrix.python }}" --extra knowledge --extra mcp
+      - run: uv run --no-sync ruff check .
+      - run: uv run --no-sync ruff format --check .
+      - run: uv run --no-sync mypy
+      - run: uv run --no-sync pytest
+      - run: uv run --no-sync python packages/python-foundation/scripts/smoke_runtime.py
+      - run: uv build --package devmrko-python-foundation
+      - run: uv run --no-sync python packages/python-foundation/scripts/verify_wheel.py

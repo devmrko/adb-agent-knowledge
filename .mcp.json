@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "vector_knowledge": {
+      "type": "stdio",
+      "command": "./scripts/run_configured_knowledge_mcp.sh",
+      "args": []
+    }
+  }
+}
