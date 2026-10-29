@@ -2,6 +2,8 @@
 
 Agent Knowledge for Oracle ADB
 
+[English](README.en.md) · 한국어
+
 **Codex·Claude 등 AI 에이전트를 위한 지식 저장소 — Kev 판단, 벡터·그래프 검색, 근거와 변경 이력.**
 
 Oracle Autonomous AI Database에 원문과 벡터를 보관하고, 한국어로 검색합니다.
@@ -184,6 +186,24 @@ Ollama 실행까지 한 번에 처리하지는 않습니다.** 필요한 기능�
 제출합니다. 서비스 무인 처리만 별도 LLM/API를 요구합니다. 벡터 임베딩과 Kev는 두 모드 모두 유지합니다.
 모델 가중치는 Git에 포함하지 않습니다. 최초 다운로드에는 인터넷·디스크 공간이 필요하고,
 실행 메모리와 속도는 CPU/GPU 및 동시에 실행하는 모델에 따라 달라집니다.
+
+## 임베딩 모델은 어디서 실행하나
+
+**기본 `EMBEDDING_PROVIDER=local`은 Knowledge API·임베딩 워커가 실행되는 머신 기준입니다.**
+Oracle DB 내부에 이 모델을 설치하지 않으며, MCP 클라이언트의 머신에서 자동 실행하는 것도 아닙니다.
+MCP 어댑터는 도구 호출을 API로 전달합니다. MCP와 API는 같은 머신에 둘 수도, 분리할 수도 있습니다.
+
+| 단계 | 실행 위치 | 처리 |
+|---|---|---|
+| 원문 임베딩 | 임베딩 워커 프로세스 | 모델 로드 → 청크를 벡터로 변환 → Oracle에 저장 |
+| 검색어 임베딩 | Knowledge API 프로세스 | 같은 임베딩 프로필로 질의를 벡터로 변환 |
+| 벡터 비교·검색 | Oracle DB | 전달받은 질의 벡터와 저장 벡터를 비교 |
+| 원격 임베딩 선택 | 별도 `/embeddings` 서버 | API·워커가 원문 청크/질의를 전송해 벡터를 받음 |
+
+기본 장치는 CPU이며 API·워커가 각각 모델을 로드하므로 메모리도 각각 사용합니다.
+서버에 API·워커를 두고 랩탑에서 Codex·Claude만 사용하면 랩탑에는 임베딩 모델을 설치할 필요가 없습니다.
+`EMBEDDING_MODEL`은 모델 이름이고 실행 위치는 `EMBEDDING_PROVIDER`와 API·워커 배포 위치가 결정합니다.
+[모델 실행 위치 상세](docs/guides/local-models.md) · [English architecture](docs/en/architecture-and-models.md).
 
 ## 기본 모델과 선택 방법
 

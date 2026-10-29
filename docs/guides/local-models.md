@@ -4,10 +4,11 @@
 > 아래 별도 생성 모델·자동 추출 워커 설명은 `GRAPH_EXTRACTION_MODE=service`에 해당합니다.
 > Kev·임베딩·검색은 유지합니다. [v2 아키텍처](v2-agent-extraction.md).
 
+[English: architecture and models](../en/architecture-and-models.md)
 
-세 모델의 역할은 서로 다르다. 자동 관계 추출을 쓰려면 MCP 서비스가 호출할 별도 LLM이 필요하다.
-서비스 내부 워커가 공통 인터페이스를 통해 모델을 호출한다. Codex·Claude의 모델을 재사용하거나
-DB 내부에서 실행하지 않는다. [LLM 호출 구조](llm-providers.md)를 참고한다.
+Kev·임베딩·관계 추출의 역할은 서로 다르다. v2 기본 agent 모드에서는 Codex·Claude가 관계를
+추출한다. service 모드에서만 별도 그래프 워커가 LLM 인터페이스를 호출한다. Oracle DB 내부에서
+이 생성 모델을 실행하는 구성은 아니다. [LLM 호출 구조](llm-providers.md)를 참고한다.
 
 ## Kev — 의사결정
 
@@ -41,8 +42,20 @@ Kev는 기본 판단 계층이며 장애 시 에이전트 판단으로 진행할
 추가 학습한 Sentence Transformer이다. 모델 카드 기준 한국어·영어, 1024차원, 코사인 유사도를
 사용한다. [모델 카드](https://huggingface.co/dragonkue/snowflake-arctic-embed-l-v2.0-ko)
 
-`.env.example`의 모델 revision을 고정해 최초 저장/검색 시 다운로드한다. 기본 캐시는
-`.cache/huggingface`, 기본 장치는 CPU다. 별도 임베딩 서버 없이 API/worker 프로세스에서
+**실행 위치는 Knowledge API·임베딩 워커 프로세스다.** `EMBEDDING_PROVIDER=local`의 local은
+이 프로세스가 실행되는 머신을 뜻한다. 모델이 Oracle DB 안에서 실행되거나 MCP 클라이언트인
+Codex·Claude의 머신에서 자동으로 실행된다는 뜻이 아니다. MCP 어댑터 자체도 임베딩을 계산하지 않는다.
+
+- 저장: 워커가 원문 청크를 임베딩하고 Oracle에 원문·벡터를 기록한다.
+- 검색: API가 질의를 임베딩하고 Oracle에 벡터 비교 쿼리를 보낸다.
+- Oracle: 벡터를 보관하고 거리 계산·검색을 수행한다. 앱의 현재 구성은 DB 내 모델 추론을 사용하지 않는다.
+
+MCP 어댑터·API·워커·모델 서버는 같은 머신 또는 서로 다른 머신에 배포할 수 있다.
+API와 워커를 분리하면 local 모델을 두 머신에 각각 준비하고 동일한 모델·revision·전처리를 유지한다.
+
+`.env.example`의 모델 revision을 고정해 최초 저장/검색 시 다운로드한다. 기본 실행 스크립트가 설정하는 캐시는
+`.cache/huggingface`이며 `HF_HOME`으로 바꿀 수 있다. 직접 Python을 실행하면 Hugging Face의
+환경/기본 캐시 규칙을 따른다. 기본 장치는 CPU다. 별도 임베딩 서버 없이 API/worker 프로세스에서
 모델을 로드하므로 여러 프로세스의 메모리 사용도 고려한다. `mps` 또는 `cuda`를 선택하려면
 해당 PyTorch·하드웨어 호환성을 확인한다. 전체 모델 동시 실행의 최소 메모리를 보장하지 않는다.
 
@@ -54,9 +67,9 @@ Kev는 기본 판단 계층이며 장애 시 에이전트 판단으로 진행할
 모델·revision·차원·전처리가 다른 벡터를 섞어 비교하지 않는다. 프로필 불일치는 오류를 반환하며
 자동 재임베딩·무중단 전환은 미구현이다. 기존 설정을 유지하거나 별도 스키마에서 검증한다.
 
-## 관계 추출용 생성 모델
+## 관계 추출용 생성 모델 — service 모드만
 
-Ollama/Gemma 또는 OpenRouter 등 호환 API를 선택한다. Kev나 임베딩 모델을 대체하지 않는다.
+agent 모드는 Codex·Claude가 추출한다. service 모드에서는 Ollama/Gemma 또는 OpenRouter 등 호환 API를 선택한다. Kev나 임베딩 모델을 대체하지 않는다.
 로컬 예제 태그는 `adb-agent-knowledge-gemma4:e2b`이며 기반 모델은 `config/Gemma4.Modelfile`에
 지정돼 있다. Ollama는 별도 앱/서비스로 실행해야 한다. [전체 설치](local-full-setup.md)
 

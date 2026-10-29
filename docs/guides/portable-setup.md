@@ -1,15 +1,20 @@
 # 자기 Oracle ADB로 시작하기
 
-Docker 없이 macOS/Linux에서 실행한다. Windows는 WSL을 사용한다.
+Docker 없이 macOS/Linux에서 실행한다. Windows에서는 WSL 사용을 고려할 수 있으나 신규 Oracle·모델 설치 검증은 아직 없다.
 이 저장소는 ADB를 자동 생성하거나 관리자의 권한을 부여하지 않는다.
 
 ## 1. 실행 위치 선택
 
 | 구성 | 랩탑에서 실행 | 별도 서버에서 실행 |
 |---|---|---|
-| 가벼운 클라이언트 | MCP 클라이언트 | 지식 API/worker, Kev, 임베딩, 관계 추출 |
-| 원격 모델 | 지식 API/worker/MCP | Kev, 임베딩, 관계 추출 |
-| 로컬 모델 | 지식 API/worker/MCP 및 선택한 모델 | Oracle ADB만 원격 |
+| 가벼운 클라이언트 | Codex·Claude 및 연결 런처 | MCP 어댑터·API·worker, Kev, 임베딩 |
+| 원격 모델 | MCP 어댑터·API·worker | Kev와 임베딩 endpoint |
+| 로컬 모델 | MCP 어댑터·API·worker, Kev, 임베딩 | Oracle ADB |
+
+세 구성 모두 Oracle ADB는 원격이다. 표는 배치 예시이며 MCP 어댑터와 API를 분리할 수도 있다.
+local 임베딩은 API·worker 머신에서 실행한다. Oracle 안이나 MCP 어댑터에서 실행하지 않는다.
+agent 모드의 관계 추출은 Codex·Claude가 수행한다. service 모드를 선택할 때만 별도 생성 모델과
+그래프 워커를 준비한다. [English setup](../../README.en.md).
 
 기본 판단 제공자는 Kev이다. 원격 Kev도 동일한 /v1/systemone 계약을 사용한다.
 DecisionProvider 인터페이스로 다른 판단기를 구현할 수 있지만 현재 배포된 구현체는 Kev 하나다.

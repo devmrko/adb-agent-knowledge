@@ -1,5 +1,7 @@
 # adb-agent-knowledge 매뉴얼
 
+[English documentation](en/README.md) · [English README](../README.en.md)
+
 제품명: **Agent Knowledge for Oracle ADB**. 저장소·체크아웃 폴더는 `adb-agent-knowledge`이며,
 MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있습니다. 스킬명은 `adb-agent-knowledge`입니다.
 

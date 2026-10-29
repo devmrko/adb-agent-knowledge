@@ -3,7 +3,7 @@
 먼저 [실행 위치·모델 선택](portable-setup.md)을 확인하세요. Docker는 필수가 아니며 Kev는 기본 판단 계층입니다.
 
 필요 사항: Git, Python 3와 venv/pip, 접속 가능한 기존 Autonomous Database, 압축 해제한 Wallet.
-설치 스크립트가 프로젝트 전용 uv와 Python 3.12 환경을 준비한다. Windows는 WSL에서 실행한다.
+설치 스크립트가 프로젝트 전용 uv와 Python 3.12 환경을 준비한다. Windows/WSL의 신규 Oracle·모델 설치는 아직 검증하지 않았다.
 
 ```sh
 git clone https://github.com/devmrko/adb-agent-knowledge.git adb-agent-knowledge
@@ -44,13 +44,16 @@ ORACLE_DSN=your_database_low
   같은 개인 지식에 접근한다. 운영 다중 사용자는 ENVIRONMENT=production 및 JWT 설정이 필요하다.
 
 
-## 전체 기능을 로컬 모델로 준비하기
+## 모델과 그래프 준비
 
-RDF 초기화, Kev, OpenRouter 없는 Gemma 4 구성은 [전체 설치 가이드](local-full-setup.md)를 따르세요.
+기본 agent 모드에는 Kev와 임베딩 모델이 필요하며 별도 생성형 모델 설치는 필요하지 않다.
+임베딩은 API·워커 머신에서 실행하고 Oracle은 벡터 저장·검색을 담당한다.
+[모델 실행 위치](local-models.md)와 [RDF·Property Graph 초기화](oracle-graph-examples.md)를 참고한다.
+무인 관계 추출을 위한 선택적 service 모드의 Gemma 구성은 [전체 설치 가이드](local-full-setup.md)를 따른다.
 
 ## 다음 단계
 
 - [브라우저에서 검색하기](search-ui.md)
 - [Codex / Claude 연결하기](agent-installation.md)
-- [로컬 모델과 선택적 Kev 설정](local-models.md)
+- [모델 실행 위치와 Kev 설정](local-models.md)
 - [문제가 생겼을 때](knowledge-development.md#장애-복구)

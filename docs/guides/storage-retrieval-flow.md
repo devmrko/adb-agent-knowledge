@@ -5,19 +5,19 @@
 > Kev·임베딩·검색은 유지합니다. [v2 아키텍처](v2-agent-extraction.md).
 
 
-2026-10-29 공개 preview 구현 기준. 에이전트의 저장·조회 판단, API의 실제 처리, 비동기 관계 연결을 구분한다.
+2026-10-30 공개 preview 구현 기준. 에이전트의 저장·조회 판단, API의 실제 처리, 비동기 관계 연결을 구분한다.
 
 ## 구성
 
 ```mermaid
 flowchart LR
     Agent["Codex · Claude<br/>adb-agent-knowledge 스킬"] --> MCP["adb_agent_knowledge MCP"]
-    MCP --> API["Knowledge API"]
+    MCP --> API["Knowledge API<br/>질의 임베딩 실행"]
     UI["지식 노트 웹 화면"] --> API
     MCP <--> Kev["Kev · 로컬 또는 원격<br/>저장·조회·탐색 경로 판단"]
     API <--> DB[("Oracle Autonomous AI Database<br/>요약 · 상세 · 원문 버전 · 출처<br/>벡터 · 인덱스 · 공유 RDF · 변경 이력")]
     Worker["임베딩 워커<br/>한국어 임베딩 모델"] <--> DB
-    GraphWorker["자동 관계 워커"] <--> DB
+    GraphWorker["service 모드만: 자동 관계 워커"] <--> DB
     GraphWorker <--> Kev
     GraphWorker <--> Port["CompletionProvider 인터페이스"]
     Port <--> LLM["HTTP 구현: Ollama·vLLM·OpenRouter 등<br/>SDK·직접 실행은 확장 지점"]
@@ -25,8 +25,8 @@ flowchart LR
 
 - **Oracle**이 지식과 이력의 기준 저장소다. 로컬 Markdown은 스킬 지침과 원본 설계 자료 등에 사용한다.
 - **Kev**는 처리 필요성과 경로를 판단한다. 임베딩 생성, 관계 추출, 사실 확정은 담당하지 않는다.
-- **임베딩 모델**은 로컬 또는 OpenAI 호환 endpoint를 선택한다. 기본 로컬 한국어 모델은 `dragonkue/snowflake-arctic-embed-l-v2.0-ko`다.
-- **설정한 생성 모델**은 자동 관계 추출과 별도 의미 검토에 사용한다. 임베딩과는 다른 처리다.
+- **임베딩 모델**은 local이면 API·워커 머신에서 실행하고, 원격이면 API·워커가 OpenAI 호환 endpoint를 호출한다. Oracle DB 내부나 MCP 어댑터에서 추론하지 않는다. 기본 로컬 한국어 모델은 `dragonkue/snowflake-arctic-embed-l-v2.0-ko`다.
+- **설정한 생성 모델**은 service 모드에서만 자동 관계 추출과 별도 의미 검토에 사용한다. agent 모드에서는 Codex·Claude가 추출한다. 임베딩과는 다른 처리다.
 - 웹 화면에서 직접 수행한 저장·조회는 Kev의 허가를 기다리지 않는다.
 
 ## 1. 저장과 기존 지식 보완
@@ -56,7 +56,16 @@ flowchart TD
 - 요약은 직접 제공할 수 있으며, 생략하면 발췌형 미리보기를 사용한다. 자동 생성 요약은 현재 구현 범위가 아니다.
 - 출처에는 원본 위치·머신 ID·버전·문서 내 위치를 기록할 수 있다. 파일 경로 기록이 파일의 접근 가능성을 보장하지는 않는다.
 
-## 2. 기존·신규 지식의 자동 관계 연결
+## 2. 기존·신규 지식의 관계 연결
+
+### 기본 agent 모드
+
+READY → knowledge_graph_prepare(Kev 판단·원문 버전·검토 상태) → REVIEWING →
+전체 원문 확인·knowledge_graph_resolve → 기존 개체/관계 재사용 또는 보완 →
+COMPLETE/RELATIONS 또는 COMPLETE/NONE. 미해결 항목은 FAILED/UNRESOLVED로 남긴다.
+기존 미검토 지식도 knowledge_graph_reviews에서 이어받는다. [상세 계약](graph-identity-review.md).
+
+### 선택적 service 모드
 
 ```mermaid
 flowchart TD
@@ -134,4 +143,4 @@ flowchart TD
 - [변경 이력](change-history.md)
 - [Codex·Claude 설치](agent-installation.md)
 
-[서비스 내부 LLM 인터페이스](llm-providers.md): MCP 서비스 워커가 호출하며 Codex·Claude 모델 공유나 DB 내부 추론이 아니다.
+[서비스 내부 LLM 인터페이스](llm-providers.md): 선택적 service 모드의 그래프 워커가 호출한다. 기본 agent 모드는 Codex·Claude가 관계를 추출하며, 두 모드 모두 Oracle DB 내부 생성 모델 추론은 사용하지 않는다.

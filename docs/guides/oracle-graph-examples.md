@@ -1,5 +1,7 @@
 # Oracle RDF·SQL Property Graph 생성과 조회 실습
 
+[English](../en/oracle-graph-examples.md)
+
 이 프로젝트의 원칙은 **관계 테이블에 식별·버전·시점 기준을 두고, RDF에는 근거를 포함한 사실을
 표현하고, SQL Property Graph로 연결 후보를 탐색**하는 것이다. 두 엔진이 별도로 관계를 추측하거나
 동일 개체를 자동 병합하지 않는다.
