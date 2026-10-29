@@ -802,6 +802,10 @@ class KnowledgeService:
                 active = repo.revision(owner, item.active_revision_id) if item.active_revision_id else None
                 if active is None or revision.revision_no > active.revision_no:
                     item.active_revision_id = revision.id
+                    if self.settings.workflow_rdf_enabled:
+                        from knowledge_app.graph_ops_repository import GraphOpsRepository
+
+                        GraphOpsRepository(uow.session).ensure_review(owner, item.id, revision.id)
                     uow.session.add(
                         Event(
                             owner_id=owner,

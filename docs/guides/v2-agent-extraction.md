@@ -23,6 +23,13 @@ flowchart TD
     Recall --> Agent
 ```
 
+## vk0010 이후의 검토 상태와 개체 식별
+
+현재 버전은 prepare와 별도로 REVIEWING/COMPLETE/FAILED 검토 상태를 기록할 수 있습니다.
+원문 READY 시 PENDING을 만들고 기존 미검토 원문도 backlog에 포함합니다. 전체 원문과 관계를
+확인한 에이전트가 명시적으로 완료를 기록하며, prepare만으로 완료되지 않습니다.
+확인된 별칭·외부 식별자와 수정 이력도 지원합니다. [새 migration·도구·절차](graph-identity-review.md).
+
 ## 기본 설치
 
 Oracle 접속·테이블·RDF 초기화는 기존 설치 안내대로 진행합니다. 그래프 사용에는

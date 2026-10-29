@@ -26,6 +26,8 @@ from knowledge_app.graph_auto_extractor import Extractor, ModelExtractor
 from knowledge_app.graph_auto_models import ExtractionRun, GraphProposal
 from knowledge_app.graph_auto_repository import AutoGraphRepository
 from knowledge_app.graph_contracts import AssertionInput, EntityInput, EvidenceInput
+from knowledge_app.graph_ops_models import GraphReview
+from knowledge_app.graph_ops_repository import snapshot
 from knowledge_app.graph_service import GraphService, digest
 from knowledge_app.llm import CompletionProvider
 from knowledge_app.models import GraphClaim, GraphEntity, GraphVersion, Item, now, uid
@@ -101,6 +103,11 @@ class AutoGraphService:
                 raise fail("GRAPH_SOURCE_STALE", ErrorCategory.CONFLICT)
             content = revision.content_text
             preview = content[: command.max_chars]
+            review = uow.session.scalar(
+                select(GraphReview).where(
+                    GraphReview.owner_id == item.owner_id, GraphReview.revision_id == revision.id
+                )
+            )
             return {
                 "knowledge_id": item.id,
                 "revision_id": revision.id,
@@ -110,6 +117,8 @@ class AutoGraphService:
                 "total_chars": len(content),
                 "next_offset": len(preview) if len(preview) < len(content) else None,
                 "entity_candidates": repo.context(item, preview),
+                "review": snapshot(review) if review else {"id": None, "status": "PENDING", "version": 0},
+                "identity_tool": "knowledge_graph_resolve",
                 "review_required": repo.required(item),
                 "schema": self.schema(),
                 "writes_performed": False,

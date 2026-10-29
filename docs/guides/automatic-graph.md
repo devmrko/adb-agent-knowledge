@@ -25,7 +25,7 @@ GRAPH_AUTO_MAX_CHARS=24000
 
 외부 LLM 사용은 해당 제공자에 원문과 제한된 기존 개체 후보를 전송한다. OpenRouter는 data_collection=deny와 require_parameters=true를 사용한다. 명시적으로 다른 endpoint를 선택하면 GRAPH_AUTO_API_KEY로 별도 키를 지정할 수 있다. `.env`와 키는 Git에 포함하지 않는다. 로컬 OpenAI 호환 서버는 loopback URL, 해당 model, allow_remote=false로 구성한다.
 
-서비스를 중지하고 `./uvw run --no-sync alembic upgrade head`로 vk0009를 적용한 뒤 `./scripts/run_knowledge.sh`를 실행한다. 이 실행기는 API, 임베딩/outbox 워커, 그래프 추출 워커를 함께 관리한다. 분리 실행은 `./.venv/bin/python -m knowledge_app.graph_auto_worker` 또는 `--once`를 사용한다.
+서비스를 중지하고 `./uvw run --no-sync alembic upgrade head`로 최신 migration(vk0010 포함)을 적용한 뒤 `./scripts/run_knowledge.sh`를 실행한다. 이 실행기는 API, 임베딩/outbox 워커, 그래프 추출 워커를 함께 관리한다. 분리 실행은 `./.venv/bin/python -m knowledge_app.graph_auto_worker` 또는 `--once`를 사용한다.
 
 2026-10-19 OpenRouter 공개 모델 목록 기준 Qwen3.5-Flash는 입력 100만 토큰당 $0.065, 출력 $0.26이다. 가상 한국어 운영 기록에서 6개 개체/5개 명시적 관계를 약 4.6초에 추출했으나, 이 한 사례가 일반 정확도를 입증하지 않는다. 실제 프로젝트 자료로 정확도·비용 평가가 필요하다.
 

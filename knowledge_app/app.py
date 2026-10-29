@@ -36,6 +36,8 @@ from knowledge_app.graph_contracts import (
     GraphSearch,
     GraphSeed,
 )
+from knowledge_app.graph_ops_contracts import GraphExplore, IdentityBind, IdentityResolve, ReviewUpdate
+from knowledge_app.graph_ops_service import GraphOpsService
 from knowledge_app.graph_service import GraphService
 from knowledge_app.indexes import EntryInput, IndexEdit, IndexInput, IndexService
 from knowledge_app.navigation import NavigationRequest, NavigationService
@@ -99,6 +101,7 @@ def create_app(
     engine = database(settings)
     service = KnowledgeService(sessions(engine), embedder or create_embedder(settings), settings)
     graph_service = GraphService(sessions(engine), settings)
+    graph_ops = GraphOpsService(sessions(engine), settings)
     audit = AuditService(sessions(engine), settings.workflow_rdf_enabled)
     auto_graph = AutoGraphService(sessions(engine), settings)
     indexes = IndexService(sessions(engine), settings.workflow_rdf_enabled)
@@ -303,6 +306,49 @@ def create_app(
             return [normalize_scope(v) for v in scope.split(",")]
         except ValueError:
             raise fail("INVALID_SCOPE") from None
+
+    @app.get("/api/v1/graph/reviews")
+    def graph_review_backlog(
+        actor: ActorDep,
+        scope: str | None = None,
+        offset: Annotated[int, Query(ge=0, le=1000000)] = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 30,
+    ) -> dict[str, Any]:
+        return graph_ops.backlog(actor, index_scopes(scope), offset, limit)
+
+    @app.post("/api/v1/graph/reviews/{item_id}")
+    def graph_review_update(item_id: str, command: ReviewUpdate, actor: ActorDep) -> dict[str, Any]:
+        return graph_ops.review(actor, item_id, command)
+
+    @app.get("/api/v1/graph/entities/{entity_id}/identities")
+    def graph_entity_identities(
+        entity_id: str,
+        actor: ActorDep,
+        offset: Annotated[int, Query(ge=0, le=1000000)] = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 30,
+    ) -> dict[str, Any]:
+        return graph_ops.bindings(actor, entity_id, offset, limit)
+
+    @app.post("/api/v1/graph/identities/resolve")
+    def graph_identity_resolve(command: IdentityResolve, actor: ActorDep) -> dict[str, Any]:
+        return graph_ops.resolve(actor, command)
+
+    @app.post("/api/v1/graph/identities")
+    def graph_identity_bind(command: IdentityBind, actor: ActorDep) -> dict[str, Any]:
+        return graph_ops.bind(actor, command)
+
+    @app.get("/api/v1/graph/operations/{target_id}")
+    def graph_operation_history(
+        target_id: str,
+        actor: ActorDep,
+        offset: Annotated[int, Query(ge=0, le=1000000)] = 0,
+        limit: Annotated[int, Query(ge=1, le=100)] = 30,
+    ) -> dict[str, Any]:
+        return graph_ops.history(actor, target_id, offset, limit)
+
+    @app.post("/api/v1/graph/explore")
+    def graph_explore(command: GraphExplore, actor: ActorDep) -> dict[str, Any]:
+        return graph_ops.explore(actor, command)
 
     @app.get("/api/v1/indexes")
     def index_catalog(

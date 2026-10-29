@@ -271,7 +271,20 @@ Graph 생성 권한이 필요합니다. 비활성 상태에서는 기존 관계�
 로컬 개발 화면은 자동 연결됩니다. 원격/운영 환경은 별도 인증·HTTPS를 구성합니다.
 기본 실행은 이 머신에서만 접속 가능한 개인 개발 환경이며 토큰과 Wallet은 Git에 올리지 않습니다.
 
+## 개체 식별과 누락 없는 관계 검토
+
+이름이 비슷하다고 개체를 합치지 않습니다. `knowledge_graph_resolve`는 기존 identity_key,
+현재 원문으로 확인한 별칭·외부 식별자와 이름 힌트를 구분합니다. 정정은 버전과 근거를 확인하고
+이력을 보존합니다. 원문이 바뀌면 이전 근거의 식별자는 확정 후보에서 제외됩니다.
+
+`knowledge_graph_reviews`로 기존 지식까지 미완료 목록을 찾고 REVIEWING → COMPLETE/FAILED를
+기록합니다. 관계가 없다는 결론도 전체 원문을 확인한 뒤 NONE으로 기록하며 Kev skip과 구분합니다.
+`vk0010` migration이 필요합니다. [개체 식별·검토 흐름](docs/guides/graph-identity-review.md).
+
 ## RDF와 SQL Property Graph를 어떻게 쓰나
+
+[RDF·Property Graph 생성 SQL부터 Cafesto 관계 등록·조회까지 실행 예제](docs/guides/oracle-graph-examples.md)를 제공합니다.
+`knowledge_graph_explore`는 근거 탐색(evidence)과 의존 검토 경로(dependencies)를 구분합니다.
 
 한 노트에 그래프를 가두지 않고 여러 지식이 같은 개체·관계를 공유합니다. 예를 들어 다음 관계를
 정확한 원문 버전과 인용으로 뒷받침합니다. 아래는 설명용 예시이며 미리 들어 있는 데이터는 아닙니다.

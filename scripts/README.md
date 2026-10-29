@@ -35,3 +35,9 @@
 자세한 효과와 입력은 각 파일 설명 및 `--help` 지원 여부를 확인한다.
 
 [설치](../docs/guides/portable-setup.md) · [개발·운영](../docs/guides/knowledge-development.md)
+
+## Oracle 그래프 실습
+
+`./uvw run python -m scripts.demo_graph_relations --apply`는 project:graph-demo에 가상 Cafesto
+원문·개체·관계를 등록하고 별칭과 근거/의존 경로를 조회합니다. --apply 없이 실행하면 쓰지 않습니다.
+[초기화·SQL·조회 예제](../docs/guides/oracle-graph-examples.md)를 먼저 확인하세요.

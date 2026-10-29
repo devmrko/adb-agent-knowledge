@@ -15,6 +15,8 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 | 브라우저에서 검색하기 | [검색 화면](guides/search-ui.md) |
 | 다른 머신의 메모리 정책 적용 | [여러 머신 설정](guides/multi-machine-memory.md) |
 | Codex / Claude에 연결하기 | [에이전트 설치](guides/agent-installation.md) |
+| RDF·Property Graph 생성·관계 등록·조회 실습 | [Oracle 그래프 예제](guides/oracle-graph-examples.md) |
+| 개체 식별과 원문별 검토 상태 | [식별·검토 흐름](guides/graph-identity-review.md) |
 | 관계·프로젝트·시점별 조회 | [공통 RDF 그래프](guides/shared-graph.md) |
 | 요약·인덱스·근거 탐색 | [인덱스 탐색](guides/index-navigation.md) |
 | 머신과 출처 위치 기록 | [출처 관리](guides/provenance.md) |

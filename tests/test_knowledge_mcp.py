@@ -42,6 +42,13 @@ def test_tool_contracts_and_save_auth():
         "knowledge_graph_extraction_runs",
         "knowledge_graph_extract",
         "knowledge_graph_prepare",
+        "knowledge_graph_reviews",
+        "knowledge_graph_review",
+        "knowledge_graph_resolve",
+        "knowledge_graph_bind",
+        "knowledge_graph_bindings",
+        "knowledge_graph_operation_history",
+        "knowledge_graph_explore",
         "knowledge_graph_proposal_review",
         "knowledge_prepare_save",
         "knowledge_index_list",
@@ -327,7 +334,7 @@ def test_agent_prepare_partial_skip_requires_review(total_chars):
             200,
             json={
                 "text": "앞부분",
-                "total_chars": 12000,
+                "total_chars": total_chars,
                 "review_required": False,
             },
         )

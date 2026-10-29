@@ -16,6 +16,7 @@ from pydantic import Field
 from knowledge_app.contracts import MemoryKind, Provenance, SourceLocation
 from knowledge_app.graph_auto_contracts import AgentGraphPrepare, ReviewCandidate
 from knowledge_app.graph_contracts import AssertionInput, AssertionRevision, EntityInput, GraphSearch
+from knowledge_app.graph_ops_contracts import GraphExplore, IdentityBind, IdentityResolve, ReviewUpdate
 from knowledge_app.indexes import EntryInput, IndexEdit, IndexInput
 from knowledge_app.navigation import NavigationRequest
 from knowledge_app.routing import MemoryDecision, MemoryRouter, Operation, RoutingSettings
@@ -368,6 +369,64 @@ def create_server(api: KnowledgeAPI, router: MemoryRouter | None = None) -> Fast
         return await api.request(
             "POST", f"/api/v1/graph/proposals/{proposal_id}/review", json=review.model_dump(mode="json")
         )
+
+    @server.tool(annotations=READ)
+    async def knowledge_graph_reviews(
+        scope: str | None = None,
+        offset: Annotated[int, Field(ge=0, le=1000000)] = 0,
+        limit: Annotated[int, Field(ge=1, le=100)] = 30,
+    ) -> dict[str, Any]:
+        """List unfinished reviews of active source revisions, including older knowledge. REVIEWING may be interrupted; reclaim explicitly with current version. No hidden extraction worker."""
+        params: dict[str, Any] = dict(offset=offset, limit=limit)
+        if scope:
+            params["scope"] = scope
+        return await api.request("GET", "/api/v1/graph/reviews", params=params)
+
+    @server.tool(annotations=WRITE)
+    async def knowledge_graph_review(knowledge_id: UUID, review: ReviewUpdate) -> dict[str, Any]:
+        """Record REVIEWING before work, COMPLETE only after reading the full exact source and resolving all relations, or FAILED/UNRESOLVED with a reason. NONE means reviewed and no supported relations, not Kev skip. Requires current revision and expected version. Completion is an agent attestation, not automatic semantic validation."""
+        return await api.request(
+            "POST", f"/api/v1/graph/reviews/{knowledge_id}", json=review.model_dump(mode="json")
+        )
+
+    @server.tool(annotations=READ)
+    async def knowledge_graph_resolve(request: IdentityResolve) -> dict[str, Any]:
+        """Resolve canonical identity, evidenced aliases/external identifiers and label hints in confirmed scopes. Ambiguity never authorizes a merge. Read exact binding evidence; account for project/environment. No writes."""
+        return await api.request(
+            "POST", "/api/v1/graph/identities/resolve", json=request.model_dump(mode="json")
+        )
+
+    @server.tool(annotations=READ)
+    async def knowledge_graph_bindings(
+        entity_id: UUID,
+        offset: Annotated[int, Field(ge=0, le=1000000)] = 0,
+        limit: Annotated[int, Field(ge=1, le=100)] = 30,
+    ) -> dict[str, Any]:
+        """List an entity's current binding versions including stale/retracted bindings, to inspect history and refresh evidence. evidence_current is source freshness, not semantic truth. Never restore retracted bindings without user authorization."""
+        return await api.request(
+            "GET", f"/api/v1/graph/entities/{entity_id}/identities", params=dict(offset=offset, limit=limit)
+        )
+
+    @server.tool(annotations=WRITE)
+    async def knowledge_graph_bind(binding: IdentityBind) -> dict[str, Any]:
+        """Record a confirmed alias/external identifier with exact current source evidence, note and expected_version (0=create). Never infer identity from similar names alone or include secrets. Read history before correcting. Retraction only on user request. External keys are unique within owner/scope/namespace; conflicts require review, not blind reassignment."""
+        return await api.request("POST", "/api/v1/graph/identities", json=binding.model_dump(mode="json"))
+
+    @server.tool(annotations=READ)
+    async def knowledge_graph_operation_history(
+        target_id: UUID,
+        offset: Annotated[int, Field(ge=0, le=1000000)] = 0,
+        limit: Annotated[int, Field(ge=1, le=100)] = 30,
+    ) -> dict[str, Any]:
+        """Read immutable identity binding or review snapshots before corrections. Historical evidence is not necessarily current. Owner-isolated and paginated."""
+        return await api.request(
+            "GET", f"/api/v1/graph/operations/{target_id}", params=dict(offset=offset, limit=limit)
+        )
+
+    @server.tool(annotations=READ)
+    async def knowledge_graph_explore(request: GraphExplore) -> dict[str, Any]:
+        """Explore evidence links or incoming dependency paths from confirmed entities/source seeds. Intent sets predicates/direction; depth/time/scope bounds are retained. Returns actual storage/backend and source evidence. Connectivity is not proof of impact or RDF inference."""
+        return await api.request("POST", "/api/v1/graph/explore", json=request.model_dump(mode="json"))
 
     @server.tool(annotations=READ)
     async def knowledge_graph_entities(query: str = "", scope: str | None = None) -> dict[str, Any]:

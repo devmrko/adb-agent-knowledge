@@ -29,7 +29,7 @@ def test_additive_migration_preserves_existing_source(tmp_path, monkeypatch):
         item_id = item.id
     command.upgrade(config, "head")
     with engine.connect() as con:
-        assert con.scalar(text("select version_num from vk_alembic_version")) == "vk0009"
+        assert con.scalar(text("select version_num from vk_alembic_version")) == "vk0010"
         row = con.execute(
             text("select memory_kind, scope, lifecycle_status from vk_item where id=:id"), dict(id=item_id)
         ).one()
@@ -37,7 +37,9 @@ def test_additive_migration_preserves_existing_source(tmp_path, monkeypatch):
         assert con.scalar(text("select edit_origin from vk_revision")) is None
         assert con.scalar(text("select content_text from vk_revision")) == "원문 보존"
         assert con.exec_driver_sql("PRAGMA foreign_key_check").fetchall() == []
-    assert "vk_event" in inspect(engine).get_table_names()
+    assert {"vk_event", "vk_g_review", "vk_g_identity", "vk_g_operation"} <= set(
+        inspect(engine).get_table_names()
+    )
     assert {"origin_machine_id", "origin_machine_label", "sources_json"} <= {
         c["name"] for c in inspect(engine).get_columns("vk_revision")
     }

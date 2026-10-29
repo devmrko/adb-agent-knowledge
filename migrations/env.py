@@ -1,6 +1,6 @@
 from alembic import context
 
-from knowledge_app import audit_models, graph_auto_models  # noqa: F401
+from knowledge_app import audit_models, graph_auto_models, graph_ops_models  # noqa: F401
 from knowledge_app.database import database
 from knowledge_app.models import Base
 from knowledge_app.settings import Settings
