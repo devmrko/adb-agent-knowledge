@@ -84,7 +84,9 @@ RDF 초기화 성공 후 WORKFLOW_RDF_ENABLED=true로 설정한다. SQL Property
 다운로드하지 않는다. --db는 접속·벡터 연산·기존 활성 벡터 프로필을 확인한다.
 모델 응답 속도, RDF 권한, 추출 품질까지 검증한 것으로 해석하지 않는다.
 
-관계 자동 추출에는 별도의 모델이 필요하다. [Ollama/Gemma 설치](local-full-setup.md) 또는
+v2 기본 `agent` 모드는 Codex·Claude가 관계를 추출하므로 별도 생성 모델이 필요 없다.
+Kev와 임베딩은 유지한다. [v2 구성](v2-agent-extraction.md)을 따른다.
+웹·배치 무인 추출을 원하면 `GRAPH_EXTRACTION_MODE=service`에서 별도의 모델이 필요하다. [Ollama/Gemma 설치](local-full-setup.md) 또는
 [호환 API 설정](automatic-graph.md)을 따른다. Kev는 관계를 추출하는 생성 모델이 아니다.
 
 ```sh

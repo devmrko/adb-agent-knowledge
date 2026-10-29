@@ -1,5 +1,10 @@
 # 자동 그래프 추출과 검토
 
+> 이 문서는 별도 LLM을 쓰는 선택적 **service 모드** 안내입니다. v2 기본 agent 모드는
+> Codex·Claude가 추출하며 별도 생성 모델 설치가 필요 없습니다. Kev는 유지합니다.
+> [v2 구성과 전환](v2-agent-extraction.md)을 먼저 확인하세요.
+
+
 MCP 서비스의 관계 추출 워커가 공통 LLM 인터페이스로 모델을 호출합니다.
 현재 HTTP 구현과 SDK·로컬 실행 확장 방법은 [LLM 제공자 안내](llm-providers.md)를 참고하세요.
 
@@ -8,6 +13,7 @@ MCP 서비스의 관계 추출 워커가 공통 LLM 인터페이스로 모델을
 ## 설정과 실행
 
 ```dotenv
+GRAPH_EXTRACTION_MODE=service
 GRAPH_AUTO_ENABLED=true
 GRAPH_AUTO_URL=https://openrouter.ai/api/v1
 GRAPH_AUTO_MODEL=qwen/qwen3.5-flash-02-23

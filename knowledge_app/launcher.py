@@ -8,6 +8,7 @@ import sys
 import time
 
 from knowledge_app.database import database
+from knowledge_app.graph_auto_contracts import AutoGraphSettings
 from knowledge_app.settings import ROOT, Settings
 
 
@@ -53,8 +54,10 @@ def main() -> None:
             str(settings.api_port),
         ],
         [sys.executable, "-m", "knowledge_app.worker"],
-        [sys.executable, "-m", "knowledge_app.graph_auto_worker"],
     ]
+    graph_config = AutoGraphSettings()
+    if graph_config.mode == "service" and graph_config.enabled and settings.workflow_rdf_enabled:
+        commands.append([sys.executable, "-m", "knowledge_app.graph_auto_worker"])
     if args.kev:
         commands.insert(0, [str(ROOT / "scripts/run_kev.sh")])
     exit_code = 0

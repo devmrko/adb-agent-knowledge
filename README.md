@@ -10,11 +10,29 @@ Kev가 조회·저장과 검색 경로를 판단합니다. 모델은 로컬 또�
 
 **필수 저장소: Oracle Autonomous Database.** 현재 Oracle 벡터·RDF·SQL Property Graph에 맞춘 구현이며 다른 DB로 교체하는 어댑터는 제공하지 않습니다. SQLite는 테스트용입니다.
 
-**릴리스 상태: preview.** 새 Oracle ADB의 전체 설치 검증은 아직 완료하지 않았습니다.
+**릴리스 상태: v2 preview (0.2.0).** 새 Oracle ADB의 전체 설치 검증은 아직 완료하지 않았습니다.
 
 **새 사용자:** [설치 구성과 모델 선택](docs/guides/portable-setup.md)부터 확인하세요.
 
 [시작하기](docs/guides/quickstart.md) · [검색 화면](docs/guides/search-ui.md) · [Codex / Claude 연결](docs/guides/agent-installation.md) · [다른 머신에 적용](docs/guides/multi-machine-memory.md) · [전체 문서](docs/README.md)
+
+## v2: 별도 생성형 LLM 운영을 줄이는 기본 구성
+
+기존 서비스 내부 LLM 추출 방식은 [`v1` 태그](https://github.com/devmrko/adb-agent-knowledge/tree/v1)로 보존합니다.
+v2 기본값은 `GRAPH_EXTRACTION_MODE=agent`입니다. **Codex·Claude가 관계를 추출하고 MCP 서비스가
+검증·저장합니다.** 별도 Gemma/Ollama/OpenRouter 설치·연결은 필요하지 않습니다.
+Kev의 조회·저장·인덱스·그래프 판단과 임베딩 모델은 그대로 유지합니다.
+
+| 역할 | v2 기본 `agent` | 선택적 `service` (v1 방식) |
+|---|---|---|
+| 조회·저장·탐색 판단 | Kev 유지 | Kev 유지 |
+| 벡터 생성 | 임베딩 모델 | 임베딩 모델 |
+| 관계 추출·의미 확인 | 호출하는 Codex·Claude | 별도 생성 모델과 그래프 워커 |
+| 관계 검증·이력·저장 | MCP 서비스와 Oracle | MCP 서비스와 Oracle |
+| 웹 업로드 후 무인 관계 추출 | 에이전트 후속 요청 필요 | 설정된 워커가 처리 |
+
+agent 모드에서도 LLM은 에이전트 쪽에서 사용하며 해당 사용량은 발생합니다.
+[구체적인 흐름·설정·v1 전환 안내](docs/guides/v2-agent-extraction.md)를 확인하세요.
 
 ## 할 수 있는 일
 
@@ -87,23 +105,20 @@ flowchart TD
     Queue --> Worker["워커: 청크 생성 → 임베딩<br/>Oracle에 벡터 저장·원문 버전 활성화"]
     Worker --> Ready["READY 확인 후 검색 가능"]
     Ready --> Index["확인된 인덱스에 연결"]
-    Ready --> Auto{"자동 관계 추출 활성화?<br/>Kev 판단 또는 명시적 추출 요청"}
-    Auto -->|추출 필요| Extract["별도 생성 모델로 관계 후보 추출<br/>정확한 인용·대상·현재 원문 검증"]
-    Extract --> Policy{"관계 반영 정책"}
-    Policy -->|review| Review["사용자가 후보 검토"]
-    Policy -->|자동 정책의 조건 충족| Publish["공유 관계와 근거 버전 기록"]
-    Review -->|승인| Publish
+    Ready --> Prepare["knowledge_graph_prepare<br/>원문 버전·후보·규칙 + Kev 판단"]
+    Prepare --> AgentGraph["Codex·Claude: 원문 확인·관계 추출<br/>기존 관계와 개체 확인"]
+    AgentGraph --> Assert["knowledge_graph_assert / revise"]
+    Assert --> Publish["서비스: 소유권·근거·버전 검증<br/>Oracle 관계·이력 저장"]
 ```
 
 `knowledge_prepare_save`는 후보를 찾는 준비 단계이며 데이터를 쓰지 않습니다. **새 저장과 기존 지식
 수정의 최종 선택은 원문을 확인한 에이전트가 합니다.** 비슷한 문서를 서버가 임의로 합치지는 않습니다.
 수정은 새 버전을 만들고 이전 기록을 보존합니다. `QUEUED`는 접수 상태이며 `READY` 확인이 필요합니다.
 
-자동 관계 추출은 별도 설정과 워커가 필요합니다. OpenRouter 또는 Ollama/Gemma 등 설정한 생성 모델을
-사용하며 Kev가 관계 자체를 만들어내지는 않습니다. `review`는 사용자 검토, `auto_existing`·
-`auto_verified`는 각 정책의 검증 조건을 만족한 후보를 자동 반영합니다. 모호한 후보는 보류할 수 있고,
-사용자는 연결을 수정·해제할 수 있습니다. 원문이 수정되면 이전 버전만 근거로 하는 관계는 현재 조회에서
-제외되며, 재추출·검토로 새 근거를 반영합니다. 과거 기록은 별도로 보존합니다.
+v2 기본 모드의 관계 추출은 Codex·Claude가 수행합니다. Kev는 필요성을 판단하며 관계 자체를
+만들지 않습니다. 별도 생성 모델을 쓰는 `service` 모드에서는 `review`·`auto_existing`·
+`auto_verified` 정책이 적용됩니다. 원문이 수정되면 이전 버전만 근거로 하는 관계는 현재 조회에서
+제외되며, 에이전트 재검토 또는 서비스 재추출로 새 근거를 반영합니다. 과거 기록은 보존합니다.
 
 ### 누가 무엇을 결정하나
 
@@ -113,7 +128,7 @@ flowchart TD
 | Codex·Claude 등 에이전트 | 도구 호출, 원문·이력 확인, 신규 저장 또는 보완 선택, 근거 기반 답변 |
 | Kev | 조회·저장 필요성, 직접 검색·인덱스·그래프 경로, 관계 추출 필요성 판단 |
 | 임베딩 모델 | 원문 청크와 질의를 벡터로 변환 |
-| 관계 추출 모델 | 원문에서 대상·관계 후보 추출 및 의미 검토 |
+| 관계 추출 | 기본은 Codex·Claude, service 모드에서만 별도 생성 모델 |
 | API·워커·Oracle | 인증·소유권·버전 충돌 검사, 비동기 색인, 관계·근거·변경 이력 보존 |
 
 명시적 조회 요청과 필요한 과거 맥락은 Kev의 잘못된 생략 판단보다 우선합니다. 저장 금지와 비밀정보
@@ -125,9 +140,10 @@ flowchart TD
 [관계·경로·근거 검색](docs/guides/related-retrieval.md) ·
 [자동 관계 설정](docs/guides/automatic-graph.md)
 
-## MCP 서비스의 LLM 호출 구조
+## 선택적 service 모드의 LLM 호출 구조
 
-**MCP 서비스에서 공통 인터페이스를 통해 LLM을 호출합니다.** 관계 추출·의미 검토 로직과
+**`GRAPH_EXTRACTION_MODE=service`에서 MCP 서비스가 공통 인터페이스로 LLM을 호출합니다.**
+기본 agent 모드는 이 경로를 실행하지 않습니다. 관계 추출·의미 검토 로직과
 모델 연결 방식을 분리했습니다. 내부에서 실제 호출하는 프로세스는 관계 추출 워커입니다.
 
 ```mermaid
@@ -162,12 +178,10 @@ Ollama 실행까지 한 번에 처리하지는 않습니다.** 필요한 기능�
 | Kev | 기본 의사결정·탐색 경로 | 별도 설치 후 `--kev`로 함께 실행하거나 원격 Kev 연결 |
 | Oracle RDF | 관계·근거 저장 및 조회 | 별도 초기화 후 `WORKFLOW_RDF_ENABLED=true` |
 | SQL Property Graph | 선택적 그래프 탐색 방식 | 별도 생성 후 `PROPERTY_GRAPH_ENABLED=true` |
-| 관계 추출용 생성 모델 | 자동 그래프 연결 | Ollama/Gemma 별도 실행 또는 OpenRouter 등 호환 API 연결 |
+| 관계 추출용 생성 모델 | service 모드 무인 처리만 | Ollama/Gemma 별도 실행 또는 OpenRouter 등 호환 API 연결 |
 
-**자동 그래프 연결을 사용하는 MCP 서비스에는 별도의 LLM 실행 환경 또는 API 연결이 필요합니다.**
-서비스의 관계 추출 워커가 이를 호출합니다. Codex·Claude의 모델이나 구독을 자동 재사용하지 않고,
-Oracle DB 내부에서 LLM을 실행하는 것도 아닙니다. 기본 벡터 저장·검색은 임베딩 모델을 사용하며
-Kev 판단과 생성형 관계 추출은 별도 역할입니다.
+**v2 agent 모드는 별도 생성형 모델을 설치하지 않습니다.** Codex·Claude가 추출한 관계를 도구로
+제출합니다. 서비스 무인 처리만 별도 LLM/API를 요구합니다. 벡터 임베딩과 Kev는 두 모드 모두 유지합니다.
 모델 가중치는 Git에 포함하지 않습니다. 최초 다운로드에는 인터넷·디스크 공간이 필요하고,
 실행 메모리와 속도는 CPU/GPU 및 동시에 실행하는 모델에 따라 달라집니다.
 
@@ -177,7 +191,7 @@ Kev 판단과 생성형 관계 추출은 별도 역할입니다.
 |---|---|---|
 | 의사결정 | `jaredpalmer/kev-4b` · `KEV_RUN` | 짧은 요청·맥락과 질문을 받아 조회·저장·탐색 선택지에 점수를 반환 |
 | 한국어 벡터 검색 | `dragonkue/snowflake-arctic-embed-l-v2.0-ko` · `EMBEDDING_MODEL` | 문서 청크와 질의를 1024차원 벡터로 변환 |
-| 자동 관계 추출 | 사용자가 선택. 로컬 예제는 Gemma 4 E2B · `GRAPH_AUTO_MODEL` | 원문에서 개체·관계 후보를 추출하고 의미 검토 |
+| 서비스 모드 관계 추출 | 사용자가 선택. 로컬 예제는 Gemma 4 E2B · `GRAPH_AUTO_MODEL` | 원문에서 개체·관계 후보를 추출하고 의미 검토 |
 
 **Kev:** Qwen3.5-4B-Base 기반 LoRA·판단 헤드 모델입니다. 이 서비스는 `/v1/systemone`의
 `noul` 점수를 사용하며 Kev가 긴 답변을 생성하지 않습니다. `KEV_MODEL=kev-latest`는 API 요청의
@@ -245,7 +259,7 @@ Graph 생성 권한이 필요합니다. 비활성 상태에서는 기존 관계�
 ### 4. 자동 관계 추출용 LLM 연결
 
 [Ollama/Gemma 설치](docs/guides/local-full-setup.md) 또는 [호환 API 설정](docs/guides/automatic-graph.md)을
-따라 모델을 준비하고 `GRAPH_AUTO_ENABLED=true`로 활성화합니다. Ollama는 앱 실행 스크립트가
+따라 모델을 준비하고 `GRAPH_EXTRACTION_MODE=service`, `GRAPH_AUTO_ENABLED=true`로 활성화합니다. Ollama는 앱 실행 스크립트가
 대신 실행하지 않습니다. 로컬 프로필은 `review` 정책으로 시작하며 자동 반영이 필요하면 검증 후
 정책을 변경합니다. 그래프를 수동으로 등록·조회하는 데 이 추출용 LLM은 필수가 아닙니다.
 

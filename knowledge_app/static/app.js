@@ -414,7 +414,7 @@ async function loadProposals(reset=true) {
    if(row.status==="LEGACY") {
     card.append(reviewNode("p","이전 추출 방식의 후보입니다. 기존 기록은 보존하며, 새 기준으로 다시 확인해야 합니다."));
     const retry=reviewNode("button","새 기준으로 관계 확인");retry.type="button";
-    retry.addEventListener("click",async()=>{try{await request(`/api/v1/graph/extraction/knowledge/${row.knowledge_id}`,{method:"POST"});reviewMessage("관계 재확인을 요청했습니다.");}catch(e){reviewMessage(e.message);}});card.append(retry);
+    retry.addEventListener("click",async()=>{try{await requestGraphExtraction(row.knowledge_id);}catch(e){reviewMessage(e.message);}});card.append(retry);
    }
    if(row.status==="PENDING") {
     const [a,b]=await Promise.all([identityField(p.subject,row.scope,"주체"),identityField(p.object,row.scope,"대상")]);
@@ -442,7 +442,16 @@ async function loadProposals(reset=true) {
 }
 $("graph-proposals-load").addEventListener("click",()=>{proposalItem=null;loadProposals();});
 $("graph-proposals-note").addEventListener("click",()=>{if(!selected){reviewMessage("노트를 먼저 선택하세요.");return;}proposalItem=selected.knowledge_id;loadProposals();});
-$("graph-extract-note").addEventListener("click",async()=>{if(!selected){reviewMessage("노트를 먼저 선택하세요.");return;}try{const run=await request(`/api/v1/graph/extraction/knowledge/${selected.knowledge_id}`,{method:"POST"});reviewMessage(`추출 작업: ${run.status} · 원문 버전 ${run.revision_id}`);}catch(e){reviewMessage(e.message);}});
+async function requestGraphExtraction(knowledgeId) {
+ const schema=await request("/api/v1/graph/extraction/schema");
+ if(schema.mode==="agent") {
+  reviewMessage(`에이전트 추출 모드입니다. Codex·Claude에 이 지식의 관계 연결을 요청하세요: ${knowledgeId} (knowledge_graph_prepare). 별도 LLM 작업은 등록하지 않았습니다.`);
+  return;
+ }
+ const run=await request(`/api/v1/graph/extraction/knowledge/${knowledgeId}`,{method:"POST"});
+ reviewMessage(`추출 작업: ${run.status} · 원문 버전 ${run.revision_id}`);
+}
+$("graph-extract-note").addEventListener("click",async()=>{if(!selected){reviewMessage("노트를 먼저 선택하세요.");return;}try{await requestGraphExtraction(selected.knowledge_id);}catch(e){reviewMessage(e.message);}});
 async function loadExtractionRuns(offset=0) {
  const version=++proposalGeneration;reviewMessage("추출 처리 내역을 불러오는 중…");$("graph-proposals-more").hidden=true;
  try {

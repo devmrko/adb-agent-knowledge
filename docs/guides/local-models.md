@@ -1,5 +1,10 @@
 # 모델 구성: Kev · 임베딩 · 관계 추출
 
+> v2 기본은 agent 추출: Codex·Claude가 관계를 추출하고 서비스가 검증·저장합니다.
+> 아래 별도 생성 모델·자동 추출 워커 설명은 `GRAPH_EXTRACTION_MODE=service`에 해당합니다.
+> Kev·임베딩·검색은 유지합니다. [v2 아키텍처](v2-agent-extraction.md).
+
+
 세 모델의 역할은 서로 다르다. 자동 관계 추출을 쓰려면 MCP 서비스가 호출할 별도 LLM이 필요하다.
 서비스 내부 워커가 공통 인터페이스를 통해 모델을 호출한다. Codex·Claude의 모델을 재사용하거나
 DB 내부에서 실행하지 않는다. [LLM 호출 구조](llm-providers.md)를 참고한다.

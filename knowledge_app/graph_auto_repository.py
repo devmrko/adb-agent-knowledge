@@ -114,6 +114,19 @@ class AutoGraphRepository:
             return result
         return None
 
+    def agent_source(self, owner: str, identifier: str) -> tuple[Item, Revision | None] | None:
+        item = self.session.scalar(select(Item).where(Item.id == identifier, Item.owner_id == owner))
+        if item is None:
+            return None
+        revision = self.session.scalar(
+            select(Revision).where(
+                Revision.id == item.active_revision_id,
+                Revision.item_id == item.id,
+                Revision.owner_id == owner,
+            )
+        )
+        return item, revision
+
     def required(self, item: Item) -> bool:
         return (
             item.memory_kind == "PROCEDURE"

@@ -27,7 +27,7 @@ from knowledge_app.contracts import (
 from knowledge_app.database import database
 from knowledge_app.embedding import Embedder, create_embedder
 from knowledge_app.extraction import PPTX_MIME
-from knowledge_app.graph_auto_contracts import ReviewCandidate
+from knowledge_app.graph_auto_contracts import AgentGraphPrepare, ReviewCandidate
 from knowledge_app.graph_auto_service import AutoGraphService
 from knowledge_app.graph_contracts import (
     AssertionInput,
@@ -111,7 +111,7 @@ def create_app(
         finally:
             engine.dispose()
 
-    app = FastAPI(title="Agent Knowledge for Oracle ADB", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="Agent Knowledge for Oracle ADB", version="0.2.0", lifespan=lifespan)
     install_web(app, Security(foundation, verifier=verifier))
     install_browser_sessions(app, settings)
     app.state.service, app.state.engine = service, engine
@@ -222,6 +222,10 @@ def create_app(
     @app.get("/api/v1/graph/extraction/schema")
     def graph_extraction_schema(actor: ActorDep) -> dict[str, Any]:
         return auto_graph.schema()
+
+    @app.post("/api/v1/graph/extraction/knowledge/{item_id}/prepare")
+    def graph_agent_prepare(item_id: str, command: AgentGraphPrepare, actor: ActorDep) -> dict[str, Any]:
+        return auto_graph.prepare(actor, item_id, command)
 
     @app.get("/api/v1/graph/extraction/runs")
     def graph_extraction_runs(

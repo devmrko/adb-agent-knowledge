@@ -41,6 +41,7 @@ def test_tool_contracts_and_save_auth():
         "knowledge_graph_proposals",
         "knowledge_graph_extraction_runs",
         "knowledge_graph_extract",
+        "knowledge_graph_prepare",
         "knowledge_graph_proposal_review",
         "knowledge_prepare_save",
         "knowledge_index_list",
@@ -278,3 +279,70 @@ def test_historical_graph_does_not_seed_from_current_vector_results():
     graph = json.loads(requests[1].content)
     assert graph["seed_revisions"] == [] and graph["query"] == "Oracle"
     assert len(requests) == 2
+
+
+def test_agent_prepare_calls_kev_without_generation_or_writes(monkeypatch):
+    decisions, requests = [], []
+
+    async def decide(self, request):
+        decisions.append(request)
+        return {"action": "graph_extract", "model_called": True}
+
+    monkeypatch.setattr(MemoryRouter, "decide", decide)
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(
+            200,
+            json={
+                "text": "a" * 8000,
+                "total_chars": 9000,
+                "review_required": True,
+                "writes_performed": False,
+            },
+        )
+
+    server = create_server(
+        KnowledgeAPI("http://127.0.0.1:8000", "private-token", transport=httpx.MockTransport(handler))
+    )
+    result = asyncio.run(
+        server.call_tool(
+            "knowledge_graph_prepare",
+            {
+                "knowledge_id": str(uuid4()),
+                "request": {"max_chars": 8000},
+            },
+        )
+    )
+    assert "preview_only" in str(result)
+    assert len(requests) == 1 and requests[0].url.path.endswith("/prepare")
+    assert len(decisions) == 1 and decisions[0].operation == "graph_extract"
+    assert len(decisions[0].text) == 6000 and decisions[0].explicit_request
+
+
+@pytest.mark.parametrize("total_chars", [2000, 12000])
+def test_agent_prepare_partial_skip_requires_review(total_chars):
+    def handler(request):
+        return httpx.Response(
+            200,
+            json={
+                "text": "앞부분",
+                "total_chars": 12000,
+                "review_required": False,
+            },
+        )
+
+    server = create_server(
+        KnowledgeAPI("http://127.0.0.1:8000", "test", transport=httpx.MockTransport(handler))
+    )
+    result = asyncio.run(
+        server.call_tool(
+            "knowledge_graph_prepare",
+            {
+                "knowledge_id": str(uuid4()),
+                "request": {},
+            },
+        )
+    )
+    assert "partial_source_requires_review" in str(result)
+    assert "agent_review" in str(result)

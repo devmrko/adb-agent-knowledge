@@ -1,5 +1,10 @@
 # Agent Knowledge for Oracle ADB 저장·조회 흐름
 
+> v2 기본은 agent 추출: Codex·Claude가 관계를 추출하고 서비스가 검증·저장합니다.
+> 아래 별도 생성 모델·자동 추출 워커 설명은 `GRAPH_EXTRACTION_MODE=service`에 해당합니다.
+> Kev·임베딩·검색은 유지합니다. [v2 아키텍처](v2-agent-extraction.md).
+
+
 2026-10-29 공개 preview 구현 기준. 에이전트의 저장·조회 판단, API의 실제 처리, 비동기 관계 연결을 구분한다.
 
 ## 구성

@@ -57,3 +57,10 @@ Oracle 신규 환경의 검증 순서는 [설치 가이드](../guides/portable-s
 소스 커밋 1f32ef2: 2026-10-29 성공. Python 3.12 locked 설치, ruff, mypy, pytest,
 Foundation 런타임 smoke, wheel 빌드와 독립 설치 검증을 모두 통과했다.
 이 CI는 실제 Oracle ADB나 Kev/Gemma 모델을 실행한 검증은 아니다.
+
+## v2 preview (0.2.0)
+
+2026-10-29: agent/service 선택, 생성 제공자 미생성, 원문 버전·소유권·부분 문서 보호,
+기존 서비스 작업 보존·재개와 MCP Kev 연동 테스트를 추가했다. ruff, mypy, 전체 pytest,
+Foundation wheel 독립 설치 검증과 웹 JavaScript 문법 검사를 수행했다.
+실제 새 Oracle ADB나 모델 품질/속도를 추가 검증한 것은 아니다. 운영 서비스는 변경하지 않았다.

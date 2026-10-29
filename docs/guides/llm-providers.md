@@ -1,6 +1,10 @@
 # MCP 서비스의 LLM 인터페이스
 
-**자동 관계 추출을 위해 MCP 서비스에서 LLM을 호출한다.** Codex·Claude의 모델을 빌려 쓰거나
+**이 문서는 선택적 `GRAPH_EXTRACTION_MODE=service`를 설명한다.**
+v2 기본 `agent` 모드는 Codex·Claude가 관계를 추출하며 이 인터페이스를 호출하지 않는다.
+[v2 흐름](v2-agent-extraction.md)을 먼저 참고한다.
+
+서비스 모드에서는 자동 관계 추출을 위해 MCP 서비스에서 LLM을 호출한다. Codex·Claude의 모델을 빌려 쓰거나
 Oracle DB 내부에서 모델을 실행하는 방식이 아니다. 내부 실행 주체는 관계 추출 워커다.
 호출된 LLM은 관계 후보를 반환하고, 서비스가 원문·개체·버전·정책을 검증한 뒤 DB에 저장한다.
 
@@ -36,6 +40,7 @@ flowchart TD
 ## HTTP API 설정
 
 ```dotenv
+GRAPH_EXTRACTION_MODE=service
 GRAPH_AUTO_ENABLED=true
 GRAPH_AUTO_PROVIDER=openai_compatible
 GRAPH_AUTO_URL=http://127.0.0.1:11434/v1
@@ -48,7 +53,8 @@ GRAPH_AUTO_POLICY=review
 
 이 예시의 모델은 Ollama에 먼저 생성해야 하는 로컬 별칭이다. 실제 제공자의 모델 ID로
 교체할 수 있다. 원격 HTTPS endpoint는 `GRAPH_AUTO_ALLOW_REMOTE=true`와 필요한 API 키를
-설정한다. 기존 `.env`에서 PROVIDER를 생략해도 현재 HTTP 방식으로 동작한다.
+설정한다. 서비스 모드에서 PROVIDER를 생략하면 HTTP 방식을 사용한다. v1 설정을 유지하려면
+`GRAPH_EXTRACTION_MODE=service`를 명시해야 한다.
 설정한 모델/서버가 서비스에서 접근 가능해야 한다. 에이전트의 구독·API 키가 자동 공유되지 않는다.
 
 HTTP 어댑터는 `/chat/completions`, 인증, JSON/JSON Schema 응답 형식, timeout, 응답 크기 제한,

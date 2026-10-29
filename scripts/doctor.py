@@ -8,6 +8,7 @@ from sqlalchemy import select, text
 
 from knowledge_app.database import database
 from knowledge_app.embedding import create_embedder
+from knowledge_app.graph_auto_contracts import AutoGraphSettings
 from knowledge_app.models import Chunk, Item
 from knowledge_app.routing import RoutingSettings
 from knowledge_app.settings import Settings
@@ -17,11 +18,13 @@ def check(*, db: bool = False) -> int:
     try:
         settings = Settings()
         RoutingSettings()
+        graph = AutoGraphSettings()
         embedder = create_embedder(settings)
     except Exception:
         print("FAIL configuration: check provider URL, pinned revision, dimensions and chunk settings")
         return 1
     print(f"OK providers: Kev; embedding={settings.embedding_provider}; dimensions={embedder.dimensions}")
+    print(f"OK graph extraction configuration: {graph.mode} (live inference not checked)")
     if settings.database_url.startswith("oracle"):
         wallet = Path(settings.wallet_dir)
         if not all((settings.user_name, settings.user_password.get_secret_value(), settings.oracle_dsn)):

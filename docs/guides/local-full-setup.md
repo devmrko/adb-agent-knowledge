@@ -1,5 +1,10 @@
 # OpenRouter 없이 전체 기능 설치하기 — Oracle + Kev + Gemma 4
 
+> 이 문서는 별도 LLM을 쓰는 선택적 **service 모드** 안내입니다. v2 기본 agent 모드는
+> Codex·Claude가 추출하며 별도 생성 모델 설치가 필요 없습니다. Kev는 유지합니다.
+> [v2 구성과 전환](v2-agent-extraction.md)을 먼저 확인하세요.
+
+
 2026-10-19 기준. 개인 개발/내부 사용용 설치 절차다. Oracle은 원격 DB이며, 모델 추론은 로컬에서 수행한다. 인터넷 공개 서버의 HTTPS·인증·자동 재시작 구성을 대신하지 않는다.
 
 ## 무엇을 준비하는가
@@ -96,6 +101,7 @@ Cafesto 소속·생성 기반 관계를 추출하고 단순 도구 나열에서 
 
 ```dotenv
 WORKFLOW_RDF_ENABLED=true
+GRAPH_EXTRACTION_MODE=service
 GRAPH_AUTO_ENABLED=true
 GRAPH_AUTO_URL=http://127.0.0.1:11434/v1
 GRAPH_AUTO_MODEL=adb-agent-knowledge-gemma4:e2b

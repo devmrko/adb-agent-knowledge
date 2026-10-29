@@ -60,6 +60,9 @@ PATTERNS: dict[str, tuple[set[str], set[str]]] = {
 
 class AutoGraphSettings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ROOT / ".env", extra="ignore", env_prefix="GRAPH_AUTO_")
+    mode: Literal["agent", "service"] = Field(
+        default="agent", validation_alias=AliasChoices("GRAPH_EXTRACTION_MODE", "mode")
+    )
     enabled: bool = False
     provider: Literal["openai_compatible"] = "openai_compatible"
     url: str = "http://127.0.0.1:1234/v1"
@@ -77,6 +80,8 @@ class AutoGraphSettings(BaseSettings):
 
     @model_validator(mode="after")
     def endpoint(self) -> "AutoGraphSettings":
+        if self.mode == "agent":
+            return self
         p = urlsplit(self.url)
         local = p.hostname in {"localhost", "127.0.0.1", "::1"}
         if p.username or p.password or p.query or p.fragment or not p.hostname:
@@ -160,3 +165,8 @@ class ReviewCandidate(Strict):
         if self.decision == "approve" and (self.subject is None or self.object is None):
             raise ValueError("Explicit endpoint identity confirmation required")
         return self
+
+
+class AgentGraphPrepare(Strict):
+    expected_revision_id: UUID | None = None
+    max_chars: int = Field(default=6000, ge=1000, le=24000)

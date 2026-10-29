@@ -43,7 +43,7 @@ def setup(knowledge, text=TEXT, kind="FACT"):
     ).json()
     assert service.process_one()
     auto = client.app.state.auto_graph
-    auto.config = AutoGraphSettings(_env_file=None, enabled=True, model="test")
+    auto.config = AutoGraphSettings(_env_file=None, mode="service", enabled=True, model="test")
     auto.extractor, auto.router = Extractor(), Router()
     return client, service, auto, source
 
@@ -160,7 +160,7 @@ def test_schema_rejects_invalid_pattern_and_remote_default():
     with pytest.raises(ValidationError):
         Extraction.model_validate(payload)
     with pytest.raises(ValidationError):
-        AutoGraphSettings(_env_file=None, url="https://example.org/v1")
+        AutoGraphSettings(_env_file=None, mode="service", url="https://example.org/v1")
 
 
 def test_auto_existing_requires_exact_canonical_ids(knowledge_fixture):  # noqa: F811
@@ -357,7 +357,7 @@ def test_old_pending_candidates_require_reextraction(knowledge_fixture):  # noqa
 def test_http_extractor_uses_separate_semantic_review():
     from knowledge_app.graph_auto_extractor import HTTPExtractor
 
-    extractor = HTTPExtractor(AutoGraphSettings(_env_file=None, model="test"))
+    extractor = HTTPExtractor(AutoGraphSettings(_env_file=None, mode="service", model="test"))
     with patch.object(
         extractor,
         "complete",

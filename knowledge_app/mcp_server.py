@@ -14,7 +14,7 @@ from mcp.types import ToolAnnotations
 from pydantic import Field
 
 from knowledge_app.contracts import MemoryKind, Provenance, SourceLocation
-from knowledge_app.graph_auto_contracts import ReviewCandidate
+from knowledge_app.graph_auto_contracts import AgentGraphPrepare, ReviewCandidate
 from knowledge_app.graph_contracts import AssertionInput, AssertionRevision, EntityInput, GraphSearch
 from knowledge_app.indexes import EntryInput, IndexEdit, IndexInput
 from knowledge_app.navigation import NavigationRequest
@@ -305,6 +305,35 @@ def create_server(api: KnowledgeAPI, router: MemoryRouter | None = None) -> Fast
         return await api.request("GET", "/api/v1/graph/extraction/schema")
 
     @server.tool(annotations=READ)
+    async def knowledge_graph_prepare(
+        knowledge_id: UUID, request: AgentGraphPrepare, explicit_request: bool = False
+    ) -> dict[str, Any]:
+        """Prepare agent-led relation extraction with exact source and Kev routing. No generation provider or writes. Read remaining source pages; resolve identities, then assert/revise evidence-backed relationships. A skip on a partial source never proves absence of relationships."""
+        data = await api.request(
+            "POST",
+            f"/api/v1/graph/extraction/knowledge/{knowledge_id}/prepare",
+            json=request.model_dump(mode="json"),
+        )
+        data["routing"] = await router.decide(
+            MemoryDecision(
+                operation="graph_extract",
+                text=data["text"][:6000].strip() or data["title"][:6000],
+                verified=True,
+                explicit_request=explicit_request or data["review_required"],
+            )
+        )
+        partial = data["total_chars"] > min(len(data["text"]), 6000)
+        data["routing_scope"] = "preview_only" if partial else "full_source"
+        if partial and data["routing"]["action"] == "skip":
+            data["routing"] = {
+                **data["routing"],
+                "action": "agent_review",
+                "reason": "partial_source_requires_review",
+                "preview_action": "skip",
+            }
+        return data
+
+    @server.tool(annotations=READ)
     async def knowledge_graph_proposals(
         knowledge_id: UUID | None = None,
         offset: Annotated[int, Field(ge=0, le=1000000)] = 0,
@@ -330,7 +359,7 @@ def create_server(api: KnowledgeAPI, router: MemoryRouter | None = None) -> Fast
 
     @server.tool(annotations=WRITE)
     async def knowledge_graph_extract(knowledge_id: UUID) -> dict[str, Any]:
-        """Enqueue the current source revision for the configured extraction provider. This may send source text to the configured external LLM and incur cost; follow the user's provider and collection authorization. Idempotent for source/model/schema."""
+        """Service mode only; in agent mode use knowledge_graph_prepare instead. Enqueue the current source revision for the configured extraction provider. This may send source text to the configured external LLM and incur cost; follow the user's provider and collection authorization. Idempotent for source/model/schema."""
         return await api.request("POST", f"/api/v1/graph/extraction/knowledge/{knowledge_id}")
 
     @server.tool(annotations=WRITE)
