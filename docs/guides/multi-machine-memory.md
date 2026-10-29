@@ -37,7 +37,7 @@ API 서버가 다른 머신에 있다면 `127.0.0.1`은 그 서버를 가리키�
 ./.venv/bin/python scripts/install_agent.py claude --overwrite --register-mcp
 ```
 
-Codex 기본은 `~/.agents/skills/vector-knowledge`입니다. 현재 클라이언트가 `~/.codex/skills`를 쓰면 첫 명령에 `--destination ~/.codex/skills/vector-knowledge`를 붙입니다. 이미 Claude에 같은 이름의 MCP가 등록되어 있으면 기존 연결을 확인하여 이 체크아웃의 `scripts/run_configured_knowledge_mcp.sh`를 사용하도록 갱신합니다. 사용자 범위와 프로젝트 범위의 중복 연결은 피합니다. [설치 안내](agent-installation.md)를 참고합니다.
+Codex 기본은 `~/.agents/skills/adb-agent-knowledge`입니다. 현재 클라이언트가 `~/.codex/skills`를 쓰면 첫 명령에 `--destination ~/.codex/skills/adb-agent-knowledge`를 붙입니다. 이미 Claude에 같은 이름의 MCP가 등록되어 있으면 기존 연결을 확인하여 이 체크아웃의 `scripts/run_configured_knowledge_mcp.sh`를 사용하도록 갱신합니다. 사용자 범위와 프로젝트 범위의 중복 연결은 피합니다. [설치 안내](agent-installation.md)를 참고합니다.
 
 ## 3. 글로벌·프로젝트 지침 검색과 적용
 

@@ -1,7 +1,7 @@
 # adb-agent-knowledge를 Claude Code에서 사용하기
 
 설치 폴더는 `adb-agent-knowledge`, MCP 등록명은 `adb_agent_knowledge`, 스킬명은
-`vector-knowledge`다. MCP 이름은 `--mcp-name`으로 선택할 수 있다.
+`adb-agent-knowledge`다. MCP 이름은 `--mcp-name`으로 선택할 수 있다.
 
 ## 연결 방법 선택
 
@@ -24,7 +24,7 @@
 ./.venv/bin/python scripts/install_agent.py claude --register-mcp
 ```
 
-스킬은 `~/.claude/skills/vector-knowledge`에 설치하고 MCP는 사용자 범위에 현재 체크아웃의
+스킬은 `~/.claude/skills/adb-agent-knowledge`에 설치하고 MCP는 사용자 범위에 현재 체크아웃의
 실행 파일을 등록한다. 같은 이름의 연결이 이미 있으면 먼저 설정을 확인하고
 [공통 설치 안내](agent-installation.md)에 따라 갱신한다.
 
@@ -38,7 +38,7 @@ claude mcp get adb_agent_knowledge
 ```
 
 세션의 `/mcp`에서 상태를 확인한다. 도구 이름은 클라이언트에 따라 접두어가 붙을 수 있으며
-실제 연결된 서버의 목록을 기준으로 삼는다. `/vector-knowledge`로 스킬을 사용할 수 있다.
+실제 연결된 서버의 목록을 기준으로 삼는다. `/adb-agent-knowledge`로 스킬을 사용할 수 있다.
 
 “이전 결정을 찾아줘”, “이 내용을 기존 지식에 보충해줘”, “연결된 프로젝트와 근거를 보여줘”처럼
 요청한다. 저장 후 `READY`를 확인하고, 보충 전에는 원문과 이력을 확인한다.

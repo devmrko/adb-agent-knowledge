@@ -1,7 +1,7 @@
 # adb-agent-knowledge 매뉴얼
 
 제품명: **Agent Knowledge for Oracle ADB**. 저장소·체크아웃 폴더는 `adb-agent-knowledge`이며,
-MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있습니다. 스킬명은 `vector-knowledge`입니다.
+MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있습니다. 스킬명은 `adb-agent-knowledge`입니다.
 
 ## 처음 사용하는 분
 
@@ -17,7 +17,7 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 | 관계·프로젝트·시점별 조회 | [공통 RDF 그래프](guides/shared-graph.md) |
 | 요약·인덱스·근거 탐색 | [인덱스 탐색](guides/index-navigation.md) |
 | 머신과 출처 위치 기록 | [출처 관리](guides/provenance.md) |
-| 모델·GPU·Kev 설정하기 | [로컬 모델](guides/local-models.md) |
+| Kev·한국어 임베딩·추출 LLM 이해 | [모델 구성](guides/local-models.md) |
 
 ## 운영하거나 개선하는 분
 
@@ -27,6 +27,7 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 | API·인증·작업 복구 확인 | [개발과 운영](guides/knowledge-development.md) |
 | 검색 품질 측정 | [검색 평가](guides/search-evaluation.md) |
 | 리랭커 비교 실험 | [리랭커](guides/search-reranking.md) |
+| 설치·운영·평가 명령 찾기 | [스크립트 안내](../scripts/README.md) |
 | 폴더 구조·테스트·패키징 확인 | [저장소 구조](guides/repository-layout.md) |
 | 공개 preview 검증과 남은 범위 | [공개 검증 결과](reference/public-release-validation.md) |
 | 과거 검색 실측 기록 | [검색 실측](reference/knowledge-validation.md) |

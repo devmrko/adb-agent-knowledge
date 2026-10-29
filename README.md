@@ -125,9 +125,54 @@ flowchart TD
 [관계·경로·근거 검색](docs/guides/related-retrieval.md) ·
 [자동 관계 설정](docs/guides/automatic-graph.md)
 
+## 설치 전에 준비할 것
+
+`setup.sh`는 Python 환경·의존성과 `.env`를 준비합니다. **DB 생성, RDF 초기화, Kev 설치,
+Ollama 실행까지 한 번에 처리하지는 않습니다.** 필요한 기능에 따라 아래 항목을 준비하세요.
+
+| 구성 | 언제 필요한가 | 준비 방식 |
+|---|---|---|
+| Oracle Autonomous Database · Wallet | 실제 지식 저장·검색 | 사용자가 DB와 접속 계정 준비. 앱이 DB나 사용자 권한을 생성하지 않음 |
+| 애플리케이션 테이블 | 최초 실행 | `run_knowledge.sh --migrate` 또는 Alembic으로 생성·업그레이드 |
+| 임베딩 모델 | 벡터 저장·검색 | 기본 로컬 모델은 최초 사용 시 다운로드. 별도 모델 서버 없이 API·worker에서 실행 |
+| Kev | 기본 의사결정·탐색 경로 | 별도 설치 후 `--kev`로 함께 실행하거나 원격 Kev 연결 |
+| Oracle RDF | 관계·근거 저장 및 조회 | 별도 초기화 후 `WORKFLOW_RDF_ENABLED=true` |
+| SQL Property Graph | 선택적 그래프 탐색 방식 | 별도 생성 후 `PROPERTY_GRAPH_ENABLED=true` |
+| 관계 추출용 생성 모델 | 자동 그래프 연결 | Ollama/Gemma 별도 실행 또는 OpenRouter 등 호환 API 연결 |
+
+Codex·Claude가 답변을 작성하므로 **기본 저장·검색을 위해 별도 채팅 LLM을 띄울 필요는 없습니다.**
+자동 관계 추출에는 별도의 생성 모델이 필요하며 Kev와 임베딩 모델이 이를 대신하지 않습니다.
+모델 가중치는 Git에 포함하지 않습니다. 최초 다운로드에는 인터넷·디스크 공간이 필요하고,
+실행 메모리와 속도는 CPU/GPU 및 동시에 실행하는 모델에 따라 달라집니다.
+
+## 기본 모델과 선택 방법
+
+| 역할 | 기본 모델 · 설정 | 하는 일 |
+|---|---|---|
+| 의사결정 | `jaredpalmer/kev-4b` · `KEV_RUN` | 짧은 요청·맥락과 질문을 받아 조회·저장·탐색 선택지에 점수를 반환 |
+| 한국어 벡터 검색 | `dragonkue/snowflake-arctic-embed-l-v2.0-ko` · `EMBEDDING_MODEL` | 문서 청크와 질의를 1024차원 벡터로 변환 |
+| 자동 관계 추출 | 사용자가 선택. 로컬 예제는 Gemma 4 E2B · `GRAPH_AUTO_MODEL` | 원문에서 개체·관계 후보를 추출하고 의미 검토 |
+
+**Kev:** Qwen3.5-4B-Base 기반 LoRA·판단 헤드 모델입니다. 이 서비스는 `/v1/systemone`의
+`noul` 점수를 사용하며 Kev가 긴 답변을 생성하지 않습니다. `KEV_MODEL=kev-latest`는 API 요청의
+모델 별칭이고 실제 로컬 실행 모델은 `KEV_RUN`으로 지정합니다. 기본 판단 제공자는 Kev이며
+장애 시 `agent_review`로 돌아갑니다. 공식 모델 카드의 언어는 English이므로 한국어 업무의
+판단 품질과 임계값은 자체 질의로 검증해야 합니다. [Kev 모델 카드](https://huggingface.co/jaredpalmer/kev-4b)
+
+**임베딩:** Snowflake Arctic Embed v2를 한국어 데이터로 추가 학습한 Sentence Transformer입니다.
+모델 카드는 한국어·영어, 1024차원, 코사인 유사도를 명시합니다. 이 프로젝트는 고정 revision과
+기본 384토큰 청크·48토큰 겹침을 사용하고, 질의용 prompt를 적용합니다.
+[임베딩 모델 카드](https://huggingface.co/dragonkue/snowflake-arctic-embed-l-v2.0-ko)
+
+기본 `EMBEDDING_PROVIDER=local`, `EMBEDDING_DEVICE=cpu`이며 호환 환경에서 `mps`·`cuda`를
+설정할 수 있습니다. 원격은 `EMBEDDING_PROVIDER=openai`로 OpenAI 호환 `/embeddings`에 연결합니다.
+현재 DB 열은 **1024차원**입니다. 모델·revision·청크·전처리를 변경하면 기존 벡터와 호환되지 않을 수
+있으며 자동 재임베딩·무중단 전환은 아직 없습니다. [모델 설정](docs/guides/local-models.md) ·
+[원격 모델 구성](docs/guides/portable-setup.md#3-모델-연결-선택)
+
 ## 시작하기
 
-기존 **Autonomous Database와 Wallet**이 필요합니다. macOS / Linux 기준입니다.
+macOS / Linux 기준입니다. 새 Oracle ADB 계정에는 필요한 테이블·인덱스 생성 권한이 있어야 합니다.
 
 ```sh
 git clone https://github.com/devmrko/adb-agent-knowledge.git
@@ -135,32 +180,115 @@ cd adb-agent-knowledge
 ./scripts/setup.sh
 ```
 
-생성된 `.env`의 DB 사용자·비밀번호, Wallet 경로·암호, 접속 별칭을 채웁니다.
-[설정 예시와 준비 사항 →](docs/guides/quickstart.md)
+생성된 `.env`의 `USER_NAME`, `USER_PASSWORD`, `WALLET_DIR`, `WALLET_PASSWORD`, `ORACLE_DSN`을
+채웁니다. DB 비밀번호와 Wallet 암호는 서로 다를 수 있습니다. [접속 설정](docs/guides/quickstart.md)
+
+### 1. 기본 저장·검색과 Kev 실행
 
 ```sh
-./scripts/run_knowledge.sh --migrate  # 최초 실행: 스키마 준비 + API + worker
-# 이후 실행: ./scripts/run_knowledge.sh
+./scripts/setup_kev.sh
+./scripts/run_knowledge.sh --migrate --kev
 ```
 
-**검색 화면:** http://127.0.0.1:8000/knowledge
+`--migrate`가 원문·청크·벡터·버전·관계 기준 데이터·이력 등의 테이블을 준비한 뒤 API와 워커를
+시작합니다. RDF 네트워크와 SQL Property Graph는 이 옵션으로 생성되지 않습니다.
+이후에는 `./scripts/run_knowledge.sh --kev`로 실행합니다. 원격 또는 이미 실행 중인 Kev를
+사용한다면 `setup_kev.sh`와 `--kev`를 생략합니다. 기존 DB의 DDL은 자동 커밋되므로 적용 내용을 확인하세요.
 
-**API 문서:** http://127.0.0.1:8000/docs
+### 2. RDF 관계 기능 초기화
 
-로컬 개발 화면은 자동 연결됩니다. 원격/운영 환경이나 자동 연결을 끈 경우 API 토큰으로 연결합니다. 토큰과 Wallet은 Git에 올리지 않습니다.
-기본 실행은 이 머신에서만 접속 가능한 개인 개발 환경입니다.
+실행 중인 API·워커를 정상 종료한 뒤, 위 테이블 준비가 끝난 상태에서 실행합니다.
+
+```sh
+./.venv/bin/python -m scripts.prepare_knowledge_rdf
+```
+
+성공 후 `.env`에 `WORKFLOW_RDF_ENABLED=true`를 설정합니다. 이 도구는 RDF 네트워크·그래프를
+준비하며 생성 권한을 자동 부여하지 않습니다. 일부만 초기화된 상태는 중단하고 확인을 요구합니다.
+
+### 3. SQL Property Graph 선택적 활성화
+
+```sh
+./.venv/bin/python -m scripts.setup_property_graph          # 권한·객체 확인
+./.venv/bin/python -m scripts.setup_property_graph --apply  # View와 Graph 생성
+```
+
+성공 후 `.env`에 `PROPERTY_GRAPH_ENABLED=true`를 설정합니다. Oracle 기능 지원과 View·Property
+Graph 생성 권한이 필요합니다. 비활성 상태에서는 기존 관계형 테이블 탐색을 사용합니다.
+
+### 4. 자동 관계 추출용 LLM 연결
+
+[Ollama/Gemma 설치](docs/guides/local-full-setup.md) 또는 [호환 API 설정](docs/guides/automatic-graph.md)을
+따라 모델을 준비하고 `GRAPH_AUTO_ENABLED=true`로 활성화합니다. Ollama는 앱 실행 스크립트가
+대신 실행하지 않습니다. 로컬 프로필은 `review` 정책으로 시작하며 자동 반영이 필요하면 검증 후
+정책을 변경합니다. 그래프를 수동으로 등록·조회하는 데 이 추출용 LLM은 필수가 아닙니다.
+
+설정을 마친 뒤 서비스를 다시 시작합니다. 모델·그래프 초기화까지 한 번에 수행하는 통합 설치 명령은
+아직 없으며, [새 ADB 검증 범위](docs/reference/public-release-validation.md)를 확인하세요.
+
+**검색 화면:** http://127.0.0.1:8000/knowledge · **API 문서:** http://127.0.0.1:8000/docs
+
+로컬 개발 화면은 자동 연결됩니다. 원격/운영 환경은 별도 인증·HTTPS를 구성합니다.
+기본 실행은 이 머신에서만 접속 가능한 개인 개발 환경이며 토큰과 Wallet은 Git에 올리지 않습니다.
+
+## RDF와 SQL Property Graph를 어떻게 쓰나
+
+한 노트에 그래프를 가두지 않고 여러 지식이 같은 개체·관계를 공유합니다. 예를 들어 다음 관계를
+정확한 원문 버전과 인용으로 뒷받침합니다. 아래는 설명용 예시이며 미리 들어 있는 데이터는 아닙니다.
+
+```text
+프로젝트 A ── uses ─────────▶ 공통 인증 서비스
+프로젝트 B ── uses ─────────▶ 공통 인증 서비스
+공통 인증 서비스 ─ deployed_on ─▶ 서버 X
+```
+
+| 계층 | 저장·조회 역할 |
+|---|---|
+| 관계형 테이블 `vk_g_*` | 개체·관계·관계 버전·원문 근거의 기준 데이터. 소유권·기간·상태를 관리 |
+| Oracle 네이티브 RDF | 공통 관계와 근거를 RDF로 기록. 서비스 조회 시 RDF accessor로 관계 버전을 검증 |
+| SQL Property Graph `VK_KNOWLEDGE_GRAPH` | 기존 관계 테이블을 바탕으로 정의한 선택적 그래프. `GRAPH_TABLE`로 인접 관계 후보를 조회 |
+
+Property Graph를 위해 별도 그래프 DB에 데이터를 복제하지 않습니다. 테이블의 변경을 같은 기반
+데이터 위에서 조회하며, 최종 결과에는 서비스의 사용자·범위·시점·현재 근거 필터가 적용됩니다.
+관계 추출은 LLM/에이전트가 하고, RDF나 Property Graph 자체가 문서를 읽어 관계를 추론하지는 않습니다.
+
+**사용 예:** “프로젝트 A가 쓰는 서비스와 배포 위치를 보여줘”라고 요청하면, 에이전트가 개체를
+확인하고 관계를 확장해 연결 경로와 근거 원문을 받습니다. 일반 지식 검색은
+`graph_mode=always`로 관계를 함께 요청할 수 있고, 직접 그래프 검색에는 다음과 같이 범위를 지정합니다.
+
+`POST /api/v1/graph/search` 요청 본문:
+
+```json
+{
+  "query": "프로젝트 A",
+  "scopes": ["global", "project:a", "project:b"],
+  "direction": "outgoing",
+  "predicates": ["uses", "deployed_on"],
+  "depth": 1,
+  "max_edges": 20
+}
+```
+
+해당 API는 인증이 필요합니다. `depth=1`은 직접 관계와 추가 한 단계, 최대 2개 edge 경로를 뜻합니다.
+응답의 `paths`, `related_knowledge`, 각 관계의 `evidence`로 경로·연결된 원문·정확한 인용을 확인합니다.
+개체 탐색은 현재 이름·별칭 기반이며, 임의 자연어를 완벽히 이해하는 그래프 질의 엔진은 아닙니다.
+웹의 ‘관련 그래프’와 노트의 ‘연결된 지식’에서도 확인할 수 있습니다.
+
+`valid_at`은 업무 시점, `known_at`은 당시 기록 시점 조회에 사용합니다. 날짜는 근거 없이 추정하지
+않으며 이 필터가 일반 벡터 검색 전체에 적용되는 것은 아닙니다. 관계 경로는 연결을 보여주며,
+자동으로 인과관계나 장애 영향을 증명하지 않습니다. [관계 검색 상세](docs/guides/related-retrieval.md)
 
 ## Codex / Claude에서 사용하기
 
 공개 저장소 이름과 연결 식별자는 다음처럼 구분합니다. MCP 이름은 설치 시 선택할 수 있으며 기본값은 `adb_agent_knowledge`입니다.
-스킬 호출명 `vector-knowledge`는 유지합니다.
+스킬 폴더와 호출명도 `adb-agent-knowledge`로 통일했습니다.
 
 | 구분 | 이름 |
 |---|---|
 | Git 저장소 · 체크아웃 폴더 · Python 프로젝트 | `adb-agent-knowledge` |
 | 제품 설명 | Agent Knowledge for Oracle ADB |
 | MCP 서버 등록명 | `adb_agent_knowledge` |
-| 스킬 이름 · 폴더 | `vector-knowledge` |
+| 스킬 이름 · 폴더 | `adb-agent-knowledge` |
 | Python 애플리케이션 모듈 | `knowledge_app` |
 
 
@@ -184,7 +312,7 @@ cd adb-agent-knowledge
 ```text
 knowledge_app/                 API · MCP · 검색 · 웹 화면
 migrations/                    지식 저장소 DB 마이그레이션
-skills/vector-knowledge/       Codex / Claude 공통 스킬
+skills/adb-agent-knowledge/       Codex / Claude 공통 스킬
 scripts/                       설치 · 실행 · 평가 도구
 tests/                         지식 서비스 테스트
 docs/                          사용 안내 · 설계 · 검증 결과
@@ -193,7 +321,16 @@ alembic.ini                    지식 저장소 마이그레이션 설정
 pyproject.toml / uv.lock       서비스 의존성 + 로컬 workspace
 ```
 
-일반 사용자는 `packages/`를 따로 설정할 필요가 없습니다.
+일반 사용자는 `.env`, `scripts/setup.sh`, `scripts/run_knowledge.sh`, `scripts/install_agent.py`부터
+보면 됩니다. `config/`는 선택 기능의 설정 예제, `skills/`는 에이전트 설치 자료입니다.
+`knowledge_app/`, `migrations/`, `tests/`는 개발·운영 코드이고 `.github/workflows/`는 자동 검사입니다.
+
+`packages/python-foundation/`은 실제 사용 중인 인증·트랜잭션·오류 처리 라이브러리입니다.
+독립 예제와 테스트까지 이 폴더에 격리했으며 일반 사용자는 따로 설치하거나 수정할 필요가 없습니다.
+`pyproject.toml`은 프로젝트·의존성 설정, `uv.lock`은 버전 고정, `uvw`는 전역 설치가 필요 없는 uv 실행기입니다.
+AGENTS.md·CLAUDE.md는 개발 에이전트 지침이며 지식 데이터 사본이 아닙니다.
+
+실행 경로 호환성을 위해 `scripts/`는 유지하되 [명령 용도별 안내](scripts/README.md)로 구분합니다.
 [개발 구조와 검증 명령 →](docs/guides/repository-layout.md)
 
 ## 현재 범위

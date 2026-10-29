@@ -10,9 +10,23 @@
 | `knowledge_app/static/` | 검색 웹 화면 HTML/CSS/JS |
 | `migrations/` + `alembic.ini` | 지식 DB 전용 migration, 기존 vk_alembic_version 유지 |
 | `tests/` | 지식 서비스와 MCP·평가·설치 테스트 |
-| `scripts/` | 사용자 설치/실행, 로컬 평가 도구 |
-| `skills/` | 에이전트에 설치할 공통 지식 스킬 |
+| `scripts/` | 설치·운영·평가 진입점. [용도별 안내](../../scripts/README.md) |
+| `skills/adb-agent-knowledge/` | Codex·Claude에 설치할 공통 지식 스킬 |
 | `packages/python-foundation/` | 기반 라이브러리 소스, 별도 예제·migration·tests·docs |
+
+## 이름과 폴더를 나눈 기준
+
+- `adb-agent-knowledge`: 공개 저장소·프로젝트·스킬 이름.
+- `adb_agent_knowledge`: 기본 MCP 등록 별칭. `--mcp-name`으로 바꿀 수 있다.
+- `knowledge_app`: 내부 Python 모듈. 제품명과 달라도 정상이며 기존 실행·import 경로를 유지한다.
+- `packages/python-foundation`: 실제 인증·트랜잭션·오류 처리 의존성. 서비스 코드와 별도로
+  배포 가능한 wheel·자체 예제·테스트를 격리한다. 앱 사용자가 이 예제를 실행할 필요는 없다.
+- `docs/guides`: 사용·운영 안내. `docs/design`은 개발 설계, `docs/reference`는 검증·참조 자료.
+- 정책 블록의 `vector-knowledge` 식별자와 기존 백업 경로는 복구 호환용이며 제품 이름이 아니다.
+
+새 사용자는 README → 설치 가이드 → 에이전트 연결 순서로 읽는다. 소스 변경 없이 실행할 때
+`knowledge_app`, `migrations`, `tests`, `packages`를 직접 수정하지 않는다.
+대규모 src/ 이동이나 scripts import 경로 변경은 이번 공개 정리에 포함하지 않았다.
 
 ## 이전 체크아웃에서 업데이트
 

@@ -1,7 +1,7 @@
 # adb-agent-knowledge: Codex / Claude 연결
 
 공개 저장소와 설치 폴더는 `adb-agent-knowledge`입니다. MCP 기본 등록명은
-`adb_agent_knowledge`이며 `--mcp-name`으로 선택할 수 있습니다. 스킬명은 `vector-knowledge`입니다.
+`adb_agent_knowledge`이며 `--mcp-name`으로 선택할 수 있습니다. 스킬명은 `adb-agent-knowledge`입니다.
 
 먼저 README대로 서비스와 .env를 구성하고 API/worker를 실행한다.
 스킬은 사용 방법이고 MCP는 실제 도구 연결이다. 두 가지를 함께 설정해야 한다.
@@ -10,15 +10,15 @@
 ```sh
 ./.venv/bin/python scripts/install_agent.py codex --register-mcp
 ```
-기본 스킬 위치는 `~/.agents/skills/vector-knowledge`, MCP는 Codex 사용자 설정에 등록한다.
-이전 Codex 환경에서 `~/.codex/skills`를 쓰는 경우 `--destination ~/.codex/skills/vector-knowledge`로 지정할 수 있다.
-새 세션에서 `$vector-knowledge`로 호출한다.
+기본 스킬 위치는 `~/.agents/skills/adb-agent-knowledge`, MCP는 Codex 사용자 설정에 등록한다.
+이전 Codex 환경에서 `~/.codex/skills`를 쓰는 경우 `--destination ~/.codex/skills/adb-agent-knowledge`로 지정할 수 있다.
+새 세션에서 `$adb-agent-knowledge`로 호출한다.
 
 ## Claude Code
 ```sh
 ./.venv/bin/python scripts/install_agent.py claude --register-mcp
 ```
-스킬 위치는 `~/.claude/skills/vector-knowledge`. 새 세션에서 `/vector-knowledge`로 호출한다.
+스킬 위치는 `~/.claude/skills/adb-agent-knowledge`. 새 세션에서 `/adb-agent-knowledge`로 호출한다.
 이 저장소 안에서만 사용할 경우 `.mcp.json`도 제공한다. 사용자 범위와 프로젝트 범위에
 중복 연결하지 않도록 필요한 쪽 하나를 선택한다.
 
@@ -39,7 +39,7 @@ Claude에 같은 이름의 연결이 이미 있으면 먼저 기존 설정을 �
 이름은 영문자로 시작하는 1–64자의 영문·숫자·밑줄·하이픈이다. 설치된 스킬에도 선택한
 이름을 기록하므로 에이전트가 해당 MCP를 찾는다. 도구 함수명 `knowledge_search` 등은
 바뀌지 않으며 클라이언트가 붙이는 서버 접두어만 달라질 수 있다.
-스킬명은 계속 `vector-knowledge`다. 여러 서비스별 스킬을 따로 설치하려면 `--destination`도
+스킬명은 `adb-agent-knowledge`다. 여러 서비스별 스킬을 따로 설치하려면 `--destination`도
 구분한다. 기존 스킬에 `--overwrite`하면 선택된 연결 안내도 새 값으로 갱신된다.
 
 `--mcp-name`은 사용자 범위 등록과 설치된 스킬에 적용되며 저장소 `.mcp.json`은 수정하지 않는다.
@@ -59,7 +59,7 @@ Claude 프로젝트 범위 방식을 선택했다면 `.mcp.json`의 `mcpServers`
 Claude의 `~/.claude/CLAUDE.md`에 다음 문장을 기존 지침과 함께 추가한다. 설치 스크립트는
 이 파일들을 덮어쓰지 않는다.
 
-> 요청마다 vector-knowledge 스킬을 참고해 지식 조회 필요성을 판단한다.
+> 요청마다 adb-agent-knowledge 스킬을 참고해 지식 조회 필요성을 판단한다.
 > Kev의 knowledge_decide로 조회/저장 여부를 판단하되 명시적 지시와 저장 금지를 우선한다.
 > 필요한 경우에만 검색하고, 출처 원문을 확인한다.
 
@@ -116,3 +116,11 @@ Codex CLI 0.165.0에서 `/mcp`는 상태 목록이며 재연결 메뉴가 아니
 `connected` 표시만으로 새 코드 적용을 확인할 수는 없다. `knowledge_search`를
 `graph_mode=always`로 호출해 `graph.paths`, `graph.related_knowledge`, `graph.retrieval_lanes`가
 반환되는지 확인한다. 빈 배열은 관계가 없는 정상 결과일 수도 있다.
+
+## 이전 스킬 이름에서 업데이트
+
+공개본의 스킬 폴더와 호출명은 `adb-agent-knowledge`다. 이전 `vector-knowledge` 스킬은
+설치 도구가 자동 삭제하지 않는다. 새 스킬을 설치·검증한 다음 기존 스킬을 비활성화하거나
+제거해 동일 서비스에 두 지침이 중복 적용되지 않게 한다. 기존 MCP 별칭을 그대로 사용할
+경우 `--mcp-name vector_knowledge`로 새 스킬에 해당 연결을 지정할 수 있다.
+기존 지침 블록 식별자와 메모리 정책 백업 경로의 `vector-knowledge`는 복구 호환성을 위해 유지한다.

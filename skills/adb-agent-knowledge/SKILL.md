@@ -1,5 +1,5 @@
 ---
-name: vector-knowledge
+name: adb-agent-knowledge
 description: Retrieve personal or project knowledge and maintain durable memories through the configured knowledge MCP. Use for prior decisions, preferences, troubleshooting history, requested saves, or user-authorized automatic memory capture, with optional local Kev routing.
 ---
 

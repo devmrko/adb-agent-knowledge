@@ -24,7 +24,7 @@ def install(destination: Path, *, overwrite: bool = False, server_name: str = DE
         raise FileExistsError("Destination exists; use --overwrite to update this skill explicitly")
     if destination.is_symlink():
         raise ValueError("Refusing to overwrite a symlink destination")
-    shutil.copytree(ROOT / "skills/vector-knowledge", destination, dirs_exist_ok=overwrite)
+    shutil.copytree(ROOT / "skills/adb-agent-knowledge", destination, dirs_exist_ok=overwrite)
     skill = destination / "SKILL.md"
     skill.write_text(
         skill.read_text()
@@ -54,7 +54,7 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     destination = args.destination or (
-        Path.home() / (".agents" if args.agent == "codex" else ".claude") / "skills/vector-knowledge"
+        Path.home() / (".agents" if args.agent == "codex" else ".claude") / "skills/adb-agent-knowledge"
     )
     launcher = str(ROOT / "scripts/run_configured_knowledge_mcp.sh")
     command = (

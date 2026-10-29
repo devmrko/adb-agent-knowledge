@@ -70,10 +70,10 @@ ollama serve
 
 ```sh
 ollama pull gemma4:e2b-it-qat
-ollama create vector-knowledge-gemma4:e2b -f config/Gemma4.Modelfile
+ollama create adb-agent-knowledge-gemma4:e2b -f config/Gemma4.Modelfile
 ```
 
-전용 모델 이름에는 문맥 크기 32768 설정을 적용한다. 서버는 loopback `127.0.0.1:11434`에서 사용한다. `-cloud` 모델을 선택하지 않는다. 모델 태그는 갱신될 수 있으므로 배포 시 `ollama list`와 `ollama show vector-knowledge-gemma4:e2b`로 설치 모델과 설정을 기록한다.
+전용 모델 이름에는 문맥 크기 32768 설정을 적용한다. 서버는 loopback `127.0.0.1:11434`에서 사용한다. `-cloud` 모델을 선택하지 않는다. 모델 태그는 갱신될 수 있으므로 배포 시 `ollama list`와 `ollama show adb-agent-knowledge-gemma4:e2b`로 설치 모델과 설정을 기록한다.
 
 검증은 실제 저장된 지식 대신 한국어 가상 문장만 보내며 DB에 쓰지 않는다.
 
@@ -98,16 +98,16 @@ Cafesto 소속·생성 기반 관계를 추출하고 단순 도구 나열에서 
 WORKFLOW_RDF_ENABLED=true
 GRAPH_AUTO_ENABLED=true
 GRAPH_AUTO_URL=http://127.0.0.1:11434/v1
-GRAPH_AUTO_MODEL=vector-knowledge-gemma4:e2b
+GRAPH_AUTO_MODEL=adb-agent-knowledge-gemma4:e2b
 GRAPH_AUTO_ALLOW_REMOTE=false
 GRAPH_AUTO_API_KEY=
-GRAPH_AUTO_POLICY=auto_verified
+GRAPH_AUTO_POLICY=review
 GRAPH_AUTO_TIMEOUT_SECONDS=120
 GRAPH_AUTO_MAX_CHARS=12000
 GRAPH_AUTO_REASONING_EFFORT=none
 ```
 
-빈 `GRAPH_AUTO_API_KEY`가 기존 OpenRouter 키 대신 사용된다. 원격 endpoint는 허용하지 않는다. `auto_verified`는 검토를 통과한 관계를 자동 연결하므로 잘못된 관계는 화면에서 수정·해제한다. 초기 실자료 평가를 수동으로 하고 싶으면 `GRAPH_AUTO_POLICY=review`로 바꿀 수 있다.
+빈 `GRAPH_AUTO_API_KEY`가 기존 OpenRouter 키 대신 사용된다. 원격 endpoint는 허용하지 않는다. 로컬 프로필의 기본값은 `review`로 후보를 수동 검토한다. 실자료 검증 후 자동 연결을 원하면 `GRAPH_AUTO_POLICY=auto_verified`로 변경한다. 자동 연결된 관계도 화면에서 수정·해제할 수 있다.
 
 12000자를 넘는 원문은 조용히 자르지 않고 `SOURCE_TOO_LONG`으로 남는다. 긴 문서의 자동 분할 추출은 아직 없다. timeout도 무작정 늘리기보다 처리 속도·문맥·작업 lease를 함께 검토한다. 모델을 변경하면 기존 지식도 새 모델 기준의 추출 작업 대상이 된다.
 

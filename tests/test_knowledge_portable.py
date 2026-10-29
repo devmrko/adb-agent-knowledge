@@ -31,6 +31,7 @@ def test_skill_install_is_portable_and_no_overwrite(tmp_path):
     destination = tmp_path / "custom skills/vector-knowledge"
     install(destination)
     assert (destination / "SKILL.md").is_file()
+    assert "name: adb-agent-knowledge" in (destination / "SKILL.md").read_text()
     assert not list(destination.rglob(".env"))
     with pytest.raises(FileExistsError):
         install(destination)
