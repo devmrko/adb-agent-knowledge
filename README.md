@@ -30,6 +30,101 @@ Kev가 조회·저장과 검색 경로를 판단합니다. 모델은 로컬 또�
 | 사용자별 관리 | 사용자 소유권과 프로젝트 범위로 구분 |
 | 에이전트 연결 | MCP + 공통 스킬로 검색·저장·수정; Kev 기본 판단 계층 |
 
+## 워크플로우와 의사결정
+
+에이전트가 매 요청에서 저장된 지식의 필요성을 판단하고, 필요한 경우 MCP 도구를 호출합니다.
+**Kev는 조회·저장 필요성과 탐색 경로에 점수를 주는 판단 모델**입니다. 답변 작성, 임베딩 생성,
+원문을 읽고 기존 지식을 보충할지 결정하는 일, 관계 추출은 각각 다른 역할입니다.
+이 흐름은 스킬 지침과 도구 호출로 동작하며, 모든 대화를 가로채는 강제 실행 훅은 아닙니다.
+
+### 조회: 필요한 기억을 찾고 근거까지 확인
+
+```mermaid
+flowchart TD
+    Request["사용자 요청"] --> Need{"에이전트 + Kev<br/>과거 지식이 필요한가?"}
+    Need -->|불필요| Continue["조회 없이 작업 진행"]
+    Need -->|필요 · 명시적 조회 요청| Recall["knowledge_recall"]
+    Recall --> Route{"Kev: 어떤 경로로 찾을까?"}
+    Route -->|직접 검색| Search["질의 임베딩<br/>Oracle 벡터 + 키워드 검색"]
+    Route -->|인덱스 탐색| Index["관련 인덱스 선택<br/>목록·항목 탐색"]
+    Route -->|양쪽| Both["직접 검색 + 인덱스 탐색"]
+    Search --> Preview["지식 요약 · 정확한 원문 버전 ID"]
+    Index --> Preview
+    Both --> Preview
+    Preview --> GraphNeed{"Kev 또는 명시적 요청<br/>관계·흐름도 필요한가?"}
+    GraphNeed -->|필요| Graph["문서 버전 + 개체명·별칭으로 관계 탐색<br/>RDF · 선택적 SQL Property Graph"]
+    Graph --> Evidence["연결된 지식 · 제한된 관계 경로<br/>근거 원문 버전 · 인용"]
+    Evidence --> Read["에이전트가 정확한 상세 원문 확인<br/>필요하면 출처·다음 지식 참조"]
+    GraphNeed -->|불필요| Read
+    Read --> Answer["근거를 바탕으로 답변·작업"]
+```
+
+`knowledge_decide(operation="lookup")`로 선택적 조회 여부를 먼저 판단할 수 있습니다.
+`knowledge_recall`은 직접 검색·인덱스·양쪽 경로를 선택하고, 특정 질의는 `knowledge_search`로
+바로 검색할 수 있습니다. 관계 조회는 `graph_mode=auto/always/never`로 제어합니다.
+인덱스가 비거나 라우팅이 불확실하면 직접 검색 등의 대체 경로를 제공합니다.
+
+예를 들어 **“지난번 이 프로젝트를 어떻게 배포했지?”**라는 요청은 배포 기록을 검색하고,
+필요하면 프로젝트·서비스·배포 환경의 관계와 당시 근거를 따라갑니다. 전체 문서를 한꺼번에
+읽는 대신 **요약 → 상세 지식 → 필요한 원본·연결 지식** 순서로 확인합니다.
+
+### 저장: 새로 저장할지, 기존 지식을 보완할지 판단
+
+```mermaid
+flowchart TD
+    Candidate["확인된 결정·선호·프로젝트 사실·작업 결과"] --> Consent{"명시적 저장 요청 또는<br/>선별 자동 저장 허용?"}
+    Consent -->|아니오| Stop["저장하지 않음"]
+    Consent -->|예| Prepare["knowledge_prepare_save<br/>Kev: 저장 가치·탐색 경로 판단<br/>중복·수정·인덱스 후보 조회"]
+    Prepare --> Worth{"저장할 가치가 있는가?"}
+    Worth -->|생략| Stop
+    Worth -->|저장 또는 에이전트 검토| Inspect["에이전트가 기존 원문·이력 확인"]
+    Inspect --> Choice{"같은 사실인가?<br/>무엇이 달라졌는가?"}
+    Choice -->|변경 없음| Stop
+    Choice -->|새로운 지식| Save["knowledge_save"]
+    Choice -->|같은 지식의 정정·보완| Revise["knowledge_revise<br/>최신 버전 ID로 충돌 검사"]
+    Save --> Queue["원문·요약·출처와 작업 저장<br/>QUEUED"]
+    Revise --> Queue
+    Queue --> Worker["워커: 청크 생성 → 임베딩<br/>Oracle에 벡터 저장·원문 버전 활성화"]
+    Worker --> Ready["READY 확인 후 검색 가능"]
+    Ready --> Index["확인된 인덱스에 연결"]
+    Ready --> Auto{"자동 관계 추출 활성화?<br/>Kev 판단 또는 명시적 추출 요청"}
+    Auto -->|추출 필요| Extract["별도 생성 모델로 관계 후보 추출<br/>정확한 인용·대상·현재 원문 검증"]
+    Extract --> Policy{"관계 반영 정책"}
+    Policy -->|review| Review["사용자가 후보 검토"]
+    Policy -->|자동 정책의 조건 충족| Publish["공유 관계와 근거 버전 기록"]
+    Review -->|승인| Publish
+```
+
+`knowledge_prepare_save`는 후보를 찾는 준비 단계이며 데이터를 쓰지 않습니다. **새 저장과 기존 지식
+수정의 최종 선택은 원문을 확인한 에이전트가 합니다.** 비슷한 문서를 서버가 임의로 합치지는 않습니다.
+수정은 새 버전을 만들고 이전 기록을 보존합니다. `QUEUED`는 접수 상태이며 `READY` 확인이 필요합니다.
+
+자동 관계 추출은 별도 설정과 워커가 필요합니다. OpenRouter 또는 Ollama/Gemma 등 설정한 생성 모델을
+사용하며 Kev가 관계 자체를 만들어내지는 않습니다. `review`는 사용자 검토, `auto_existing`·
+`auto_verified`는 각 정책의 검증 조건을 만족한 후보를 자동 반영합니다. 모호한 후보는 보류할 수 있고,
+사용자는 연결을 수정·해제할 수 있습니다. 원문이 수정되면 이전 버전만 근거로 하는 관계는 현재 조회에서
+제외되며, 재추출·검토로 새 근거를 반영합니다. 과거 기록은 별도로 보존합니다.
+
+### 누가 무엇을 결정하나
+
+| 담당 | 역할 |
+|---|---|
+| 사용자 | 자동 저장 허용, 명시적 조회·저장 요청, 관계 수정·해제 |
+| Codex·Claude 등 에이전트 | 도구 호출, 원문·이력 확인, 신규 저장 또는 보완 선택, 근거 기반 답변 |
+| Kev | 조회·저장 필요성, 직접 검색·인덱스·그래프 경로, 관계 추출 필요성 판단 |
+| 임베딩 모델 | 원문 청크와 질의를 벡터로 변환 |
+| 관계 추출 모델 | 원문에서 대상·관계 후보 추출 및 의미 검토 |
+| API·워커·Oracle | 인증·소유권·버전 충돌 검사, 비동기 색인, 관계·근거·변경 이력 보존 |
+
+명시적 조회 요청과 필요한 과거 맥락은 Kev의 잘못된 생략 판단보다 우선합니다. 저장 금지와 비밀정보
+제외는 모델 점수보다 우선하며, Kev 장애·불확실성은 `agent_review`로 돌려 에이전트가 판단합니다.
+모델 점수는 사실의 정확도를 보증하지 않고, 그래프 경로도 인과관계의 증명은 아닙니다.
+웹 화면에서 사용자가 직접 수행하는 저장·조회는 Kev의 허가를 기다리지 않습니다.
+
+[상세 저장·조회 흐름](docs/guides/storage-retrieval-flow.md) ·
+[관계·경로·근거 검색](docs/guides/related-retrieval.md) ·
+[자동 관계 설정](docs/guides/automatic-graph.md)
+
 ## 시작하기
 
 기존 **Autonomous Database와 Wallet**이 필요합니다. macOS / Linux 기준입니다.

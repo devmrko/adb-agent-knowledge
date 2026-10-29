@@ -1,6 +1,6 @@
 # Agent Knowledge for Oracle ADB 저장·조회 흐름
 
-2026-10-19 현재 구현 기준. 에이전트의 저장·조회 판단, API의 실제 처리, 비동기 관계 연결을 구분한다.
+2026-10-29 공개 preview 구현 기준. 에이전트의 저장·조회 판단, API의 실제 처리, 비동기 관계 연결을 구분한다.
 
 ## 구성
 
@@ -9,18 +9,18 @@ flowchart LR
     Agent["Codex · Claude<br/>vector-knowledge 스킬"] --> MCP["adb_agent_knowledge MCP"]
     MCP --> API["Knowledge API"]
     UI["지식 노트 웹 화면"] --> API
-    MCP <--> Kev["로컬 Kev<br/>저장·조회·탐색 경로 판단"]
+    MCP <--> Kev["Kev · 로컬 또는 원격<br/>저장·조회·탐색 경로 판단"]
     API <--> DB[("Oracle Autonomous AI Database<br/>요약 · 상세 · 원문 버전 · 출처<br/>벡터 · 인덱스 · 공유 RDF · 변경 이력")]
     Worker["임베딩 워커<br/>한국어 임베딩 모델"] <--> DB
     GraphWorker["자동 관계 워커"] <--> DB
     GraphWorker <--> Kev
-    GraphWorker <--> LLM["OpenRouter 모델<br/>관계 추출 · 의미 검토"]
+    GraphWorker <--> LLM["설정한 생성 모델<br/>Ollama·Gemma / OpenRouter 등"]
 ```
 
 - **Oracle**이 지식과 이력의 기준 저장소다. 로컬 Markdown은 스킬 지침과 원본 설계 자료 등에 사용한다.
 - **Kev**는 처리 필요성과 경로를 판단한다. 임베딩 생성, 관계 추출, 사실 확정은 담당하지 않는다.
-- **한국어 임베딩 모델**은 로컬에서 실행한다. 현재 모델은 `dragonkue/snowflake-arctic-embed-l-v2.0-ko`다.
-- **OpenRouter 모델**은 자동 관계 추출과 별도 의미 검토에 사용한다. 임베딩과는 다른 처리다.
+- **임베딩 모델**은 로컬 또는 OpenAI 호환 endpoint를 선택한다. 기본 로컬 한국어 모델은 `dragonkue/snowflake-arctic-embed-l-v2.0-ko`다.
+- **설정한 생성 모델**은 자동 관계 추출과 별도 의미 검토에 사용한다. 임베딩과는 다른 처리다.
 - 웹 화면에서 직접 수행한 저장·조회는 Kev의 허가를 기다리지 않는다.
 
 ## 1. 저장과 기존 지식 보완
@@ -56,7 +56,7 @@ flowchart TD
 flowchart TD
     Sources["기존 활성 지식 · 새 지식 · 수정된 원문"] --> Job["원문 버전·스키마·모델별 처리 작업"]
     Job --> Route{"Kev 판단 또는 명시적 재처리"}
-    Route -->|추출 필요| Extract["OpenRouter<br/>대상과 관계 후보 추출"]
+    Route -->|추출 필요| Extract["설정한 생성 모델<br/>대상과 관계 후보 추출"]
     Route -->|불필요| Skip["SKIPPED<br/>명시적 재처리 가능"]
     Extract --> Check["별도 의미 검토<br/>유형·정확한 인용·현재 원문 검증"]
     Check -->|근거 불충분| Drop["관계 후보 제외"]
@@ -68,7 +68,7 @@ flowchart TD
     Adjust --> History["새 관계 버전 기록<br/>이전 관계·근거 보존"]
 ```
 
-현재 운영 정책은 `auto_verified`다. 의미 검토를 통과하고 대상 식별이 가능한 관계는 사용자의 개별 승인 없이 연결한다. 이는 자동 추론 결과이며 인간이 확인한 사실이라는 뜻은 아니다.
+자동 관계 기능을 활성화한 뒤 `review`, `auto_existing`, `auto_verified` 정책을 선택한다. `auto_verified`에서는 의미 검토를 통과하고 대상 식별이 가능한 관계를 사용자의 개별 승인 없이 연결한다. 이는 자동 추론 결과이며 인간이 확인한 사실이라는 뜻은 아니다.
 
 - 기존 지식도 처리 대상이다. 과거 작성자 감사 기록이 없는 경우 인증된 재처리 요청을 자동 반영의 실행 주체로 사용할 수 있다. 과거 작성자를 새로 추정하지 않는다.
 - 관계 추출 완료와 RDF 연결 완료는 다르다. `DONE`/`PARTIAL`만으로 연결 성공을 단정하지 않고 자동 반영 결과를 확인한다.
