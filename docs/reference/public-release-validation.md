@@ -31,7 +31,8 @@ Oracle 구현이다. SQLite 테스트는 대체 운영 DB 지원이 아니다. �
 - 새 Oracle ADB/빈 스키마에서 권한·Wallet·전체 migration·RDF·Property Graph 초기화.
 - 새 계정에서 실제 모델을 사용한 저장 READY → 검색 → 수정 → 과거 이력 전체 흐름.
 - 새 머신에서 Kev/Gemma 최초 다운로드·구동과 CPU/GPU 조합별 자원 요구량.
-- Windows/WSL 및 Linux의 새 설치(기존 CI 설정은 포함하지만 이 검증은 macOS에서 수행).
+- Windows/WSL 및 Linux에서 실제 Oracle·모델을 연결하는 신규 설치.
+  Ubuntu GitHub Actions의 의존성 설치·자동 테스트·wheel 검증은 아래와 같이 통과했다.
 
 따라서 공개 가능한 preview 소스이며, 새 사용자의 전체 설치를 검증한 정식 릴리스는 아니다.
 DB/모델 자격증명을 포함하지 않으며 사용자가 자신의 환경을 준비해야 한다.
@@ -49,3 +50,10 @@ DB/모델 자격증명을 포함하지 않으며 사용자가 자신의 환경�
 ```
 
 Oracle 신규 환경의 검증 순서는 [설치 가이드](../guides/portable-setup.md)를 따른다.
+
+## GitHub Ubuntu CI 결과
+
+[verify 40820684727](https://github.com/devmrko/adb-agent-knowledge/actions/runs/40820684727),
+소스 커밋 1f32ef2: 2026-10-29 성공. Python 3.12 locked 설치, ruff, mypy, pytest,
+Foundation 런타임 smoke, wheel 빌드와 독립 설치 검증을 모두 통과했다.
+이 CI는 실제 Oracle ADB나 Kev/Gemma 모델을 실행한 검증은 아니다.
