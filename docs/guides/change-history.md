@@ -2,6 +2,13 @@
 
 지식·원문 버전·인덱스·RDF 관계의 행 변경을 같은 DB 트랜잭션에 기록합니다. 기존 원문 revision과 관계의 유효/기록 시점 이력은 그대로 유지합니다. 감사 기록은 변경 사실을 설명하며 원문 버전 이력을 대체하지 않습니다.
 
+## 초기화
+
+`./scripts/run_knowledge.sh --migrate` 또는 `./uvw run alembic upgrade head`로
+이력 테이블과 트리거를 함께 준비합니다. 별도 트리거 SQL 실행은 필요하지 않습니다.
+새 DB는 모든 migration을 순서대로, 기존 DB는 미적용 revision만 실행합니다.
+RDF 네트워크·SQL Property Graph 초기화는 별도입니다.
+
 ## 구성
 
 | 테이블 | 역할 |
@@ -11,11 +18,17 @@
 | vk_change_outbox | 커밋 이후 처리할 이벤트와 시도 횟수·재시도 시각·결과 |
 | vk_change_review | 직접 SQL 변경, 원문 보완/폐기로 재검토해야 할 RDF 근거 |
 
-감사 대상은 vk_item, vk_revision(출처 포함), vk_index, vk_index_entry, vk_g_entity, vk_g_claim, vk_g_version, vk_g_evidence, vk_workflow입니다. 원문 텍스트·요약·출처·관계 JSON은 기록하지만 원본 파일 BLOB과 임베딩 벡터는 복제하지 않습니다. 원본은 바이트 크기만 기록하므로 감사 기록만으로 삭제된 PDF 등의 바이너리를 복원할 수 없습니다. 변경 없는 UPDATE도 SQL이 실행되면 기록될 수 있습니다. 테이블 생성/ALTER/DROP 같은 **DDL 감사는 포함하지 않습니다.**
+감사 대상은 vk_item, vk_revision(출처 포함), vk_index, vk_index_entry, vk_g_entity, vk_g_claim, vk_g_version, vk_g_evidence, vk_workflow입니다. vk0011부터 vk_g_extract, vk_g_proposal, vk_g_review, vk_g_identity, vk_g_operation도 포함합니다. 원문 텍스트·요약·출처·관계 JSON은 기록하지만 원본 파일 BLOB과 임베딩 벡터는 복제하지 않습니다. 원본은 바이트 크기만 기록하므로 감사 기록만으로 삭제된 PDF 등의 바이너리를 복원할 수 없습니다. 변경 없는 UPDATE도 SQL이 실행되면 기록될 수 있습니다. 테이블 생성/ALTER/DROP 같은 **DDL 감사는 포함하지 않습니다.**
 
 API는 같은 트랜잭션의 변경에 context를 연결합니다. 인증 주체와 클라이언트가 선언한 머신은 다른 정보이며 머신 ID는 인증 증거가 아닙니다. 해당 작업에 머신·수정 사유가 제공되지 않았으면 unknown/null로 둡니다. worker 작업은 WORKER로 구분합니다. context가 없는 쓰기는 DIRECT_SQL입니다. 이는 직접 SQL 또는 아직 업데이트하지 않은 앱/worker일 수 있으며 사람이 직접 실행했다는 증거는 아닙니다.
 
 Oracle 트리거는 JSON_OBJECT RETURNING CLOB로 변경 전후를 기록하고 outbox를 INSERT합니다. 두 기록 중 하나가 실패하면 원본 변경도 실패합니다. 트리거는 외부 HTTP·LLM·임베딩을 호출하지 않으며 autonomous transaction을 사용하지 않습니다. 이벤트 테이블의 UPDATE/DELETE와 원본 행의 owner/id 변경을 트리거가 거부합니다. 원본을 가리키는 FK를 두지 않아 물리 삭제 뒤에도 이력을 조회할 수 있습니다. 다만 DB 소유자/관리자의 트리거 해제까지 막는 외부 보안 감사 시스템은 아닙니다.
+
+vk0011은 vk_g_operation의 UPDATE/DELETE를 트리거로 차단합니다. 추출 lease_token은
+감사 스냅샷에서 제외합니다. 변경이 없는 UPDATE도 기록되므로 워커 상태 변경은 감사 용량을
+늘릴 수 있습니다. 서비스 모드에서 context를 연결하지 않은 워커/후보 처리도 DIRECT_SQL로
+표시될 수 있습니다. 이는 미식별 쓰기이며 사람의 SQL 실행 판정이 아닙니다.
+개체 식별·검토 API는 인증 사용자 context를 연결합니다.
 
 ## 후속 처리
 
@@ -47,7 +60,7 @@ outbox는 PENDING → DONE 또는 FAILED입니다. 행 잠금과 조건부 갱�
 ./scripts/run_knowledge.sh
 ```
 
-vk0008에서 테이블 4개와 Oracle 트리거 10개를 추가합니다. CREATE TRIGGER 권한과 기존 테이블 소유권이 필요합니다. Oracle DDL은 자동 커밋되므로 검토한 마이그레이션으로 적용합니다. 실패 시 USER_ERRORS를 확인하고 복구하기 전 쓰기 서비스를 재개하지 않습니다. 이미 생성된 감사 테이블은 checkfirst로 보존하고 재시도합니다. SQLite도 실제 트리거를 사용합니다.
+vk0008에서 이력/처리 테이블 4개와 Oracle 트리거 10개를 추가하고, vk0011에서 감사 대상 5개에 대한 트리거와 operation 이력 보호 트리거 1개를 추가합니다(총 16개). CREATE TRIGGER 권한과 기존 테이블 소유권이 필요합니다. Oracle DDL은 자동 커밋되므로 검토한 마이그레이션으로 적용합니다. 실패 시 USER_ERRORS를 확인하고 복구하기 전 쓰기 서비스를 재개하지 않습니다. 이미 생성된 감사 테이블은 checkfirst로 보존하고 재시도합니다. SQLite도 실제 트리거를 사용합니다.
 
 여러 머신의 모든 writer/worker를 같은 코드로 맞춰야 행위자 연결과 후속 처리가 정상 작동합니다. 이전 버전이 쓰더라도 트리거는 변경을 잡지만 DIRECT_SQL 재검토가 늘어날 수 있습니다. 기존 데이터의 과거 사건은 소급 생성하지 않으며 설치 이후부터 기록합니다. 일반 삭제는 기존 retire를 사용합니다. 영구 삭제·감사 보존 기간·개인정보 삭제에 따른 snapshot 정리는 별도로 설계해야 하며 자동 삭제나 임의 감사 수정 기능은 제공하지 않습니다. 원문 텍스트를 이력에도 보관하므로 저장 용량과 접근 권한을 운영 시 함께 관리합니다.
 

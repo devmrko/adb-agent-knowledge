@@ -8,6 +8,8 @@
 | Where embedding, Kev and generation run | [Architecture and models](architecture-and-models.md) |
 | RDF/Property Graph setup, SQL, identity and review examples | [Oracle graph examples](oracle-graph-examples.md) |
 
+[Documentation audit and migration validation](../reference/documentation-audit.md)
+
 These guides cover the current public implementation. The remaining detailed operational/design documents
 are primarily Korean and are indexed in the Korean documentation home. A translated description does not
 imply that new deployment combinations have been tested. Code, migrations, and recorded test limits remain

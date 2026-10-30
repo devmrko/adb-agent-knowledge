@@ -109,6 +109,7 @@ stateDiagram-v2
 | 검토/식별자 스냅샷 이력 | GET /api/v1/graph/operations/{review_or_binding_id}?offset=0&limit=30 |
 | 목적별 탐색 | POST /api/v1/graph/explore |
 
-이력은 서비스가 같은 트랜잭션으로 append-only 스냅샷을 기록한다. 새 세 테이블에 대한 DB 직접
-수정까지 추적하는 감사 트리거를 추가한 것은 아니다. DB 직접 수정은 이 계약을 우회하므로 지원
-경로로 사용하지 않는다. 소유권·현재 원문·충돌 검증은 API에서 수행한다.
+이력은 서비스가 같은 트랜잭션으로 스냅샷을 기록한다. vk0011은 새 세 테이블의 행 변경도
+vk_change_event/outbox에 기록하고 vk_g_operation의 UPDATE/DELETE를 트리거로 차단한다.
+identity/review API 쓰기는 인증 주체를 감사 context에 연결한다. DB 직접 수정은 기록되더라도
+소유권·현재 원문·충돌 검증을 우회하므로 지원 경로로 사용하지 않는다. 최신 migration을 적용한다.

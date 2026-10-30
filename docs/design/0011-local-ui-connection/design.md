@@ -1,5 +1,7 @@
 # 로컬 개발 화면 자동 연결
 
+> 설계 당시의 결정·계획을 보존한 기록입니다. 현재 기본값·설치·지원 범위는 [현재 매뉴얼](../../README.md)을 기준으로 확인하세요. 이 문서의 계획이나 과거 검증은 현재 구현·배포 보장이 아닙니다.
+
 사용자 요청: localhost 검색 화면에서 토큰을 매번 입력하지 않는다.
 UI_AUTO_CONNECT=true(기본), development, DevelopmentVerifier, loopback API_HOST일 때만 제공한다.
 POST /knowledge/local-connection은 loopback peer + 허용된 localhost Host + 동일 Origin +

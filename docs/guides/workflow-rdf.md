@@ -6,7 +6,11 @@ Oracle 네이티브 RDF에 업무 관계를 저장한다. DB Companion의 저장
 
 ## 설치
 
-기존 API 설정과 Wallet을 사용한다. 최초 1회 `./uvw run --no-sync python -m scripts.setup_workflow_rdf`를 실행한다. DDL은 자동 커밋되며 기존 namespace가 있으면 교체하지 않고 중단한다. 실패 시 객체 상태를 확인하고 재실행 여부를 판단한다. 이어서 `./uvw run --no-sync alembic upgrade head`, `.env`의 `WORKFLOW_RDF_ENABLED=true`, 서비스 재시작 순서다. 다른 머신이 같은 DB를 사용하면 RDF 설치를 반복하지 않는다.
+API/worker 쓰기를 중지하고 `./uvw run --no-sync alembic upgrade head` →
+`./uvw run --no-sync python -m scripts.prepare_knowledge_rdf` 순서로 준비한다.
+성공 후 .env의 WORKFLOW_RDF_ENABLED=true를 설정하고 재시작한다.
+DDL은 자동 커밋이며 일부만 초기화된 namespace는 확인이 필요하다.
+저수준 setup_workflow_rdf는 기존 namespace에 반복 실행하지 않는다.
 
 SQLite는 manifest 기반 테스트 대체만 제공한다. 네이티브 RDF 및 성능 검증은 Oracle에서 수행해야 한다.
 
@@ -25,7 +29,10 @@ SQLite는 manifest 기반 테스트 대체만 제공한다. 네이티브 RDF 및
 
 동일 revision의 관계는 불변이다. 같은 내용 재요청은 멱등이며, 정정은 새 원문 revision 후 새 관계를 저장한다. 원문 새 버전이 READY가 되면 예전 관계는 기본 조회에서 제외된다. 새 관계가 없으면 ABSENT. 폐기된 지식은 INACTIVE. 서버는 인증 소유자와 활성 버전을 다시 확인한다.
 
-knowledge_search의 graph_mode는 auto(기본), always, never. auto는 Kev graph_lookup으로 결정하고, agent_review/장애일 때 흐름 관련 질의는 보수적으로 조회한다. 상위3개 원문 후보에 최대20간선을 포함하고 잘린 결과는 truncated=true로 표시한다. 전체(최대100간선)는 get_workflow를 사용한다. 원문 검색 실패와 관계 조회 실패를 구분하며 관계 장애는 UNAVAILABLE로 표시한다. 일반 HTTP search와 웹 검색은 기존 계약을 유지한다; HTTP 클라이언트는 workflow GET을 별도 호출한다.
+현재 knowledge_search/recall의 관계 확장은 [공통 관계 검색](related-retrieval.md)을 따른다.
+HTTP search도 include_graph=true를 지원한다. 이전 revision별 그래프 전체는
+knowledge_get_workflow 또는 해당 workflow GET API로 명시적으로 조회한다.
+이전 형식에는 업무/기록 시점 계약이 없으므로 공유 그래프의 시점 검색과 혼동하지 않는다.
 
 조회는 RDF accessor SQL로 지정 named graph만 읽어 구조화된 관계를 돌려준다. 임의 SPARQL, 업무 실행, 무제한 경로 추론은 제공하지 않는다. SEM_MATCH/JVM이 필요 없다. 관계 탐색의 답변은 에이전트가 원문 근거와 함께 구성한다.
 

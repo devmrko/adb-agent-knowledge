@@ -37,6 +37,7 @@ version/locator로 기록한다. multipart 파일 업로드는 위 객체를 JSO
 이전 버전은 변경하지 않는다. 과거 자료에 머신이나 경로가 없으면 기록 없음으로 표시한다.
 검색 화면의 원문 보기에서 작성 머신과 모든 누적 출처를 확인할 수 있다.
 
-기존 DB는 `./uvw run --extra knowledge --extra mcp alembic upgrade head`로 vk0003을 적용하고
-API/worker를 재시작한다. 컬럼 추가만 수행하며 기존 벡터 재색인은 필요 없다.
+출처 컬럼은 vk0003에서 도입됐다. 기존 DB는 API/worker를 중지한 뒤
+`./uvw run --extra knowledge --extra mcp alembic upgrade head`로 최신 migration 전체를 적용한다.
+현재 head에는 후속 테이블도 포함된다. 출처 컬럼 추가 자체는 기존 벡터 재색인을 요구하지 않는다.
 NoSQL/객체 저장소 실제 연동과 원본 위치 자동 이동은 아직 제공하지 않는다.

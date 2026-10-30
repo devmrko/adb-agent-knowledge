@@ -1,5 +1,7 @@
 # Evidence-backed identity and resumable agent review
 
+> 설계 당시의 결정·계획을 보존한 기록입니다. 현재 기본값·설치·지원 범위는 [현재 매뉴얼](../../README.md)을 기준으로 확인하세요. 이 문서의 계획이나 과거 검증은 현재 구현·배포 보장이 아닙니다.
+
 Scope approved 2026-10-30: retain Kev, improve entity identification and useful RDF/Property Graph
 retrieval, track review of active source versions. No Kev comparison, Oracle Text, automatic entity
 merge, new inference engine, or change to original source identity. Public repo only; deploy after validation.

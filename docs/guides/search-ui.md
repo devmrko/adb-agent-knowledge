@@ -4,7 +4,14 @@ API 실행 후 http://127.0.0.1:8000/knowledge 에 접속한다. `/`도 이 화�
 로컬 개발 화면은 자동 연결한다. UI_AUTO_CONNECT=false 또는 원격/운영 환경에서는
 `.env`의 DEV_API_TOKEN 또는 유효한 API 토큰을 입력한다. DB/Wallet 비밀번호가 아니다.
 운영 JWT 인증 환경에서는 해당 API에 유효한 Bearer 토큰을 사용한다.
-토큰은 페이지 메모리에만 있고 새로고침/연결 해제 시 지워진다. 토큰을 URL에 넣지 않는다.
+Bearer 연결의 토큰은 페이지 메모리에만 유지하며 새로고침/연결 해제 시 지워진다.
+WEB_PUBLIC_ORIGIN을 구성한 HTTPS 웹에서는 전용 API 키를 /knowledge/session에서 교환한다.
+원래 키 대신 Secure·HttpOnly·SameSite=Strict 쿠키를 저장하며 서버는 세션 ID 해시와 만료 정보를
+WEB_SESSION_DB에 보관한다. 새로고침 후에도 유지되고 로그아웃하면 삭제된다.
+기본 만료는 WEB_SESSION_TTL_SECONDS=604800(7일)이다. 변경 요청은 Origin·CSRF 검사를 적용한다.
+API 키를 localStorage/sessionStorage나 URL에 넣지 않는다. WEB_API_KEY_SHA256에 키 해시를
+설정하며 WEB_ACTOR_ISSUER/WEB_ACTOR_SUBJECT로 지정한 한 사용자로 연결한다.
+이 전용 웹 키 설정은 다중 사용자 JWT 인증을 대신하지 않는다.
 
 - 연결 시 최근 지식 목록을 10개씩 표시한다. 이전/다음으로 이동한다.
 - 질문을 입력하고 검색하면 관련 지식을 최대 20개 표시한다.

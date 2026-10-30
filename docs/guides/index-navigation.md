@@ -4,13 +4,12 @@
 
 ## 설치와 업그레이드
 
-기존 빠른 시작 설정을 완료한 뒤 다음을 실행합니다. RDF 기능을 켠 Oracle에서는 기존 network/shared graph 설치에 이어 VK_NAV 모델도 준비해야 합니다. API와 worker는 같은 코드를 사용해야 합니다.
+기존 빠른 시작 설정을 완료한 뒤 다음을 실행합니다. RDF 기능을 켠 Oracle에서는 기존 network/shared graph 설치에 이어 VK_NAV 모델도 준비해야 합니다. 먼저 API·worker의 쓰기를 중지하고, 업데이트 후 모두 같은 코드 버전으로 시작합니다.
 
 ```sh
 ./uvw run alembic upgrade head
-./uvw run python -m scripts.setup_workflow_rdf
-./uvw run python -m scripts.setup_shared_rdf
-./uvw run python -m scripts.setup_navigation_rdf
+./uvw run python -m scripts.prepare_knowledge_rdf
+# 성공 후 .env에 WORKFLOW_RDF_ENABLED=true 설정
 ./scripts/run_knowledge.sh
 # 별도 터미널: 현재 API 사용자의 기존 활성 지식 파생 데이터 보완
 ./uvw run python -m scripts.backfill_navigation

@@ -1,5 +1,7 @@
 # 서비스 중심 저장소 구조
 
+> 설계 당시의 결정·계획을 보존한 기록입니다. 현재 기본값·설치·지원 범위는 [현재 매뉴얼](../../README.md)을 기준으로 확인하세요. 이 문서의 계획이나 과거 검증은 현재 구현·배포 보장이 아닙니다.
+
 루트는 vector-knowledge 실행 프로젝트(uv package=false), Foundation은 로컬 workspace dependency로 분리한다.
 공개 배포 Foundation wheel의 이름/버전/import/API는 유지한다. 기존 실행 scripts와 MCP 경로도 유지한다.
 knowledge_app는 서비스 코드, migrations와 alembic.ini는 VK 전용 migration이다.

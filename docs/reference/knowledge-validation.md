@@ -1,5 +1,7 @@
 # 검증 결과 — 2026-10-15
 
+> Historical, dated evidence: this record does not certify the current deployment or repeat earlier live tests. See [current documentation](../README.md).
+
 ## 이식성·스킬 배포 검증
 - 78개 테스트: 기존 .env 보존/신규 토큰 생성, 스킬 복사 및 덮어쓰기 방지,
   별도 SQLite DB에서 migration→API/worker 시작→Ctrl-C 종료까지 확인.

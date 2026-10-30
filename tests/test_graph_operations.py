@@ -266,3 +266,33 @@ def test_documented_demo_is_repeatable(knowledge_fixture):  # noqa: F811
     assert first["knowledge_id"] == second["knowledge_id"]
     assert len(second["results"]["dependencies"]["edges"]) == 2
     assert len(second["results"]["evidence"]["edges"]) == 2
+
+
+def test_identity_and_review_audit_actor_and_owner_isolation(ops):
+    client, _, evidence, eid = ops
+    row = bind(client, evidence, eid).json()
+    review = client.post(
+        "/api/v1/graph/reviews/" + evidence["knowledge_id"],
+        json=dict(
+            revision_id=evidence["revision_id"],
+            expected_version=0,
+            status="REVIEWING",
+            note="Audit attribution test",
+        ),
+    )
+    assert review.status_code == 200
+    for table, identifier, operation in (
+        ("vk_g_identity", row["id"], "GRAPH_IDENTITY_BIND"),
+        ("vk_g_review", review.json()["id"], "GRAPH_REVIEW"),
+    ):
+        events = client.get("/api/v1/changes", params={"table": table, "target_id": identifier}).json()[
+            "items"
+        ]
+        matched = [e for e in events if e["operation"] == operation]
+        assert matched and all(e["actor_subject"] == "alice" for e in matched)
+        client.headers["Authorization"] = "Bearer bob"
+        assert (
+            client.get("/api/v1/changes", params={"table": table, "target_id": identifier}).json()["items"]
+            == []
+        )
+        client.headers["Authorization"] = "Bearer alice"

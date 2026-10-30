@@ -1,4 +1,4 @@
-# OpenRouter 없이 전체 기능 설치하기 — Oracle + Kev + Gemma 4
+# 선택적 service 모드 설치 — Oracle + Kev + 로컬 Gemma
 
 > 이 문서는 별도 LLM을 쓰는 선택적 **service 모드** 안내입니다. v2 기본 agent 모드는
 > Codex·Claude가 추출하며 별도 생성 모델 설치가 필요 없습니다. Kev는 유지합니다.
@@ -19,7 +19,7 @@
 
 Gemma가 Kev나 임베딩 모델을 대체하지 않는다. OpenRouter 키는 필요하지 않으며 로컬 모델 실패 시 클라우드로 자동 전환하지 않는다. 최초 설치에는 모델/패키지 다운로드를 위한 인터넷이 필요하다.
 
-공식 Ollama에는 `gemma4:e2b`가 제공된다. E2B는 유효 파라미터 규모를 뜻하며 모델 전체가 2GB라는 의미가 아니다. 다운로드 크기는 백엔드에 따라 약 4.6~7.5GB로 표시되며 실행 메모리에는 문맥 캐시와 임베딩·Kev가 추가된다. 여유 메모리를 확인하고, 이 구성 전체의 특정 RAM/GPU 최소치를 검증된 수치로 간주하지 않는다.
+공식 Ollama에는 `gemma4:e2b`가 제공된다. E2B는 유효 파라미터 규모를 뜻하며 모델 전체가 2GB라는 의미가 아니다. 다운로드 크기는 선택한 태그·양자화 정보를 확인한다. 실행 메모리에는 문맥 캐시와 임베딩·Kev가 추가된다. 여유 메모리를 확인하고, 이 구성 전체의 특정 RAM/GPU 최소치를 검증된 수치로 간주하지 않는다.
 
 - [Google Gemma 4 설명](https://ai.google.dev/gemma/docs/core)
 - [공식 Ollama Gemma 4 E2B](https://ollama.com/library/gemma4:e2b)
@@ -62,6 +62,8 @@ Wallet 파일을 지정한 디렉터리에 준비한다. DB 계정은 앱 테이
 ```
 
 RDF 준비 도구는 `VK_FLOW_RDF` 네트워크와 `VK_FLOW`, `VK_SHARED`, `VK_NAV` 그래프를 준비한다. 정상적인 기존 그래프는 유지한다. 일부만 만들어진 네트워크는 삭제·교체하지 않고 중단하여 상태 확인을 요구한다.
+
+SQL Property Graph는 이 단계에서 생성하지 않는다. 필요하면 [Oracle 그래프 예제](oracle-graph-examples.md)의 선택적 생성 절차를 적용한다.
 
 ## 3. Ollama와 로컬 Gemma 준비
 
@@ -111,6 +113,7 @@ GRAPH_AUTO_POLICY=review
 GRAPH_AUTO_TIMEOUT_SECONDS=120
 GRAPH_AUTO_MAX_CHARS=12000
 GRAPH_AUTO_REASONING_EFFORT=none
+GRAPH_AUTO_STRUCTURED_OUTPUT=true
 ```
 
 빈 `GRAPH_AUTO_API_KEY`가 기존 OpenRouter 키 대신 사용된다. 원격 endpoint는 허용하지 않는다. 로컬 프로필의 기본값은 `review`로 후보를 수동 검토한다. 실자료 검증 후 자동 연결을 원하면 `GRAPH_AUTO_POLICY=auto_verified`로 변경한다. 자동 연결된 관계도 화면에서 수정·해제할 수 있다.
@@ -152,4 +155,4 @@ Ollama는 이 실행 스크립트의 관리 대상이 아니므로 별도 앱/�
 
 ## 검증 범위
 
-이 문서와 로컬 프로필·적용/검증 도구를 제공한다. 문서를 작성한 머신에는 Ollama가 설치되지 않아 **Gemma 4 실제 추론 속도·한국어 관계 품질·완전한 새 머신 설치는 아직 검증하지 않았다.** 현재 실행 중인 서비스의 OpenRouter 설정은 자동으로 바꾸지 않았다. 로컬 프로필을 적용하고 위 검사를 통과한 환경에서 운영 전환한다.
+이 문서와 로컬 프로필·적용/검증 도구를 제공한다. 문서를 작성한 머신에는 Ollama가 설치되지 않아 **Gemma 4 실제 추론 속도·한국어 관계 품질·완전한 새 머신 설치는 아직 검증하지 않았다.** 이 문서는 특정 운영 서버의 현재 모델이나 배포 상태를 보증하지 않는다. 로컬 프로필을 적용하고 위 검사를 통과한 환경에서 운영 전환한다.

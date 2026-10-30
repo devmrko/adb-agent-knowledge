@@ -1,5 +1,7 @@
 # 사용과 확장
 
+> 이 문서는 기반 라이브러리 계약입니다. 아래 예제 앱 명령은 원본 Foundation 프로젝트 기준이며, 이 저장소 루트의 Alembic은 지식 DB용입니다. 여기서 Foundation wheel을 만들 때는 `./uvw build --package devmrko-python-foundation`을 사용합니다. [격리된 패키지 안내](../README.md)를 먼저 확인하세요.
+
 ## 공통 개발 규칙
 
 설계와 완료 기준을 먼저 작성하고 Router → Service → Repository 계층으로 구현합니다. HTTP DTO는 Pydantic 모델, 내부 값 객체는 dataclass를 기본으로 사용합니다. dict[str, object]는 동적 데이터 경계에 한정합니다. 계약은 Protocol, 공통 실행 흐름은 ABC를 사용하고 불필요한 상속은 만들지 않습니다.

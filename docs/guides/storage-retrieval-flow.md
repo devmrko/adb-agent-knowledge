@@ -46,7 +46,7 @@ flowchart TD
     Worker --> Store["Oracle에 청크·벡터 저장<br/>새 원문 버전 활성화"]
     Store --> Ready["READY 확인<br/>검색 가능"]
     Ready --> Index["필요한 인덱스에 연결<br/>에이전트가 확인한 분류 반영"]
-    Ready --> Graph["별도 자동 관계 처리"]
+    Ready --> Graph["agent: 에이전트 후속 검토·등록<br/>service: 별도 워커 추출 작업"]
 ```
 
 - `knowledge_prepare_save`는 준비 단계이며 지식을 직접 쓰지 않는다.
@@ -66,6 +66,8 @@ COMPLETE/RELATIONS 또는 COMPLETE/NONE. 미해결 항목은 FAILED/UNRESOLVED�
 기존 미검토 지식도 knowledge_graph_reviews에서 이어받는다. [상세 계약](graph-identity-review.md).
 
 ### 선택적 service 모드
+
+아래 자동 반영 경로는 auto_verified 정책의 예다. 기본 review는 후보를 보관하고 명시적 승인을 기다린다.
 
 ```mermaid
 flowchart TD

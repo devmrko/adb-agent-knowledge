@@ -1,5 +1,7 @@
 # 공개 preview 검증 — 2026-10-29
 
+> Historical, dated evidence: this record does not certify the current deployment or repeat earlier live tests. See [current documentation](../README.md).
+
 ## 배포본 범위
 
 현재 개발 소스를 별도 폴더로 내보낸 독립 Git 저장소다. 기존 작업 폴더와 운영 서버는

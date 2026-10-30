@@ -213,9 +213,10 @@ new review work and make old-only identity evidence ineligible for confirmed mat
 
 Review completion is an agent attestation, not a semantic completeness guarantee. Interrupted work can be
 explicitly reclaimed using the current version. History is retained; direct SQL changes to these new tables
-are not covered by newly added audit triggers. Use API writes.
+are audited after vk0011. That migration also blocks UPDATE/DELETE on vk_g_operation.
+Auditing does not enforce the API identity/evidence rules on direct SQL; use API writes.
 
 The fictional demo, repeated execution, identity conflicts/history and source revision behavior are tested
-through the SQLite application API. Oracle migration DDL is compile-checked, not a substitute for executing
-on a fresh ADB. The SQL above follows the checked-in setup/query implementation; verify actual privileges,
+through the SQLite application API. Oracle table DDL is generated with the SQLAlchemy Oracle dialect; trigger SQL and compilation-error
+handling are checked without a live Oracle engine. These checks do not replace execution on a fresh ADB. The SQL above follows the checked-in setup/query implementation; verify actual privileges,
 Oracle version and execution in your deployment. See [release validation](../reference/public-release-validation.md).

@@ -1,5 +1,7 @@
 # Installed dependency license inventory
 
+> Historical, dated evidence: this record does not certify the current deployment or repeat earlier live tests. See [current documentation](../README.md).
+
 Generated from the locked macOS Python 3.12 knowledge + MCP installation on 2026-10-29.
 Metadata is an inventory, not a legal audit. Other platform/optional dependencies can differ.
 Model weights are downloaded separately and are covered in THIRD_PARTY.md.

@@ -1,4 +1,7 @@
--- Reference table/index DDL. Install with Alembic; vk0008 also installs audit triggers.
+-- ORM table/index reference through vk0011 (2026-10-30); NOT an install script.
+-- Install/upgrade with Alembic; vk0008 and vk0011 also initialize audit triggers.
+-- RDF and Property Graph need separate initialization; see ../guides/oracle-graph-examples.md.
+-- vk_alembic_version and native graph objects are not ORM tables and are not listed here.
 
 CREATE TABLE vk_change_context (
 	id VARCHAR2(36 CHAR) NOT NULL,
@@ -400,4 +403,57 @@ CREATE TABLE vk_workflow (
 	FOREIGN KEY(owner_id, revision_id) REFERENCES vk_revision (owner_id, id)
 );
 
-ALTER TABLE vk_item ADD CONSTRAINT vk_item_active_fk FOREIGN KEY(owner_id, active_revision_id) REFERENCES vk_revision (owner_id, id);
+CREATE TABLE vk_g_identity (
+	id VARCHAR2(36 CHAR) NOT NULL,
+	owner_id VARCHAR2(64 CHAR) NOT NULL,
+	scope VARCHAR2(108 CHAR) NOT NULL,
+	binding_key VARCHAR2(64 CHAR) NOT NULL,
+	entity_id VARCHAR2(36 CHAR) NOT NULL,
+	kind VARCHAR2(16 CHAR) NOT NULL,
+	namespace VARCHAR2(40 CHAR) NOT NULL,
+	value VARCHAR2(500 CHAR) NOT NULL,
+	version INTEGER NOT NULL,
+	status VARCHAR2(16 CHAR) NOT NULL,
+	item_id VARCHAR2(36 CHAR) NOT NULL,
+	revision_id VARCHAR2(36 CHAR) NOT NULL,
+	quote CLOB NOT NULL,
+	note VARCHAR2(1000 CHAR) NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+	PRIMARY KEY (id),
+	UNIQUE (binding_key)
+);
+
+CREATE INDEX ix_vk_g_identity_owner_id ON vk_g_identity (owner_id);
+
+CREATE TABLE vk_g_operation (
+	id VARCHAR2(36 CHAR) NOT NULL,
+	owner_id VARCHAR2(64 CHAR) NOT NULL,
+	target_id VARCHAR2(36 CHAR) NOT NULL,
+	kind VARCHAR2(16 CHAR) NOT NULL,
+	version INTEGER NOT NULL,
+	actor VARCHAR2(500 CHAR) NOT NULL,
+	snapshot_json CLOB NOT NULL,
+	created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+	PRIMARY KEY (id),
+	CONSTRAINT vk_g_op_version_uq UNIQUE (target_id, version)
+);
+
+CREATE INDEX ix_vk_g_operation_owner_id ON vk_g_operation (owner_id);
+
+CREATE INDEX ix_vk_g_operation_target_id ON vk_g_operation (target_id);
+
+CREATE TABLE vk_g_review (
+	id VARCHAR2(36 CHAR) NOT NULL,
+	owner_id VARCHAR2(64 CHAR) NOT NULL,
+	item_id VARCHAR2(36 CHAR) NOT NULL,
+	revision_id VARCHAR2(36 CHAR) NOT NULL,
+	version INTEGER NOT NULL,
+	status VARCHAR2(20 CHAR) NOT NULL,
+	outcome VARCHAR2(20 CHAR),
+	note VARCHAR2(1000 CHAR) NOT NULL,
+	updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+	PRIMARY KEY (id),
+	UNIQUE (revision_id)
+);
+
+CREATE INDEX ix_vk_g_review_owner_id ON vk_g_review (owner_id);

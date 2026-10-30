@@ -1,5 +1,7 @@
 # 검색 평가 기준선
 
+> 설계 당시의 결정·계획을 보존한 기록입니다. 현재 기본값·설치·지원 범위는 [현재 매뉴얼](../../README.md)을 기준으로 확인하세요. 이 문서의 계획이나 과거 검증은 현재 구현·배포 보장이 아닙니다.
+
 검색 동작/DB 스키마를 바꾸기 전에 인증된 검색 API를 읽기 전용으로 평가한다.
 JSONL 사례는 query, expected(knowledge_id+revision_id), scopes 및 선택적 검색 필터,
 split(dev/test), origin, forbidden을 포함한다. expected가 빈 사례는 무응답 정답이다.

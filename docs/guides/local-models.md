@@ -81,7 +81,7 @@ API와 워커를 분리하면 local 모델을 두 머신에 각각 준비하고 
 
 agent 모드는 Codex·Claude가 추출한다. service 모드에서는 Ollama/Gemma 또는 OpenRouter 등 호환 API를 선택한다. Kev나 임베딩 모델을 대체하지 않는다.
 로컬 예제 태그는 `adb-agent-knowledge-gemma4:e2b`이며 기반 모델은 `config/Gemma4.Modelfile`에
-지정돼 있다. Ollama는 별도 앱/서비스로 실행해야 한다. [전체 설치](local-full-setup.md)
+지정돼 있다. Ollama는 별도 앱/서비스로 실행해야 한다. [선택적 service 모드 설치](local-full-setup.md)
 
 리랭커는 추가 선택 모델이며 기본 비활성이다. [설정과 평가](search-reranking.md)
 각 모델·런타임의 라이선스는 프로젝트 MIT와 별개다. [외부 구성 요소](../../THIRD_PARTY.md)

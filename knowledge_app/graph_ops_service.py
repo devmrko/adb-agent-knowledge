@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, sessionmaker
 
+from knowledge_app.audit_context import audited_uow
 from knowledge_app.graph_contracts import GraphSearch
 from knowledge_app.graph_ops_contracts import GraphExplore, IdentityBind, IdentityResolve, ReviewUpdate
 from knowledge_app.graph_ops_models import GraphIdentity
@@ -56,7 +57,7 @@ class GraphOpsService:
         self.enabled()
         owner = owner_id(actor)
         try:
-            with SqlAlchemyUnitOfWork(self.factory) as uow:
+            with audited_uow(self.factory, actor, "GRAPH_REVIEW", command) as uow:
                 repo = GraphOpsRepository(uow.session)
                 source = repo.source(owner, item_id, str(command.revision_id))
                 if source is None:
@@ -85,7 +86,7 @@ class GraphOpsService:
         self.enabled()
         owner = owner_id(actor)
         try:
-            with SqlAlchemyUnitOfWork(self.factory) as uow:
+            with audited_uow(self.factory, actor, "GRAPH_IDENTITY_BIND", command) as uow:
                 repo = GraphOpsRepository(uow.session)
                 source = repo.source(
                     owner, str(command.evidence.knowledge_id), str(command.evidence.revision_id)

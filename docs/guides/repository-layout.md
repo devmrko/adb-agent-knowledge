@@ -30,14 +30,19 @@
 
 ## 이전 체크아웃에서 업데이트
 
+먼저 로컬 변경을 보존하고 같은 DB를 사용하는 API/worker의 쓰기를 중지한다.
+기존 .env는 유지하며 의존성 및 최신 migration(vk0011 포함)을 적용한다.
+Oracle DDL은 자동 커밋이므로 적용 전 백업·권한·복구 계획을 확인한다.
+
 ```sh
+git pull --ff-only
 ./scripts/setup.sh
+./scripts/run_knowledge.sh --migrate
+# 로컬 Kev도 함께 시작할 때는 --kev 추가
 ```
 
-기존 `.env`는 유지하고 이동한 Foundation 패키지의 editable 경로를 갱신한다.
-실행 중인 API/worker는 다시 시작한다. MCP 실행 스크립트 경로는 유지하므로 등록 변경은 필요 없다.
-마이그레이션 경로가 `knowledge-alembic.ini`에서 `alembic.ini`로 바뀌었다.
-DB 테이블명과 revision ID는 동일하며, 이 폴더 정리만으로 운영 DB migration을 실행할 필요는 없다.
+스킬 사본을 다시 설치하고 MCP를 재연결한다. 실행 경로/등록명을 바꾸면 등록도 갱신한다.
+과거 폴더 이동 자체는 DB를 바꾸지 않았지만, 이후 기능 업데이트의 migration까지 생략한다는 뜻은 아니다.
 
 ## 검사
 

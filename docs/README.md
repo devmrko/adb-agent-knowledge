@@ -25,6 +25,8 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 | MCP 서비스의 LLM API·SDK 인터페이스 | [LLM 호출 구조와 확장](guides/llm-providers.md) |
 | Kev·한국어 임베딩·추출 LLM 이해 | [모델 구성](guides/local-models.md) |
 
+[2026-10-30 문서 점검·migration 검증 범위](reference/documentation-audit.md)
+
 ## 운영하거나 개선하는 분
 
 | 하려는 일 | 문서 |
@@ -41,6 +43,8 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 | Claude 연결 문제 해결 | [Claude 연결](guides/claude-knowledge.md) |
 
 ## 설계 자료
+
+아래 문서는 작성 당시 설계와 검증 기록입니다. 변경된 기본값이나 과거의 미구현 목록을 현재 상태로 해석하지 마세요. 현재 사용 계약은 위 사용·운영 가이드와 소스·migration을 따릅니다.
 
 1. [지식 API](design/0001-knowledge-api/design.md)
 2. [MCP 연결](design/0002-codex-mcp/design.md)

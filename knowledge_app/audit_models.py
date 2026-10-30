@@ -5,7 +5,7 @@ from sqlalchemy import event
 from sqlalchemy.engine import Connection
 from sqlalchemy.orm import Mapped
 
-from knowledge_app import audit_schema_v8
+from knowledge_app import audit_schema_v8, audit_schema_v11
 from knowledge_app.models import Base
 
 _schema = audit_schema_v8.tables(Base.metadata)
@@ -71,3 +71,4 @@ class ChangeReview(Base):
 @event.listens_for(Base.metadata, "after_create")
 def install_audit(target: Any, connection: Connection, **kw: Any) -> None:
     audit_schema_v8.install(connection)
+    audit_schema_v11.install(connection)

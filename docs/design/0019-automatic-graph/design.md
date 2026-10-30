@@ -1,5 +1,7 @@
 # 자동 그래프 연결
 
+> 설계 당시의 결정·계획을 보존한 기록입니다. 현재 기본값·설치·지원 범위는 [현재 매뉴얼](../../README.md)을 기준으로 확인하세요. 이 문서의 계획이나 과거 검증은 현재 구현·배포 보장이 아닙니다.
+
 2026-10-19 사용자 승인. 공통 모델 v1과 원문 버전별 durable 작업을 추가한다. 원문은 증거, 추출 결과는 후보이며 기존 RDF와 원문 이력을 보존한다.
 
 - 모델 v1: project/service/machine/resource/document/task/incident/action/decision. 관계는 uses, depends_on, deployed_on, part_of, affects, addresses, documents, precedes. 주체/대상 유형을 검증한다. 모델 버전과 추출 모델을 작업에 기록한다.

@@ -131,3 +131,23 @@ Configuration: [settings.py](../../knowledge_app/settings.py), [.env.example](..
 This documentation was checked against source on 2026-10-30 and the linked model cards. That check does
 not establish actual deployment state, end-to-end model quality, or fresh-ADB compatibility. Models and
 runtimes retain their own licenses; consult [THIRD_PARTY.md](../../THIRD_PARTY.md).
+
+## Browser authentication and upgrades
+
+Local development can use loopback-only automatic Bearer connection. Manually entered Bearer tokens
+remain in page memory. With WEB_PUBLIC_ORIGIN configured, the HTTPS notes UI exchanges a dedicated
+key at /knowledge/session for a Secure, HttpOnly, SameSite=Strict cookie. The raw key is not stored in
+localStorage/sessionStorage. Server-side sessions store the session ID hash, expire after the configured
+WEB_SESSION_TTL_SECONDS (default seven days), and are removed on logout. Mutations require Origin/CSRF
+checks. This dedicated key maps to one configured actor; it is not multi-user JWT authentication.
+Graph date inputs use browser local time and are converted to UTC for the API.
+
+Stop all writers before applying updates. Run setup.sh, apply the latest Alembic migrations (including
+vk0011), restart API/workers at matching versions, reinstall copied skills and reconnect MCP. For RDF
+initialization use scripts.prepare_knowledge_rdf; do not blindly rerun setup_workflow_rdf on an existing
+namespace. Property Graph setup remains separate and optional. Oracle DDL auto-commits.
+
+Service-mode extraction currently uses the operations-v3 schema; this is distinct from product v2.
+States include PARTIAL as well as DONE: neither means all proposed relationships were published.
+Policies are review (default), auto_existing and auto_verified. Agent mode requires an agent follow-up;
+source READY alone does not create relationships or complete the review ledger.

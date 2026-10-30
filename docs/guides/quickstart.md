@@ -49,7 +49,7 @@ ORACLE_DSN=your_database_low
 기본 agent 모드에는 Kev와 임베딩 모델이 필요하며 별도 생성형 모델 설치는 필요하지 않다.
 임베딩은 API·워커 머신에서 실행하고 Oracle은 벡터 저장·검색을 담당한다.
 [모델 실행 위치](local-models.md)와 [RDF·Property Graph 초기화](oracle-graph-examples.md)를 참고한다.
-무인 관계 추출을 위한 선택적 service 모드의 Gemma 구성은 [전체 설치 가이드](local-full-setup.md)를 따른다.
+무인 관계 추출을 위한 선택적 service 모드의 Gemma 구성은 [선택적 service 모드 설치](local-full-setup.md)를 따른다.
 
 ## 다음 단계
 

@@ -4,14 +4,16 @@
 
 ## 설치와 업그레이드
 
-Oracle 사용자는 기존 .env 접속 설정을 사용한다. 최초 RDF 설치는 `./uvw run --no-sync python -m scripts.setup_workflow_rdf`로 VK_FLOW_RDF 네트워크를 생성한다. 이미 설치된 네트워크에서는 이 명령을 반복하지 않는다.
-
-공통 그래프 설치: `./uvw run --no-sync alembic upgrade head` 후 `./uvw run --no-sync python -m scripts.setup_shared_rdf`. 후자는 같은 네트워크 안에 VK_SHARED를 추가하며 유효한 모델이 있으면 그대로 둔다. WORKFLOW_RDF_ENABLED=true 설정 후 서비스를 재시작한다. DDL은 자동 커밋이므로 중간 실패 시 객체 상태를 먼저 확인한다. 기존 VK_FLOW 및 원문 데이터는 보존한다. SQLite는 동작 테스트용이며 네이티브 RDF를 제공하지 않는다.
+Oracle 사용자는 기존 .env 접속 설정을 사용한다. API·워커의 쓰기를 중지하고
+`./uvw run --no-sync alembic upgrade head` 후
+`./uvw run --no-sync python -m scripts.prepare_knowledge_rdf`를 실행한다.
+이 진입점은 VK_FLOW_RDF와 VK_FLOW/VK_SHARED/VK_NAV를 준비하며 정상적인 기존 객체는 유지한다.
+일부만 초기화된 namespace는 자동 교체하지 않고 중단한다. WORKFLOW_RDF_ENABLED=true 설정 후 서비스를 재시작한다. DDL은 자동 커밋이므로 중간 실패 시 객체 상태를 먼저 확인한다. 기존 VK_FLOW 및 원문 데이터는 보존한다. SQLite는 동작 테스트용이며 네이티브 RDF를 제공하지 않는다.
 
 ## 에이전트 저장 순서
 
 1. 원문 READY 확인 → 정확한 버전 읽기 → Kev graph_extract 또는 작업 맥락으로 관계 추출 필요성 판단.
-2. `knowledge_graph_entities(query, scope)`로 기존 개체를 찾고 동일성을 확인한다. 없으면 `knowledge_graph_entity(entity)`로 명시적 identity_key, label, scope를 저장한다. 이름이 같다는 이유로 자동 병합하지 않는다.
+2. `knowledge_graph_resolve`로 근거 있는 식별자와 이름 힌트를 구분하고 `knowledge_graph_entities(query, scope)`로 기존 개체를 확인한다. 없으면 `knowledge_graph_entity(entity)`로 명시적 identity_key, label, scope를 저장한다. 이름이 같다는 이유로 자동 병합하지 않는다.
 3. `knowledge_graph_search(search={entity_ids:[...],scopes:[...]})`로 기존 관계 확인.
 4. `knowledge_graph_assert(assertion)`에 정확한 원문 인용과 확인한 관계를 제출한다. 같은 주어/술어/목적어/조건/기간은 기존 assertion에 근거를 보완하고 recorded 이력 버전을 추가한다. 동일 재요청은 변경하지 않는다.
 5. 정정은 `knowledge_graph_history`를 읽고 `knowledge_graph_revise`에 latest expected_version_id 및 전체 수정본을 제출한다. 충돌 시 다시 읽는다. 폐기/복원은 사용자 요청 때만 수행한다.
@@ -32,6 +34,8 @@ Oracle 사용자는 기존 .env 접속 설정을 사용한다. 최초 RDF 설치
 
 위 UUID는 실제 API 반환값으로 바꾼다. 날짜가 없다면 UNKNOWN으로 두고 valid_from/to를 생략한다. TIMELESS도 명시적 근거가 필요하다. user_asserted=true는 사용자가 실제로 말한 기간만 허용한다. 서버는 인용 일치를 검증하지만 자연어 의미나 날짜 해석의 진위는 추출자가 검증해야 한다.
 
+원문별 PENDING → REVIEWING → COMPLETE/FAILED 기록은 [개체 식별·검토 안내](graph-identity-review.md)를 따른다. prepare나 관계 한 건의 저장만으로 검토가 자동 완료되지 않는다.
+
 ## 검색과 프로젝트 연결
 
 HTTP는 인증 Bearer 토큰을 사용한다. 공통 경로는 `/api/v1/graph/entities` GET/POST, `/assertions` POST, `/assertions/{id}` PUT, `/assertions/{id}/history` GET, `/search` POST이다. 전체 스키마는 실행 중인 `/docs`에서 확인한다.
@@ -48,7 +52,7 @@ valid_at은 실제 업무 시점, known_at은 당시 저장소가 알고 있던 
 
 ## 노트 화면
 
-상단 ‘관련 그래프’는 검색어에 연결된 공통 그래프를 보여준다. 노트의 ‘연결된 지식’은 그 노트의 근거에서 시작해 연결된 관계를 보여준다. 업무 기준일과 당시 기록 기준은 **UTC** 입력이다. 프로젝트 범위는 쉼표로 복수 입력한다. 비워 두면 기존 검색 범위를 따르며 둘 다 없으면 내 전체 지식이다. 관계 버튼을 누르면 기간과 정확한 원문 버전/인용을 확인한다. 원문 탭은 코드 형식·자동 줄바꿈·사용자 편집을 유지한다.
+상단 ‘관련 그래프’는 검색어에 연결된 공통 그래프를 보여준다. 노트의 ‘연결된 지식’은 그 노트의 근거에서 시작해 연결된 관계를 보여준다. 업무 기준일과 당시 기록 기준은 **브라우저 로컬 시간대**로 입력하고 API 전송 시 UTC로 변환한다. 노트를 열면 현재 시점·해당 노트 범위가 기본이며 ‘조회 조건 변경’에서 바꿀 수 있다. 프로젝트 범위는 쉼표로 복수 입력한다. 비워 두면 기존 검색 범위를 따르며 둘 다 없으면 내 전체 지식이다. 관계 버튼을 누르면 기간과 정확한 원문 버전/인용을 확인한다. 원문 탭은 코드 형식·자동 줄바꿈·사용자 편집을 유지한다.
 
 ## 보존과 한계
 

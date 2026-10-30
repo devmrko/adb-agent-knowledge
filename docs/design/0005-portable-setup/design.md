@@ -1,5 +1,7 @@
 # Portable repository and agent skill
 
+> 설계 당시의 결정·계획을 보존한 기록입니다. 현재 기본값·설치·지원 범위는 [현재 매뉴얼](../../README.md)을 기준으로 확인하세요. 이 문서의 계획이나 과거 검증은 현재 구현·배포 보장이 아닙니다.
+
 Clone → scripts/setup.sh → fill .env and unpack Wallet → scripts/run_knowledge.sh --migrate.
 Setup installs locked knowledge/MCP dependencies and generates a local API token only for a new .env.
 Existing .env is never overwritten. Config paths resolve from the repository; wallet/DSN have no personal defaults.

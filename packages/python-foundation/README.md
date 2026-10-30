@@ -1,6 +1,6 @@
 # Python Foundation · 내부 의존 패키지
 
-Vector Knowledge가 사용하는 공통 인증·DB·웹 계층이다. 서비스 사용자는 이 디렉터리를 직접 실행할 필요가 없다.
+adb-agent-knowledge가 사용하는 공통 인증·DB·웹 계층이다. 서비스 사용자는 이 디렉터리를 직접 실행할 필요가 없다.
 루트 `./scripts/setup.sh`가 uv workspace를 통해 함께 설치한다.
 
 - `src/python_foundation/`: 공통 라이브러리. import 이름과 wheel 이름은 유지한다.

@@ -258,7 +258,9 @@ cd adb-agent-knowledge
 ./scripts/run_knowledge.sh --migrate --kev
 ```
 
-`--migrate`가 원문·청크·벡터·버전·관계 기준 데이터·이력 등의 테이블을 준비한 뒤 API와 워커를
+새 DB와 기존 DB 모두 migration으로 이력 테이블·감사 트리거를 준비합니다. vk0008 기본 감사와 vk0011 그래프 감사 확장을 포함하며 CREATE TRIGGER 권한이 필요합니다.
+
+`--migrate`가 원문·청크·벡터·버전·관계 기준 데이터·이력 테이블과 감사 트리거을 준비한 뒤 API와 워커를
 시작합니다. RDF 네트워크와 SQL Property Graph는 이 옵션으로 생성되지 않습니다.
 이후에는 `./scripts/run_knowledge.sh --kev`로 실행합니다. 원격 또는 이미 실행 중인 Kev를
 사용한다면 `setup_kev.sh`와 `--kev`를 생략합니다. 기존 DB의 DDL은 자동 커밋되므로 적용 내용을 확인하세요.
@@ -307,7 +309,7 @@ Graph 생성 권한이 필요합니다. 비활성 상태에서는 기존 관계�
 
 `knowledge_graph_reviews`로 기존 지식까지 미완료 목록을 찾고 REVIEWING → COMPLETE/FAILED를
 기록합니다. 관계가 없다는 결론도 전체 원문을 확인한 뒤 NONE으로 기록하며 Kev skip과 구분합니다.
-`vk0010` migration이 필요합니다. [개체 식별·검토 흐름](docs/guides/graph-identity-review.md).
+`vk0010`에서 테이블이 추가됐으며, `vk0011`에서 해당 테이블의 감사 트리거와 이력 수정·삭제 방지가 추가됩니다. 최신 migration을 적용하세요. [개체 식별·검토 흐름](docs/guides/graph-identity-review.md).
 
 ## RDF와 SQL Property Graph를 어떻게 쓰나
 
@@ -413,6 +415,8 @@ AGENTS.md·CLAUDE.md는 개발 에이전트 지침이며 지식 데이터 사본
 
 실행 경로 호환성을 위해 `scripts/`는 유지하되 [명령 용도별 안내](scripts/README.md)로 구분합니다.
 [개발 구조와 검증 명령 →](docs/guides/repository-layout.md)
+
+[문서 점검·migration 검증 범위](docs/reference/documentation-audit.md)
 
 ## 현재 범위
 

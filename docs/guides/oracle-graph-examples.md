@@ -210,5 +210,5 @@ WHERE target_id = :foundation_entity_id;
 ## 검증 범위
 
 데모 재실행, 두 단계 경로, 별칭 해결, 원문 갱신에 따른 근거 무효화·이력은 SQLite 자동 테스트로
-검증한다. 새 vk0010의 Oracle DDL은 컴파일 검증한다. 새 ADB 실행 검증과는 다르다.
+검증한다. vk0010 테이블은 SQLAlchemy Oracle dialect로 DDL을 생성해 검사한다. vk0011 트리거 SQL과 컴파일 오류 처리 경로도 검사하지만, 실제 Oracle에서 컴파일·실행한 검증과는 다르다.
 실환경에서는 버전·권한·migration과 위 스크립트 실행 결과를 따로 확인해야 한다.

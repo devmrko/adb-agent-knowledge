@@ -29,7 +29,7 @@ def test_additive_migration_preserves_existing_source(tmp_path, monkeypatch):
         item_id = item.id
     command.upgrade(config, "head")
     with engine.connect() as con:
-        assert con.scalar(text("select version_num from vk_alembic_version")) == "vk0010"
+        assert con.scalar(text("select version_num from vk_alembic_version")) == "vk0011"
         row = con.execute(
             text("select memory_kind, scope, lifecycle_status from vk_item where id=:id"), dict(id=item_id)
         ).one()

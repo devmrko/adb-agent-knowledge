@@ -33,7 +33,7 @@ Oracle 정확 cosine 검색 상위 100개와 단순 키워드 포함 검색 상�
 RRF score는 관련성 확률이 아니다. min_similarity(기본 SEARCH_MIN_SIMILARITY=0.28)보다 낮고 모든 질의어 일치도 아닌 청크는 제외한다. 0.28은 잠정값이며 실제 데이터로 보정해야 한다.
 
 ## 모델과 A10
-모델 revision은 40자리 commit SHA로 고정한다. 변경 시 profile이 달라지므로 기존 데이터 재처리가 필요하다.
+local 임베딩 모델 revision은 40자리 commit SHA로 고정한다. 원격 제공자는 고정 버전 문자열과 동일한 모델·전처리를 운영자가 보장해야 한다. 변경 시 profile이 달라지므로 기존 데이터 재처리가 필요하다.
 현재 Oracle DDL은 1024차원 전용. 차원이 다른 모델은 별도 마이그레이션이 필요하다.
 개발은 EMBEDDING_DEVICE=cpu. MPS와 CUDA는 같은 설정 인터페이스지만 아직 별도 실측이 필요하다.
 A10에서는 EMBEDDING_DEVICE=cuda로 설정하고 NVIDIA 드라이버/PyTorch CUDA 호환성을 검증한다.

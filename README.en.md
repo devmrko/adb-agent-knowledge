@@ -119,7 +119,9 @@ revision from `.env.example`. Never commit credentials or Wallet files.
 ```
 
 Omit `--kev` when using an already-running or remote Kev service. Migrations create/upgrade application
-tables, not the database or RDF network. Oracle DDL commits implicitly: back up and review upgrades on
+tables **and audit triggers**, not the database or RDF network. vk0008 initializes core history/audit;
+vk0011 adds graph extraction, proposal, identity, review and operation auditing plus append-only operation
+history protection. New and existing schemas use the same migration command; CREATE TRIGGER is required. Oracle DDL commits implicitly: back up and review upgrades on
 existing databases, and stop incompatible writers while applying them.
 
 - Notes: http://127.0.0.1:8000/knowledge
@@ -187,3 +189,5 @@ impact. Arbitrary SPARQL and ontology inference are not implemented.
 Tests using SQLite validate application behavior, not native Oracle RDF execution or model quality.
 Source availability and configured providers must be checked in each deployment. Models and runtime licenses
 are separate from the [MIT project license](LICENSE).
+
+[Documentation audit and migration validation](docs/reference/documentation-audit.md).

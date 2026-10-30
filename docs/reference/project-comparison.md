@@ -1,5 +1,7 @@
 # Agent memory architecture comparison
 
+> Historical, dated evidence: this record does not certify the current deployment or repeat earlier live tests. See [current documentation](../README.md).
+
 Reviewed 2026-10-29 against official project READMEs. This is an architecture review,
 not a controlled performance benchmark. These projects change rapidly.
 

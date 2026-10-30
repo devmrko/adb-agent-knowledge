@@ -1,5 +1,7 @@
 # Portable providers and public onboarding
 
+> 설계 당시의 결정·계획을 보존한 기록입니다. 현재 기본값·설치·지원 범위는 [현재 매뉴얼](../../README.md)을 기준으로 확인하세요. 이 문서의 계획이나 과거 검증은 현재 구현·배포 보장이 아닙니다.
+
 2026-10-29. User-approved direction: MIT application, Oracle ADB, no mandatory Docker,
 Kev as the default decision layer, selectable local/remote inference.
 

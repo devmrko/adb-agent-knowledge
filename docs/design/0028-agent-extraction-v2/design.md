@@ -1,5 +1,7 @@
 # v2: agent-led extraction, Kev retained
 
+> 설계 당시의 결정·계획을 보존한 기록입니다. 현재 기본값·설치·지원 범위는 [현재 매뉴얼](../../README.md)을 기준으로 확인하세요. 이 문서의 계획이나 과거 검증은 현재 구현·배포 보장이 아닙니다.
+
 User approved preserving prior public code as v1 and reducing separate LLM installation/operation
 in v2. Tag v1 points to 29fb86c. Main becomes v2 preview (package 0.2.0); no running deployment changed.
 
