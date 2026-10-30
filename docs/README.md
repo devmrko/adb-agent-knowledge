@@ -12,7 +12,7 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 | v2 기본 구성·v1 전환·Kev 역할 | [에이전트 추출](guides/v2-agent-extraction.md) |
 | 구성 선택과 Oracle 필수 조건 | [설치·모델 선택](guides/portable-setup.md) |
 | 저장·조회 아키텍처 이해하기 | [저장·조회 흐름](guides/storage-retrieval-flow.md) |
-| OpenRouter 없이 전체 기능 준비 | [Oracle·Kev·로컬 Gemma 설치](guides/local-full-setup.md) |
+| 선택적 service 모드: OpenRouter 없이 무인 관계 추출 | [Oracle·Kev·로컬 Gemma 설치](guides/local-full-setup.md) |
 | 설치하고 실행하기 | [빠른 시작](guides/quickstart.md) |
 | 브라우저에서 검색하기 | [검색 화면](guides/search-ui.md) |
 | 다른 머신의 메모리 정책 적용 | [여러 머신 설정](guides/multi-machine-memory.md) |

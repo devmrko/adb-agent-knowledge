@@ -5,6 +5,9 @@
 This guide describes the application code, not a promise that every model is installed on a particular
 server. A configured model name does not identify the machine where inference takes place.
 
+**Default v2 models: Kev for decisions, an embedding model for vectors, and your existing Codex/Claude
+model for relationship extraction.** Gemma is an optional service-mode example, not a required v2 model.
+
 ## Execution boundaries
 
 | Function | Process | Model or database work |

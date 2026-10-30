@@ -74,11 +74,20 @@ when switching to agent mode, but are not processed there. HTTP paths remain `/a
 
 ## Models
 
-| Role | Default or example | Settings |
+**The v2 default is Kev + an embedding model + the Codex/Claude model you already use.** No separate
+generative model installation is required for agent-led relationship extraction.
+
+| Role | Model and settings | Where it runs and what it does |
 |---|---|---|
-| Decision routing | `jaredpalmer/kev-4b` | `KEV_RUN`, `KEV_URL`; API alias `KEV_MODEL=kev-latest` |
-| Korean/English embeddings | `dragonkue/snowflake-arctic-embed-l-v2.0-ko` | `EMBEDDING_MODEL`, pinned `EMBEDDING_REVISION` |
-| Service-mode generation | User-selected; local example uses Gemma | `GRAPH_AUTO_PROVIDER`, `GRAPH_AUTO_URL`, `GRAPH_AUTO_MODEL` |
+| Lookup, capture and navigation decisions | `jaredpalmer/kev-4b`; `KEV_RUN` / `KEV_URL` | Separate Kev service scores choices |
+| Document and query embeddings | `dragonkue/snowflake-arctic-embed-l-v2.0-ko`; `EMBEDDING_MODEL` | API/ingestion worker hosts by default, or a remote embedding endpoint; produces 1024-dimensional vectors |
+| **Relationship extraction — default agent mode** | **Your Codex/Claude model**; `GRAPH_EXTRACTION_MODE=agent` | **The calling agent reads sources, extracts relationships and submits them through MCP for validation/storage** |
+
+Oracle stores and compares the generated vectors; the embedding model itself does not execute database searches.
+
+**Optional service mode:** only for extraction without an agent, set `GRAPH_EXTRACTION_MODE=service` and
+`GRAPH_AUTO_ENABLED=true`. The graph worker then calls a separate model endpoint using `GRAPH_AUTO_MODEL`.
+Gemma 4 E2B is an installation example for this mode, not a default or required v2 model.
 
 The database currently requires **1024-dimensional** embeddings. Local defaults are CPU, 384-token chunks,
 48-token overlap, and the model's query prompt. API and worker must use matching embedding profiles.

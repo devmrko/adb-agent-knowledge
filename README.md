@@ -207,11 +207,19 @@ MCP 어댑터는 도구 호출을 API로 전달합니다. MCP와 API는 같은 �
 
 ## 기본 모델과 선택 방법
 
-| 역할 | 기본 모델 · 설정 | 하는 일 |
+**v2 기본 구성은 Kev + 임베딩 모델 + 사용 중인 Codex·Claude입니다.** 관계 추출을 위한 별도 생성형 모델 설치는 필요하지 않습니다.
+
+| 역할 | 모델 · 설정 | 실행 위치와 처리 |
 |---|---|---|
-| 의사결정 | `jaredpalmer/kev-4b` · `KEV_RUN` | 짧은 요청·맥락과 질문을 받아 조회·저장·탐색 선택지에 점수를 반환 |
-| 한국어 벡터 검색 | `dragonkue/snowflake-arctic-embed-l-v2.0-ko` · `EMBEDDING_MODEL` | 문서 청크와 질의를 1024차원 벡터로 변환 |
-| 서비스 모드 관계 추출 | 사용자가 선택. 로컬 예제는 Gemma 4 E2B · `GRAPH_AUTO_MODEL` | 원문에서 개체·관계 후보를 추출하고 의미 검토 |
+| 조회·저장·탐색 판단 | `jaredpalmer/kev-4b` · `KEV_RUN` / `KEV_URL` | 별도 Kev 서비스가 선택지에 점수 반환 |
+| 문서·질의 임베딩 | `dragonkue/snowflake-arctic-embed-l-v2.0-ko` · `EMBEDDING_MODEL` | 기본은 API·임베딩 워커 머신에서 1024차원 벡터 생성. 원격 임베딩 endpoint 선택 가능 |
+| **관계 추출 — v2 기본 agent 모드** | **사용 중인 Codex·Claude 모델** · `GRAPH_EXTRACTION_MODE=agent` | **호출하는 에이전트가 원문을 읽고 관계 추출 → MCP로 검증·저장 요청** |
+
+Oracle DB는 생성된 벡터를 저장하고 비교·검색합니다. 임베딩 모델 자체가 DB 검색을 수행하는 것은 아닙니다.
+
+**선택적 service 모드:** 에이전트 없이 관계를 추출하려는 경우에만 `GRAPH_EXTRACTION_MODE=service`와
+`GRAPH_AUTO_ENABLED=true`를 설정합니다. 이때 그래프 워커가 `GRAPH_AUTO_MODEL`로 지정한 별도 모델
+endpoint를 호출합니다. Gemma 4 E2B는 이 모드의 설치 예제이며 v2 기본 모델이나 필수 구성은 아닙니다.
 
 **Kev:** Qwen3.5-4B-Base 기반 LoRA·판단 헤드 모델입니다. 이 서비스는 `/v1/systemone`의
 `noul` 점수를 사용하며 Kev가 긴 답변을 생성하지 않습니다. `KEV_MODEL=kev-latest`는 API 요청의
@@ -276,12 +284,12 @@ cd adb-agent-knowledge
 성공 후 `.env`에 `PROPERTY_GRAPH_ENABLED=true`를 설정합니다. Oracle 기능 지원과 View·Property
 Graph 생성 권한이 필요합니다. 비활성 상태에서는 기존 관계형 테이블 탐색을 사용합니다.
 
-### 4. 자동 관계 추출용 LLM 연결
+### 4. 선택 사항: service 모드의 별도 LLM 연결
 
 [Ollama/Gemma 설치](docs/guides/local-full-setup.md) 또는 [호환 API 설정](docs/guides/automatic-graph.md)을
 따라 모델을 준비하고 `GRAPH_EXTRACTION_MODE=service`, `GRAPH_AUTO_ENABLED=true`로 활성화합니다. Ollama는 앱 실행 스크립트가
 대신 실행하지 않습니다. 로컬 프로필은 `review` 정책으로 시작하며 자동 반영이 필요하면 검증 후
-정책을 변경합니다. 그래프를 수동으로 등록·조회하는 데 이 추출용 LLM은 필수가 아닙니다.
+정책을 변경합니다. v2 기본 agent 모드는 이 단계를 건너뜁니다. 관계 추출은 Codex·Claude가 수행합니다.
 
 설정을 마친 뒤 서비스를 다시 시작합니다. 모델·그래프 초기화까지 한 번에 수행하는 통합 설치 명령은
 아직 없으며, [새 ADB 검증 범위](docs/reference/public-release-validation.md)를 확인하세요.

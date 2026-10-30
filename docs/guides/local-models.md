@@ -10,6 +10,16 @@ Kev·임베딩·관계 추출의 역할은 서로 다르다. v2 기본 agent 모
 추출한다. service 모드에서만 별도 그래프 워커가 LLM 인터페이스를 호출한다. Oracle DB 내부에서
 이 생성 모델을 실행하는 구성은 아니다. [LLM 호출 구조](llm-providers.md)를 참고한다.
 
+## v2 기본 구성
+
+| 역할 | 모델 | 실행 위치 |
+|---|---|---|
+| 판단 | Kev-4B | 별도 Kev 서비스 |
+| 문서·질의 임베딩 | 한국어 Snowflake 임베딩 모델 | API·워커 머신 또는 원격 임베딩 endpoint |
+| 관계 추출 | 사용 중인 Codex·Claude 모델 | 호출하는 에이전트 |
+
+Oracle은 벡터 저장·비교·검색을 담당한다. Gemma 설치는 아래 선택적 service 모드에만 해당한다.
+
 ## Kev — 의사결정
 
 기본 실행 모델 `jaredpalmer/kev-4b`는 Qwen3.5-4B-Base 기반 LoRA와 판단 헤드를 사용한다.
