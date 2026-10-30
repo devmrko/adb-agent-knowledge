@@ -9,8 +9,10 @@ Database: source documents, vectors, shared relationships, evidence, and revisio
 Connect Codex or Claude through MCP, or use the notes web interface. Docker is not required.
 
 **Status: v2 preview.** Oracle ADB is the intended production database; SQLite is a test backend,
-not a supported production replacement. A complete installation on a fresh ADB with real models
-has not yet been validated. MIT covers this project's code, not every model or dependency.
+not a supported production replacement. A fresh isolated schema in an existing ADB has passed migrations,
+audit/RDF/Property Graph setup and real embedding retrieval. This does not certify new ADB provisioning
+or all operating systems. [Live validation](docs/reference/oracle-installation-validation.md).
+MIT covers this project's code, not every model or dependency.
 
 ## Where models run
 
@@ -191,3 +193,28 @@ Source availability and configured providers must be checked in each deployment.
 are separate from the [MIT project license](LICENSE).
 
 [Documentation audit and migration validation](docs/reference/documentation-audit.md).
+
+## Runtime installation and OS boundaries
+
+Run `./scripts/setup.sh --with-models --verify-models` to install the locked API environment, separately
+pinned Kev runtime, and test actual embedding/Kev inference. Existing .env is preserved. Model weights
+may download; checks run sequentially and stop the temporary Kev process. `--plan` prints commands only.
+Without these flags, setup installs the API environment without claiming model inference was tested.
+
+The installer supports macOS/Linux entrypoints, including Linux inside WSL. Apple Silicon Kev uses MLX;
+Linux NVIDIA uses compatible PyTorch/CUDA. Native Windows POSIX launchers are not supported; use WSL or
+remote services. Intel Mac, Linux CPU/ARM, AMD/ROCm and WSL model execution remain unverified combinations.
+Upstream PyTorch portability is not an end-to-end application guarantee. GPU drivers are not installed.
+
+The repository initializes tables, revision/history data and audit triggers through Alembic, with separate
+shipped RDF/Property Graph initialization commands. For an isolated account, use:
+
+```sh
+./.venv/bin/python -m scripts.validate_oracle_installation \
+  --env-file .run/oracle-test.env --expected-schema AK_TEST_01 --apply --graphs --models
+```
+
+ADMIN/SYS/SYSTEM are rejected. Supply your own private configuration and explicit expected schema.
+This invokes shipped setup code, then checks Oracle triggers/rollback and a synthetic source/graph using
+configured embeddings. Synthetic test notes persist; it does not delete existing data. This is not a
+production JWT/HTTPS or Kev benchmark. [Detailed guide](docs/guides/runtime-installation.md).

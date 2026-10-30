@@ -13,6 +13,7 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 | 구성 선택과 Oracle 필수 조건 | [설치·모델 선택](guides/portable-setup.md) |
 | 저장·조회 아키텍처 이해하기 | [저장·조회 흐름](guides/storage-retrieval-flow.md) |
 | 선택적 service 모드: OpenRouter 없이 무인 관계 추출 | [Oracle·Kev·로컬 Gemma 설치](guides/local-full-setup.md) |
+| OS·모델 통합 설치·Oracle 검증 | [설치와 검증](guides/runtime-installation.md) |
 | 설치하고 실행하기 | [빠른 시작](guides/quickstart.md) |
 | 브라우저에서 검색하기 | [검색 화면](guides/search-ui.md) |
 | 다른 머신의 메모리 정책 적용 | [여러 머신 설정](guides/multi-machine-memory.md) |
@@ -37,6 +38,7 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 | 리랭커 비교 실험 | [리랭커](guides/search-reranking.md) |
 | 설치·운영·평가 명령 찾기 | [스크립트 안내](../scripts/README.md) |
 | 폴더 구조·테스트·패키징 확인 | [저장소 구조](guides/repository-layout.md) |
+| 실제 Oracle·설치 스크립트 검증 | [2026-10-30 실검증](reference/oracle-installation-validation.md) |
 | 공개 preview 검증과 남은 범위 | [공개 검증 결과](reference/public-release-validation.md) |
 | 과거 검색 실측 기록 | [검색 실측](reference/knowledge-validation.md) |
 | Codex 연결 문제 해결 | [Codex 연결](guides/codex-knowledge.md) |

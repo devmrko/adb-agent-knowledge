@@ -5,6 +5,8 @@
 
 | 용도 | 진입점 | 실행 효과 |
 |---|---|---|
+| 모델 통합 설치·점검 | `./scripts/setup.sh --with-models --verify-models` | API/별도 Kev 환경 설치와 실제 모델 추론 점검 |
+| 분리 Oracle 검증 | `python -m scripts.validate_oracle_installation --help` | 명시적 테스트 계정에서 저장소 migration/그래프/감사 검증 |
 | 최초 설치 | `./scripts/setup.sh` | 잠긴 의존성 설치, 없을 때만 개인 `.env` 생성 |
 | 서비스 실행 | `./scripts/run_knowledge.sh --migrate --kev` | 선택적으로 테이블 migration·Kev 실행, API/워커 관리 |
 | 에이전트 연결 | `python scripts/install_agent.py codex --register-mcp` | 선택한 이름으로 MCP 등록, 공통 스킬 설치 |

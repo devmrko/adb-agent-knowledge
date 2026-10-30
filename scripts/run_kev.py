@@ -20,8 +20,23 @@ url = urlsplit(os.environ.get("KEV_URL") or values.get("KEV_URL") or "http://127
 if url.scheme != "http" or url.hostname not in {"127.0.0.1", "localhost", "::1"}:
     raise SystemExit("KEV_URL must be local loopback HTTP")
 run = os.environ.get("KEV_RUN") or values.get("KEV_RUN") or "jaredpalmer/kev-4b"
+device = os.environ.get("KEV_DEVICE") or values.get("KEV_DEVICE") or "auto"
+if device not in {"auto", "cpu", "cuda", "mps"}:
+    raise SystemExit("KEV_DEVICE must be auto/cpu/cuda/mps")
 os.chdir(repo)
 os.execv(
     str(python),
-    [str(python), "-m", "kev.serve", "--run", run, "--host", url.hostname, "--port", str(url.port or 80)],
+    [
+        str(python),
+        "-m",
+        "kev.serve",
+        "--run",
+        run,
+        "--device",
+        device,
+        "--host",
+        url.hostname,
+        "--port",
+        str(url.port or 80),
+    ],
 )

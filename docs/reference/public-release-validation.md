@@ -66,3 +66,7 @@ Foundation 런타임 smoke, wheel 빌드와 독립 설치 검증을 모두 통�
 기존 서비스 작업 보존·재개와 MCP Kev 연동 테스트를 추가했다. ruff, mypy, 전체 pytest,
 Foundation wheel 독립 설치 검증과 웹 JavaScript 문법 검사를 수행했다.
 실제 새 Oracle ADB나 모델 품질/속도를 추가 검증한 것은 아니다. 운영 서비스는 변경하지 않았다.
+
+## Subsequent live validation
+
+The later [2026-10-30 Oracle and runtime validation](oracle-installation-validation.md) executes isolated Oracle setup and actual model probes. Earlier unverified statements above describe the earlier check, not the result of this follow-up.

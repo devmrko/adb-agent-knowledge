@@ -12,9 +12,11 @@ Kev가 조회·저장과 검색 경로를 판단합니다. 모델은 로컬 또�
 
 **필수 저장소: Oracle Autonomous Database.** 현재 Oracle 벡터·RDF·SQL Property Graph에 맞춘 구현이며 다른 DB로 교체하는 어댑터는 제공하지 않습니다. SQLite는 테스트용입니다.
 
-**릴리스 상태: v2 preview (0.2.0).** 새 Oracle ADB의 전체 설치 검증은 아직 완료하지 않았습니다.
+**릴리스 상태: v2 preview (0.2.0).** 기존 테스트 ADB의 빈 스키마에서 migration·감사 트리거·RDF·Property Graph·실제 임베딩 검색을 검증했습니다. 새 ADB 서비스 생성과 모든 OS 지원을 보장하지는 않습니다. [실검증 범위](docs/reference/oracle-installation-validation.md).
 
-**새 사용자:** [설치 구성과 모델 선택](docs/guides/portable-setup.md)부터 확인하세요.
+****모델까지 설치·점검:** `./scripts/setup.sh --with-models --verify-models`. [OS 지원·설치 옵션·테스트 DB 검증](docs/guides/runtime-installation.md).
+
+새 사용자:** [설치 구성과 모델 선택](docs/guides/portable-setup.md)부터 확인하세요.
 
 [시작하기](docs/guides/quickstart.md) · [검색 화면](docs/guides/search-ui.md) · [Codex / Claude 연결](docs/guides/agent-installation.md) · [다른 머신에 적용](docs/guides/multi-machine-memory.md) · [전체 문서](docs/README.md)
 
@@ -293,8 +295,7 @@ Graph 생성 권한이 필요합니다. 비활성 상태에서는 기존 관계�
 대신 실행하지 않습니다. 로컬 프로필은 `review` 정책으로 시작하며 자동 반영이 필요하면 검증 후
 정책을 변경합니다. v2 기본 agent 모드는 이 단계를 건너뜁니다. 관계 추출은 Codex·Claude가 수행합니다.
 
-설정을 마친 뒤 서비스를 다시 시작합니다. 모델·그래프 초기화까지 한 번에 수행하는 통합 설치 명령은
-아직 없으며, [새 ADB 검증 범위](docs/reference/public-release-validation.md)를 확인하세요.
+설정을 마친 뒤 서비스를 다시 시작합니다. API·Kev 설치와 모델 점검은 `setup.sh --with-models --verify-models`로 묶어 실행합니다. DB/계정·Wallet 준비는 별도이며, 앱 객체는 위 migration·그래프 초기화 도구가 생성합니다. [실제 Oracle 검증 결과](docs/reference/oracle-installation-validation.md)를 확인하세요.
 
 **검색 화면:** http://127.0.0.1:8000/knowledge · **API 문서:** http://127.0.0.1:8000/docs
 

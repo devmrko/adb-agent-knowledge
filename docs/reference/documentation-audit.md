@@ -77,3 +77,7 @@ cover fresh and incremental SQLite migrations, preservation, snapshots, rollback
 actor attribution and owner isolation. Oracle SQL/error handling checks are not live Oracle compilation.
 No production deployment or fresh-ADB/model/browser validation is claimed. See the linked current guides
 for setup; the remaining detailed historical documents are primarily Korean.
+
+## Subsequent live validation
+
+The later [2026-10-30 Oracle and runtime validation](oracle-installation-validation.md) executes isolated Oracle setup and actual model probes. Earlier unverified statements above describe the earlier check, not the result of this follow-up.
