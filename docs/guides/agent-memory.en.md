@@ -33,3 +33,10 @@ The application currently requires 1024 dimensions and has no automatic re-embed
 Implementation: [SDK adapter](../../knowledge_app/agent_memory_repository.py),
 [embedding provider](../../knowledge_app/embedding.py), [settings](../../knowledge_app/settings.py).
 For setup, tools and limits, see [the detailed guide](agent-memory.md).
+
+
+## Title correction and readable relationships
+
+memory_rename corrects title metadata only, with memory_id, expected_title, title and reason. It preserves SDK content, embeddings, relationships and validity. Ownership is checked; conflicting titles return a conflict. The last 20 title changes are kept in metadata, not as full content revisions. Same-target retries are idempotent.
+
+The read-only web shows full wrapping titles in relationship cards. Expand the numbered overview for topology and SDK details for raw relation/state values. This does not change Oracle SDK semantics.

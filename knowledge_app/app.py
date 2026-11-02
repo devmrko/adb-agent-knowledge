@@ -12,7 +12,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import ValidationError
 from sqlalchemy import text
 
-from knowledge_app.agent_memory_contracts import MemoryQuery, MemorySave, ProfileSave
+from knowledge_app.agent_memory_contracts import MemoryQuery, MemoryRename, MemorySave, ProfileSave
 from knowledge_app.agent_memory_repository import SDKRepository
 from knowledge_app.agent_memory_service import AgentMemoryService
 from knowledge_app.audit_service import AuditService, ResolveReview
@@ -253,6 +253,10 @@ def create_app(
                     item["connections_status"] = "UNAVAILABLE"
             result["connections_limit"] = 5
         return result
+
+    @app.post("/api/v1/agent-memory/title")
+    def memory_rename(command: MemoryRename, actor: ActorDep) -> dict[str, Any]:
+        return memories.rename(command, actor)
 
     @app.post("/api/v1/agent-memory")
     def memory_save(command: MemorySave, actor: ActorDep) -> dict[str, Any]:

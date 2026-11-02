@@ -13,7 +13,7 @@ from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
-from knowledge_app.agent_memory_contracts import MemoryQuery, MemorySave, ProfileSave
+from knowledge_app.agent_memory_contracts import MemoryQuery, MemoryRename, MemorySave, ProfileSave
 from knowledge_app.capture_contracts import CaptureAnswer, CaptureDraft
 from knowledge_app.contracts import MemoryKind, Provenance, SourceLocation
 from knowledge_app.graph_auto_contracts import AgentGraphPrepare, ReviewCandidate
@@ -853,6 +853,11 @@ def create_server(api: KnowledgeAPI, router: MemoryRouter | None = None) -> Fast
     async def memory_search(request: MemoryQuery) -> dict[str, Any]:
         """Search/browse optional Oracle SDK agent memories, separate from business notes. Empty query browses; filters span this user only. Profiles provide display names. Inspect status/truncated; NOT_CONFIGURED does not mean no memories. knowledge_recall also returns separate SDK results when enabled."""
         return await api.request("POST", "/api/v1/agent-memory/search", json=request.model_dump(mode="json"))
+
+    @server.tool(annotations=WRITE)
+    async def memory_rename(command: MemoryRename) -> dict[str, Any]:
+        """Correct an owned memory title after reading it, with expected_title and reason. Preserves SDK body, embedding, relations and the last 20 title changes. Does not edit facts or automatically rename existing records. Same-target retries are idempotent."""
+        return await api.request("POST", "/api/v1/agent-memory/title", json=command.model_dump(mode="json"))
 
     @server.tool(annotations=WRITE)
     async def memory_save(memory: MemorySave) -> dict[str, Any]:

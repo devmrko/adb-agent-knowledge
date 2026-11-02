@@ -37,3 +37,11 @@ class ProfileSave(BaseModel):
     agent_id: str | None = Field(default=None, max_length=128)
     scope: str = Field(default="global", min_length=1, max_length=108)
     expected_version: int = Field(default=0, ge=0)
+
+
+class MemoryRename(BaseModel):
+    model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
+    memory_id: str = Field(min_length=1, max_length=128)
+    expected_title: str = Field(min_length=1, max_length=120)
+    title: str = Field(min_length=1, max_length=120)
+    reason: str = Field(min_length=1, max_length=500)

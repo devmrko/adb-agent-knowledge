@@ -39,6 +39,7 @@ def test_tool_contracts_and_save_auth():
         "memory_profile_save",
         "memory_search",
         "memory_save",
+        "memory_rename",
         "knowledge_capture_get",
         "knowledge_capture_draft",
         "knowledge_capture_answer",

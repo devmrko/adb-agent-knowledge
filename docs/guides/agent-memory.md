@@ -106,7 +106,7 @@ SDK 미설정·장애는 빈 저장소와 구분한다. 웹은 조회용이며 �
 ## 이번에 포함하지 않은 것
 
 - 서로 다른 저장소 점수를 합친 통합 순위
-- 기억 수정·은퇴·삭제 MCP, 조직 공유 ACL, 외부 세션 자동 매핑
+- 기억 본문 수정·은퇴·삭제 MCP, 조직 공유 ACL, 외부 세션 자동 매핑
 - 이름 변경의 별도 감사 이력 테이블, 자동 제목 생성
 
 장기 기억은 thread_id로 수명을 묶지 않고 origin_thread_id metadata로 출처를 남긴다.
@@ -161,3 +161,10 @@ SDK 스키마의 직접 수정·외부 삭제를 자동 복구하는 기능은 �
 ```
 
 특정 개발자 홈 디렉터리에 의존하지 않는다. 캐시를 지정하지 않으면 표준 Hugging Face 환경 설정을 따른다.
+
+
+## Title correction and readable relationships
+
+memory_rename corrects title metadata only, with memory_id, expected_title, title and reason. It preserves SDK content, embeddings, relationships and validity. Ownership is checked; conflicting titles return a conflict. The last 20 title changes are kept in metadata, not as full content revisions. Same-target retries are idempotent.
+
+The read-only web shows full wrapping titles in relationship cards. Expand the numbered overview for topology and SDK details for raw relation/state values. This does not change Oracle SDK semantics.

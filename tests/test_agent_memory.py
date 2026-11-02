@@ -164,3 +164,33 @@ def test_metadata_preserved_and_current_filter(tmp_path):
 def test_contract_rejects_blank_and_owner_override(command):
     with pytest.raises(ValueError):
         ProfileSave(**command)
+
+
+def test_memory_title_correction_preserves_body_and_owner(tmp_path):
+    app, store = client_app(tmp_path)
+    with TestClient(app, base_url=ORIGIN) as c:
+        headers = {"Authorization": "Bearer alice"}
+        saved = c.post(
+            "/api/v1/agent-memory",
+            headers=headers,
+            json={"title": "old", "text": "unchanged evidence", "idempotency_key": "rename"},
+        ).json()
+        command = {
+            "memory_id": saved["memory_id"],
+            "expected_title": "old",
+            "title": "clear title",
+            "reason": "User requested clarity",
+        }
+        path = "/api/v1/agent-memory/title"
+        assert c.post(path, json=command).status_code == 401
+        assert c.post(path, json=command, headers={"Authorization": "Bearer bob"}).status_code == 404
+        assert c.post(path, json={**command, "expected_title": "stale"}, headers=headers).status_code == 409
+        result = c.post(path, json=command, headers=headers)
+        assert result.status_code == 200
+        assert not result.json()["unchanged"]
+        assert c.post(path, json=command, headers=headers).json()["unchanged"]
+        row = store.get("memory", saved["memory_id"])
+        assert row.content == "unchanged evidence"
+        assert row.status == "valid"
+        assert row.metadata["title_history"][0]["title"] == "old"
+        assert len(row.metadata["title_history"]) == 1

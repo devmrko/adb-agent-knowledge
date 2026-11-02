@@ -10,7 +10,7 @@ from sqlalchemy import Column, MetaData, String, Table, select
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import IntegrityError
 
-from knowledge_app.agent_memory_contracts import MemoryQuery, MemorySave, ProfileSave
+from knowledge_app.agent_memory_contracts import MemoryQuery, MemoryRename, MemorySave, ProfileSave
 from knowledge_app.agent_memory_repository import SDKRepository
 from knowledge_app.service import fail, owner_id
 from python_foundation.errors import BusinessError, ErrorCategory
@@ -178,6 +178,39 @@ class AgentMemoryService:
                 **kwargs,
             )
             return {"memory_id": record_id, "status": "READY", "reused": False}
+
+        try:
+            return self.mutate(owner, write)
+        except BusinessError:
+            raise
+        except Exception:
+            raise fail("AGENT_MEMORY_WRITE_UNCERTAIN", ErrorCategory.UNAVAILABLE) from None
+
+    def rename(self, command: MemoryRename, actor: Actor) -> dict[str, Any]:
+        self.check()
+        owner = owner_id(actor)
+
+        def write() -> dict[str, Any]:
+            for typ in TYPES:
+                row = self.repo.store.get(typ, command.memory_id)
+                if row is None:
+                    continue
+                metadata = dict(row.metadata or {})
+                if row.user_id != owner or metadata.get("owner_id") != owner:
+                    raise fail("MEMORY_NOT_FOUND", ErrorCategory.NOT_FOUND)
+                current = metadata.get("title", "")
+                if current == command.title:
+                    return {"memory_id": row.id, "title": current, "unchanged": True}
+                if current != command.expected_title:
+                    raise fail("MEMORY_TITLE_CONFLICT", ErrorCategory.CONFLICT)
+                history = list(metadata.get("title_history", []))[-19:]
+                history.append(
+                    {"title": current, "changed_at": datetime.now(UTC).isoformat(), "reason": command.reason}
+                )
+                metadata.update(title=command.title, title_history=history)
+                self.repo.store.update(typ, row.id, metadata=metadata)
+                return {"memory_id": row.id, "title": command.title, "unchanged": False}
+            raise fail("MEMORY_NOT_FOUND", ErrorCategory.NOT_FOUND)
 
         try:
             return self.mutate(owner, write)

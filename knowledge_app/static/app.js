@@ -632,32 +632,81 @@ async function loadMemoryGraph(item,version){
   renderMemoryGraph(graph);
  }catch(e){if(version===memoryDetailGeneration){$("memory-graph-status").textContent="기억 관계 조회 불가";handleError(e);}}
 }
+
+function memoryRelationLabel(value) {
+ return {supports:"뒷받침함",contradicts:"내용이 충돌함",supersedes:"이전 기억을 대체함",refines:"내용을 보완함",duplicates:"중복된 기억"}[value] || value;
+}
+function memoryStateLabel(value) {
+ return {valid:"현재 기억",invalid:"과거 기억"}[value] || value || "상태 미상";
+}
+function memoryNodeCard(node) {
+ const card=element("section","");card.className="memory-node-card";
+ const type={memory:"기억",fact:"사실 기록",guideline:"지침",preference:"선호"}[node.memory_type] || node.memory_type || "기억";
+ card.append(element("small",type+" · "+memoryStateLabel(node.status)+(node.timestamp?" · "+String(node.timestamp).split("T")[0]:"")));
+ const title=element("button",node.title);title.className="memory-node-title";
+ title.addEventListener("click",()=>readMemory({...node,memory_id:node.id}));
+ card.append(title);
+ const source=element("details","");source.className="memory-node-source";
+ source.append(element("summary","내용·근거 보기"));
+ const body=element("p",node.text);body.className="memory-node-body";source.append(body);
+ const proofs=element("div","");source.append(proofs);
+ let loaded=false;
+ source.addEventListener("toggle",async()=>{
+  if(!source.open || loaded)return;loaded=true;proofs.textContent="원문 근거를 확인하는 중…";
+  try {
+   const data=await request("/api/v1/agent-memory/references?"+new URLSearchParams({memory_id:node.id,limit:"5"}));
+   if(!source.isConnected)return;proofs.replaceChildren();
+   for(const link of data.items){
+    const b=element("button",link.title+" · "+(link.status==="CURRENT"?"현재 원문":"이전 원문 · 다시 확인 필요"));
+    b.addEventListener("click",()=>{chooseStore("knowledge");read({knowledge_id:link.knowledge_id,revision_id:link.revision_id,title:link.title,scope:link.scope});});
+    proofs.append(b,element("blockquote",link.quote));
+   }
+   if(!data.items.length)proofs.append(element("p","연결된 원문 근거가 없습니다."));
+   if(data.next_offset!=null)proofs.append(element("p","일부 근거만 표시합니다. 기억을 열어 전체 근거를 확인하세요."));
+  }catch(e){if(source.isConnected){proofs.textContent="근거를 불러오지 못했습니다.";loaded=false;}}
+ });
+ card.append(source);
+ return card;
+}
 function renderMemoryGraph(graph){
  $("memory-graph").replaceChildren();$("memory-edges").replaceChildren();if(!graph.edges.length)return;
- const ns="http://www.w3.org/2000/svg",svg=document.createElementNS(ns,"svg"),height=Math.max(140,graph.nodes.length*75);
- svg.setAttribute("viewBox","0 0 740 "+height);svg.setAttribute("role","img");svg.setAttribute("aria-label","기억 관계 그래프. 아래 목록에서 방향과 근거를 확인하세요.");
- const defs=document.createElementNS(ns,"defs"),marker=document.createElementNS(ns,"marker"),arrow=document.createElementNS(ns,"path");
- for(const [k,v] of Object.entries({id:"memory-arrow",viewBox:"0 0 10 10",refX:"10",refY:"5",markerWidth:"6",markerHeight:"6",orient:"auto-start-reverse"}))marker.setAttribute(k,v);
- arrow.setAttribute("d","M 0 0 L 10 5 L 0 10 z");arrow.setAttribute("fill","#7b8790");marker.append(arrow);defs.append(marker);svg.append(defs);
- const positions=new Map(graph.nodes.map((n,i)=>[n.id,{x:90+(i%2)*330,y:40+i*70}]));
- for(const e of graph.edges){
-  const a=positions.get(e.source),b=positions.get(e.target);if(!a||!b)continue;
-  const line=document.createElementNS(ns,"line");for(const [k,v] of Object.entries({x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:"#7b8790","stroke-width":2,"marker-end":"url(#memory-arrow)"}))line.setAttribute(k,String(v));svg.append(line);
- }
- for(const n of graph.nodes){
-  const p=positions.get(n.id),circle=document.createElementNS(ns,"circle");circle.setAttribute("cx",p.x);circle.setAttribute("cy",p.y);circle.setAttribute("r","8");circle.setAttribute("fill",n.status==="valid"?"#00798c":"#999");svg.append(circle);
-  const text=document.createElementNS(ns,"text");text.setAttribute("x",p.x+12);text.setAttribute("y",p.y-12);text.setAttribute("font-size","12");text.textContent=n.title.slice(0,18);svg.append(text);
- }
- $("memory-graph").append(svg);
  const nodes=new Map(graph.nodes.map(n=>[n.id,n]));
- for(const e of graph.edges){
-  const row=element("div","");row.className="memory-evidence-card";
-  for(const [id,label] of [[e.source,"출발"],[e.target,"대상"]]){
-   const n=nodes.get(id);if(!n)continue;const b=element("button",label+": "+n.title+" · "+n.status);
-   b.addEventListener("click",()=>readMemory({...n,memory_id:n.id}));row.append(b);if(label==="출발")row.append(element("span"," → "+e.relation+" → "));
-  }
-  row.append(element("p",e.reason));$("memory-edges").append(row);
+ for(const edge of graph.edges){
+  const a=nodes.get(edge.source),b=nodes.get(edge.target);if(!a||!b)continue;
+  const row=element("article","");row.className="memory-relation-card";
+  const pair=element("div","");pair.className="memory-relation-pair";
+  const relation=element("div","");relation.className="memory-relation-label";
+  relation.append(element("span","→"),element("strong",memoryRelationLabel(edge.relation)));
+  relation.title="SDK 관계: "+edge.relation+" · 방향과 상태는 SDK 기록을 그대로 표시합니다.";
+  pair.append(memoryNodeCard(a),relation,memoryNodeCard(b));row.append(pair);
+  row.append(element("p","연결 이유: "+(edge.reason || "기록되지 않음")));
+  const raw=element("details","");raw.className="memory-sdk-details";raw.append(element("summary","SDK 기록"));
+  raw.append(element("pre",edge.source+" → "+edge.relation+" → "+edge.target+"\n"+a.status+" → "+b.status));row.append(raw);
+  $("memory-edges").append(row);
  }
+ const details=element("details","");details.className="memory-overview";
+ details.append(element("summary","전체 연결 펼쳐 보기 · "+graph.nodes.length+"개 기억"));
+ const help=element("p","번호는 아래의 전체 제목과 대응합니다. 화살표는 SDK에 저장된 관계 방향입니다.");details.append(help);
+ const ns="http://www.w3.org/2000/svg",svg=document.createElementNS(ns,"svg"),height=Math.max(160,graph.nodes.length*65);
+ svg.setAttribute("viewBox","0 0 560 "+height);svg.setAttribute("role","img");svg.setAttribute("aria-label","기억 관계 전체 지도. 번호별 제목은 아래 목록에 표시합니다.");
+ const defs=document.createElementNS(ns,"defs"),marker=document.createElementNS(ns,"marker"),arrow=document.createElementNS(ns,"path");
+ for(const [k,v] of Object.entries({id:"memory-arrow",viewBox:"0 0 10 10",refX:"9",refY:"5",markerWidth:"6",markerHeight:"6",orient:"auto"}))marker.setAttribute(k,v);
+ arrow.setAttribute("d","M 0 0 L 10 5 L 0 10 z");arrow.setAttribute("fill","#7b8790");marker.append(arrow);defs.append(marker);svg.append(defs);
+ const positions=new Map(graph.nodes.map((n,i)=>[n.id,{x:100+(i%2)*320,y:40+i*65,index:i+1}]));
+ for(const edge of graph.edges){
+  const a=positions.get(edge.source),b=positions.get(edge.target);if(!a||!b)continue;
+  const dx=b.x-a.x,dy=b.y-a.y,length=Math.hypot(dx,dy)||1,line=document.createElementNS(ns,"line");
+  for(const [k,v] of Object.entries({x1:a.x+dx/length*18,y1:a.y+dy/length*18,x2:b.x-dx/length*20,y2:b.y-dy/length*20,stroke:"#7b8790","stroke-width":2,"marker-end":"url(#memory-arrow)"}))line.setAttribute(k,String(v));
+  const label=document.createElementNS(ns,"title");label.textContent=memoryRelationLabel(edge.relation);line.append(label);svg.append(line);
+ }
+ const legend=element("ol","");legend.className="memory-graph-legend";
+ for(const node of graph.nodes){
+  const pos=positions.get(node.id),circle=document.createElementNS(ns,"circle"),text=document.createElementNS(ns,"text");
+  for(const [k,v] of Object.entries({cx:pos.x,cy:pos.y,r:18,fill:node.status==="valid"?"#356d79":"#777"}))circle.setAttribute(k,String(v));
+  svg.append(circle);for(const [k,v] of Object.entries({x:pos.x,y:pos.y+5,fill:"white","text-anchor":"middle","font-size":14}))text.setAttribute(k,String(v));text.textContent=String(pos.index);svg.append(text);
+  const li=element("li",""),button=element("button",node.title);button.addEventListener("click",()=>readMemory({...node,memory_id:node.id}));li.append(button);legend.append(li);
+ }
+ details.append(svg,legend);$("memory-graph").append(details);
 }
 async function loadNoteMemories(){
  if(!selected)return;const item=selected,version=contentGeneration;$("note-memory-status").textContent="관련 기억을 확인하는 중…";
