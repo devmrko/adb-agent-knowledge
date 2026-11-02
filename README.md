@@ -442,3 +442,18 @@ AGENTS.md·CLAUDE.md는 개발 에이전트 지침이며 지식 데이터 사본
 SDK 기반 에이전트 기억을 업무 지식과 분리해 저장·조회할 수 있습니다. 웹에서 전체/에이전트 메모리/업무 지식을 구분합니다. 기본 비활성이며 [설치·MCP 사용·현재 한계](docs/guides/agent-memory.md)를 확인하세요. 기존 노트를 자동 이전하지 않습니다.
 
 SDK가 한국어 임베딩 모델을 내장한 것은 아닙니다. 이 프로젝트의 `IEmbedder` 연결부가 앱의 임베딩 제공자를 SDK에 주입합니다. [SDK·임베딩 역할과 실행 위치](docs/guides/agent-memory.md)를 확인하세요.
+
+
+## MCP tool profiles
+
+The default stdio connection now exposes **core: 16 tools** instead of all 63.
+Unified recall still returns relevant graph/memory results; HTTP endpoints and stored data are unchanged.
+Core supports routine reading, saving and knowledge revision plus SDK memory/title operations.
+Graph/index/profile authoring, URL import, retirement and operational reviews require full.
+If a response recommends an unavailable tool, report that follow-up as pending, not completed.
+
+Set MCP_TOOL_PROFILE=full in the MCP server checkout .env (or its process environment) and reconnect
+for advanced work. For a direct launcher, use scripts/run_knowledge_mcp.sh --tool-profile full.
+With SSH, configure the remote checkout; local environment variables are not automatically forwarded.
+Do not register both profiles by default: that restores the candidate overload.
+Existing tool names and full-profile contracts are preserved. Profiles do not grant permissions.

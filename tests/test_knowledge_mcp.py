@@ -420,3 +420,23 @@ def test_capture_tools_forward_typed_payload_and_auth():
     assert requests[2].url.path.endswith("/capture/answers")
     assert json.loads(requests[2].content)["disposition"] == "answered"
     assert all(r.headers["Authorization"] == "Bearer test-token" for r in requests)
+
+
+def test_core_catalog_and_hidden_tool_cannot_execute():
+    from knowledge_app.mcp_server import CORE_TOOLS
+
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(200, json={})
+
+    api = KnowledgeAPI("http://localhost:8000", "token", transport=httpx.MockTransport(handler))
+    core = create_server(api, profile="core")
+    assert {t.name for t in asyncio.run(core.list_tools())} == CORE_TOOLS
+    assert len(CORE_TOOLS) == 16
+    with pytest.raises(ToolError):
+        asyncio.run(core.call_tool("knowledge_retire", {}))
+    assert requests == []
+    with pytest.raises(ValueError):
+        create_server(api, profile="typo")
