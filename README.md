@@ -446,14 +446,23 @@ SDK가 한국어 임베딩 모델을 내장한 것은 아닙니다. 이 프로�
 
 ## MCP tool profiles
 
-The default stdio connection now exposes **core: 16 tools** instead of all 63.
-Unified recall still returns relevant graph/memory results; HTTP endpoints and stored data are unchanged.
-Core supports routine reading, saving and knowledge revision plus SDK memory/title operations.
-Graph/index/profile authoring, URL import, retirement and operational reviews require full.
-If a response recommends an unavailable tool, report that follow-up as pending, not completed.
+Default core exposes **17 tools**: 16 everyday tools plus knowledge_tools.
+Call knowledge_tools(profile="memory" | "graph" | "organize" | "operations") when a follow-up needs more tools.
+The selected group replaces the previous optional group; it does not accumulate. Return to core after the task.
+- memory: SDK profiles, evidence attachment and memory relationships (22 tools total).
+- graph: business relationship preparation, identities, authoring and review (31 total).
+- organize: indexes, guided capture and URL import (28 total).
+- operations: change reviews, retirement/restoration and service extraction operations (29 total).
+- full: every tool, for explicit advanced workflows (64 total).
 
-Set MCP_TOOL_PROFILE=full in the MCP server checkout .env (or its process environment) and reconnect
-for advanced work. For a direct launcher, use scripts/run_knowledge_mcp.sh --tool-profile full.
-With SSH, configure the remote checkout; local environment variables are not automatically forwarded.
-Do not register both profiles by default: that restores the candidate overload.
-Existing tool names and full-profile contracts are preserved. Profiles do not grant permissions.
+The server advertises tools.listChanged and sends notifications/tools/list_changed after a change.
+This is implemented for one-client-per-process stdio. A client must refresh tools/list to expose new tools
+to its model. Protocol behavior is tested; automatic refresh in every Codex/Claude version is not guaranteed.
+If refresh does not work, set MCP_TOOL_PROFILE to the desired profile in the server checkout .env and reconnect,
+or launch scripts/run_knowledge_mcp.sh --tool-profile graph (replace graph as needed).
+SSH clients must configure the remote checkout; local env is not automatically forwarded.
+
+Core recall still returns bounded graph/memory results. Switch to the relevant profile for new relationships
+or index memberships; never claim unavailable follow-up work completed. Selective automatic storage permission
+still applies; changing the tool catalog neither writes knowledge nor grants permissions.
+Do not register all profiles at once. Existing tool names, HTTP endpoints and stored records are unchanged.

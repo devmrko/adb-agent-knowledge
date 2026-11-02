@@ -30,6 +30,7 @@ def test_tool_contracts_and_save_auth():
     )
     tools = asyncio.run(server.list_tools())
     assert {t.name for t in tools} == {
+        "knowledge_tools",
         "memory_prepare_links",
         "memory_link_knowledge",
         "memory_references",
@@ -434,9 +435,43 @@ def test_core_catalog_and_hidden_tool_cannot_execute():
     api = KnowledgeAPI("http://localhost:8000", "token", transport=httpx.MockTransport(handler))
     core = create_server(api, profile="core")
     assert {t.name for t in asyncio.run(core.list_tools())} == CORE_TOOLS
-    assert len(CORE_TOOLS) == 16
+    assert len(CORE_TOOLS) == 17
     with pytest.raises(ToolError):
         asyncio.run(core.call_tool("knowledge_retire", {}))
     assert requests == []
     with pytest.raises(ValueError):
         create_server(api, profile="typo")
+
+
+def test_task_profiles_replace_optional_tools_and_notify():
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+
+    from knowledge_app.mcp_server import CORE_TOOLS
+
+    async def scenario():
+        api = KnowledgeAPI("http://localhost:8000", "token")
+        server = create_server(api, profile="core")
+        notification = AsyncMock()
+        context = SimpleNamespace(session=SimpleNamespace(send_tool_list_changed=notification))
+        # Exercise the registered callable with an isolated session context.
+        switch = server._tool_manager.get_tool("knowledge_tools").fn
+        result = await switch(context, "memory")
+        assert result["tool_count"] == 22
+        names = {t.name for t in await server.list_tools()}
+        assert "memory_link" in names and "knowledge_graph_assert" not in names
+        await switch(context, "graph")
+        names = {t.name for t in await server.list_tools()}
+        assert "memory_link" not in names and "knowledge_graph_assert" in names
+        assert (
+            next(
+                t for t in await server.list_tools() if t.name == "knowledge_graph_assert"
+            ).annotations.readOnlyHint
+            is False
+        )
+        await switch(context, "core")
+        assert {t.name for t in await server.list_tools()} == CORE_TOOLS
+        await switch(context, "core")
+        assert notification.await_count == 3
+
+    asyncio.run(scenario())
