@@ -118,3 +118,50 @@ def test_expiry_rotation_disabled_and_no_plaintext(tmp_path):
         assert c.get("/knowledge/session").status_code == 404
         assert login(c).status_code == 401
         assert c.get("/api/v1/knowledge", headers={"Authorization": "Bearer alice"}).status_code == 200
+
+
+def test_capture_cookie_csrf_and_owner_boundary(tmp_path):
+    app = make_app(tmp_path, workflow_rdf_enabled=True)
+    with TestClient(app, base_url=ORIGIN) as c:
+        csrf = login(c).json()["csrf"]
+        headers = {"Origin": ORIGIN, "X-CSRF-TOKEN": csrf}
+        saved = c.post(
+            "/api/v1/knowledge", json={"title": "HR draft", "text": "Owner is unknown."}, headers=headers
+        ).json()
+        assert app.state.service.process_one()
+        path = f"/api/v1/graph/reviews/{saved['knowledge_id']}/capture"
+        draft = {
+            "revision_id": saved["revision_id"],
+            "expected_version": 0,
+            "summary": "Draft only",
+            "questions": [
+                {
+                    "key": "owner",
+                    "question": "Who owns this?",
+                    "reason": "Avoid guessing",
+                    "quote": "Owner is unknown.",
+                }
+            ],
+        }
+        assert c.post(path, json=draft).status_code == 403
+        assert c.post(path, json=draft, headers=headers).status_code == 200
+        answer = {
+            "revision_id": saved["revision_id"],
+            "expected_version": 1,
+            "question_key": "owner",
+            "disposition": "deferred",
+            "text": "Unknown",
+        }
+        assert c.post(path + "/answers", json=answer).status_code == 403
+        assert (
+            c.post(
+                path + "/answers", json=answer, headers={"Origin": "https://evil.test", "X-CSRF-TOKEN": csrf}
+            ).status_code
+            == 403
+        )
+        assert (
+            c.post(path + "/answers", json=answer, headers={"Authorization": "Bearer bob"}).status_code == 404
+        )
+        assert c.post(path + "/answers", json=answer, headers=headers).status_code == 200
+        assert c.get(path).json()["capture"]["pending_question_keys"] == ["owner"]
+        assert c.get(path, headers={"Authorization": "Bearer bob"}).status_code == 404

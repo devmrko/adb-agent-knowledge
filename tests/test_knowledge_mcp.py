@@ -30,6 +30,18 @@ def test_tool_contracts_and_save_auth():
     )
     tools = asyncio.run(server.list_tools())
     assert {t.name for t in tools} == {
+        "memory_prepare_links",
+        "memory_link_knowledge",
+        "memory_references",
+        "memory_link",
+        "memory_graph",
+        "memory_profiles",
+        "memory_profile_save",
+        "memory_search",
+        "memory_save",
+        "knowledge_capture_get",
+        "knowledge_capture_draft",
+        "knowledge_capture_answer",
         "knowledge_decide",
         "knowledge_recall",
         "knowledge_changes",
@@ -353,3 +365,57 @@ def test_agent_prepare_partial_skip_requires_review(total_chars):
     )
     assert "partial_source_requires_review" in str(result)
     assert "agent_review" in str(result)
+
+
+def test_capture_tools_forward_typed_payload_and_auth():
+    requests = []
+
+    def handler(request):
+        requests.append(request)
+        return httpx.Response(200, json={"published": False})
+
+    server = create_server(
+        KnowledgeAPI("http://127.0.0.1:8000", "test-token", transport=httpx.MockTransport(handler))
+    )
+    item, revision = str(uuid4()), str(uuid4())
+    asyncio.run(server.call_tool("knowledge_capture_get", {"knowledge_id": item, "revision_id": revision}))
+    asyncio.run(
+        server.call_tool(
+            "knowledge_capture_draft",
+            {
+                "knowledge_id": item,
+                "draft": {
+                    "revision_id": revision,
+                    "expected_version": 0,
+                    "summary": "Current operation",
+                    "questions": [
+                        {
+                            "key": "approval",
+                            "question": "Required approval or current practice?",
+                            "reason": "Avoid inventing policy",
+                            "quote": "I check and publish",
+                        }
+                    ],
+                },
+            },
+        )
+    )
+    asyncio.run(
+        server.call_tool(
+            "knowledge_capture_answer",
+            {
+                "knowledge_id": item,
+                "answer": {
+                    "revision_id": revision,
+                    "expected_version": 1,
+                    "question_key": "approval",
+                    "text": "Current practice only",
+                },
+            },
+        )
+    )
+    assert requests[0].url.params["revision_id"] == revision
+    assert requests[1].url.path == f"/api/v1/graph/reviews/{item}/capture"
+    assert requests[2].url.path.endswith("/capture/answers")
+    assert json.loads(requests[2].content)["disposition"] == "answered"
+    assert all(r.headers["Authorization"] == "Bearer test-token" for r in requests)

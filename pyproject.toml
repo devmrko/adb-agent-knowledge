@@ -7,6 +7,7 @@ requires-python = ">=3.12"
 dependencies = ["devmrko-python-foundation==0.1.0"]
 
 [project.optional-dependencies]
+agent-memory = ["oracleagentmemory==26.8.0"]
 mcp = ["mcp>=1.26,<2"]
 knowledge = ["oracledb>=3,<27", "pypdf>=6,<7", "sentence-transformers>=5,<6"]
 

@@ -6,6 +6,7 @@ let originalSummary="", activeIndex=null, catalogOffset=0, referenceOffset=0, or
 let sessionMode = true, csrf = "";
 let token = "", offset = 0, listMode = true, generation = 0, controller;
 let selected = null, original = "", editing = false, saving = false, pending = null;
+const READ_ONLY = true;
 let searchGraph=null;
 let graphGeneration=0, graphController, graphSource=null;
 let contentGeneration = 0, contentController, jobTimer, categoryValue = "", relationOnly = false;
@@ -13,20 +14,27 @@ function status(message, error = false) { $("status").textContent = message; $("
 function noteStatus(message, error = false) { $("note-status").textContent = message; $("note-status").classList.toggle("error", error); }
 function dirty() { return editing && ($("reader-body").value !== original || $("reader-summary").value !== originalSummary); }
 function mayLeave() { return !saving && (!dirty() || window.confirm("저장하지 않은 수정 내용을 버릴까요?")); }
-function editMode(value) { editing=value; $("reader-body").readOnly=!value; $("reader-summary").readOnly=!value; $("edit").hidden=value; $("save").hidden=!value; $("cancel").hidden=!value; }
+function editMode(value) { value=READ_ONLY?false:value; editing=value; $("reader-body").readOnly=!value; $("reader-summary").readOnly=!value; $("edit").hidden=READ_ONLY || value; $("save").hidden=!value; $("cancel").hidden=!value; }
 function clearReader() {
+ $("note-memories").replaceChildren(); $("note-memory-status").textContent=""; $("note-memories-more").hidden=true;
+ $("capture-content").replaceChildren(); $("capture-count").textContent=""; $("capture-status").textContent="";
  graphGeneration++; graphController?.abort(); graphSource=null;
  showNoteView("summary"); $("reader-summary").value=""; originalSummary=""; originalUri=null; referenceOffset=0; $("reference-indexes").replaceChildren(); $("reference-sources").textContent=""; $("download-original").disabled=true; $("references-more").hidden=true; $("show-workflow").disabled=true; $("flow-count").textContent=""; $("workflow-canvas").replaceChildren(); $("workflow-relations").replaceChildren(); $("workflow-evidence").hidden=true;
  contentGeneration++; contentController?.abort(); clearTimeout(jobTimer); selected=null; pending=null; original=""; editMode(false);
  $("reader-title").textContent="노트를 선택하세요"; $("reader-body").value=""; updateLines(); $("reader-meta").textContent=""; $("edit-origin").hidden=true; $("edit").disabled=true; $("check-job").hidden=true; noteStatus("");
 }
 function disconnect() {
+ memoryDetailGeneration++; $("memory-evidence").replaceChildren(); $("memory-graph").replaceChildren(); $("memory-edges").replaceChildren(); $("note-memories").replaceChildren(); $("memory-evidence-status").textContent=""; $("memory-graph-status").textContent=""; $("note-memory-status").textContent="";
+ memoryGeneration++; $("memory-results").replaceChildren(); $("memory-body").textContent=""; $("memory-meta").textContent=""; $("memory-title").textContent="메모리를 선택하세요"; $("memory-status").textContent=""; $("memory-agent").replaceChildren(new Option("내 전체 에이전트","")); $("memory-thread").replaceChildren(new Option("내 전체 대화",""));
  proposalGeneration++; $("graph-proposals").replaceChildren(); $("graph-review-status").textContent=""; $("graph-proposals-more").hidden=true;
  searchGraph=null; $("search-result-graph").hidden=true;
  generation++; controller?.abort(); clearReader(); activeIndex=null; $("index-catalog").replaceChildren(); $("index-more").hidden=true; token=""; csrf=""; $("token").value=""; $("connect-form").hidden=false; $("connected").hidden=true; $("connection").textContent="연결 전"; $("results").replaceChildren(); $("category").replaceChildren(new Option("전체 카테고리","")); categoryValue=""; relationOnly=false; $("has-relations").checked=false; $("count").textContent=""; $("pagination").hidden=true; status("API 토큰으로 연결하면 노트를 볼 수 있습니다.");
 }
 function authHeaders() { return sessionMode ? {"X-CSRF-TOKEN":csrf} : {Authorization:"Bearer "+token}; }
 async function request(path, options={}) {
+ const method=(options.method || "GET").toUpperCase();
+ const readPosts=["/api/v1/knowledge/search","/api/v1/graph/search","/api/v1/graph/identities/resolve","/api/v1/agent-memory/search","/api/v1/agent-memory/graph"];
+ if(READ_ONLY && method!=="GET" && method!=="HEAD" && !(method==="POST" && readPosts.includes(path)))throw new Error("데이터 변경은 MCP에서 진행해 주세요. 웹은 조회 전용입니다.");
  const response=await fetch(path,{...options,cache:"no-store",credentials:"same-origin",headers:{...authHeaders(),"Content-Type":"application/json"}});
  if(!response.ok) {
   if(response.status===401 || response.status===403) throw new Error("AUTH");
@@ -48,11 +56,11 @@ async function read(item) {
  try {
   const data=await request(`/api/v1/knowledge/${item.knowledge_id}/revisions/${item.revision_id}/content`,{signal:contentController.signal});
   if(version!==contentGeneration) return;
-  original=data.text; originalSummary=data.summary || ""; $("reader-summary").value=originalSummary; $("summary-kind").textContent=data.summary_kind==="EXTRACTIVE"?"원문 발췌 요약 · 전체 내용은 상세에서 확인":"작성된 요약 · "+data.summary_kind; $("reader-body").value=original; updateLines(); $("edit").disabled=false;
+  original=data.text; originalSummary=data.summary || ""; $("reader-summary").value=originalSummary; $("summary-kind").textContent=data.summary_kind==="EXTRACTIVE"?"원문 발췌 요약 · 전체 내용은 상세에서 확인":"작성된 요약 · "+data.summary_kind; $("reader-body").value=original; updateLines(); $("edit").disabled=READ_ONLY;
   $("edit-origin").hidden=data.edit_origin!=="HUMAN"; $("edit-origin").textContent="사용자 편집";
   const sources=(data.sources || []).map(s=>`${s.kind}: ${s.location}${s.machine_id ? " · 머신 "+s.machine_id : ""}${s.version ? " · 버전 "+s.version : ""}${s.locator ? " · "+s.locator : ""}`);
   $("reader-meta").textContent=`지식 ${item.knowledge_id}\n버전 ${item.revision_id}\n범위 ${item.scope || ""}\n편집 경로 ${data.edit_origin || "UNKNOWN"}\n작성 머신 ${data.origin_machine_label || data.origin_machine_id || "기록 없음"}\n${sources.join("\n") || "출처 위치: 기록 없음"}`;
-  noteStatus(""); if(graphVersion===graphGeneration)loadWorkflow(item,version);
+  noteStatus(""); loadCapture(item,version); if(graphVersion===graphGeneration)loadWorkflow(item,version);
  } catch(error) { if(version===contentGeneration) { noteStatus("원문을 불러오지 못했습니다.",true); handleError(error); } }
 }
 function render(items) {
@@ -64,6 +72,8 @@ function render(items) {
  }
 }
 async function load() {
+ const requestedView=storeView, requestedGeneration=generation;
+ if(token && (storeView==="memory" || storeView==="all")) { await loadMemories(); if(requestedView!==storeView || requestedGeneration!==generation || storeView==="memory") return; }
  if(!token) { status("먼저 API 토큰으로 연결해 주세요.",true); return; }
  controller?.abort(); controller=new AbortController(); const version=++generation; clearReader();
  searchGraph=null; $("search-result-graph").hidden=true;
@@ -123,8 +133,8 @@ $("connect-form").addEventListener("submit",async event=>{
   offset=0; listMode=true; await categories(); await load();
  } catch(error) { key=""; status(error.message,true); }
 });
-$("search-form").addEventListener("submit",event=>{event.preventDefault(); if(!mayLeave()) return; activeIndex=null; offset=0; listMode=!$("query").value.trim(); load();});
-$("browse").addEventListener("click",()=>{if(!mayLeave()) return; activeIndex=null; offset=0; listMode=true; load();});
+$("search-form").addEventListener("submit",event=>{event.preventDefault(); if(!mayLeave()) return; activeIndex=null; offset=0; memoryOffset=0; listMode=!$("query").value.trim(); load();});
+$("browse").addEventListener("click",()=>{if(!mayLeave()) return; activeIndex=null; offset=0; memoryOffset=0; listMode=true; load();});
 $("category").addEventListener("change",()=>{if(!mayLeave()) { $("category").value=categoryValue; return; } activeIndex=null; categoryValue=$("category").value; offset=0; load();});
 $("has-relations").addEventListener("change",()=>{if(!mayLeave()){ $("has-relations").checked=relationOnly;return;}relationOnly=$("has-relations").checked;activeIndex=null;offset=0;load();});
 $("previous").addEventListener("click",()=>{if(!mayLeave()) return; offset=Math.max(0,offset-pageSize);load();});
@@ -136,7 +146,7 @@ $("disconnect").addEventListener("click",async()=>{
   disconnect();
  } catch(error) { status(error.message,true); }
 });
-$("edit").addEventListener("click",()=>{showNoteView("source");editMode(true);noteStatus("원문을 수정한 뒤 저장하세요. 이전 버전은 보존됩니다.");$("reader-body").focus();});
+$("edit").addEventListener("click",()=>{if(READ_ONLY)return;showNoteView("source");editMode(true);noteStatus("원문을 수정한 뒤 저장하세요. 이전 버전은 보존됩니다.");$("reader-body").focus();});
 $("cancel").addEventListener("click",()=>{if(!mayLeave()) return; $("reader-body").value=original; $("reader-summary").value=originalSummary; updateLines(); editMode(false);noteStatus("");});
 $("save").addEventListener("click",save);
 $("check-job").addEventListener("click",()=>checkJob());
@@ -157,6 +167,7 @@ async function autoConnect() {
  } catch { status("서버에 연결할 수 없습니다.",true); return; }
  try { const response=await fetch("/knowledge/local-connection",{method:"POST",headers:{"X-Knowledge-UI":"1"},credentials:"omit",cache:"no-store"}); if(!response.ok || version!==generation || token) { status("API 토큰으로 연결해 주세요."); return; } const data=await response.json(); if(version!==generation || !data.token || token) return; token=data.token; await categories(); await load(); } catch { status("API 토큰으로 연결해 주세요."); }
 }
+let storeView="knowledge", memoryOffset=0, memoryNext=null, memoryGeneration=0;
 autoConnect();
 
 function updateLines() {
@@ -200,7 +211,7 @@ $("reader-body").addEventListener("keydown",event=>{
 new ResizeObserver(updateLines).observe($("reader-body"));
 
 function showNoteView(view) {
- for(const name of ["summary","source","references","workflow"]) { $(name+"-view").hidden=view!==name; $("show-"+name).setAttribute("aria-pressed",String(view===name)); }
+ for(const name of ["summary","source","references","workflow","capture"]) { $(name+"-view").hidden=view!==name; $("show-"+name).setAttribute("aria-pressed",String(view===name)); }
  if(view==="source") updateLines();
 }
 $("show-summary").addEventListener("click",()=>showNoteView("summary"));
@@ -413,10 +424,10 @@ async function loadProposals(reset=true) {
    card.append(sourceButton);
    if(row.status==="LEGACY") {
     card.append(reviewNode("p","이전 추출 방식의 후보입니다. 기존 기록은 보존하며, 새 기준으로 다시 확인해야 합니다."));
-    const retry=reviewNode("button","새 기준으로 관계 확인");retry.type="button";
+    const retry=reviewNode("button","새 기준으로 관계 확인");retry.type="button";retry.hidden=READ_ONLY;
     retry.addEventListener("click",async()=>{try{await requestGraphExtraction(row.knowledge_id);}catch(e){reviewMessage(e.message);}});card.append(retry);
    }
-   if(row.status==="PENDING") {
+   if(row.status==="PENDING" && !READ_ONLY) {
     const [a,b]=await Promise.all([identityField(p.subject,row.scope,"주체"),identityField(p.object,row.scope,"대상")]);
     const fields=document.createElement("div");fields.className="identity-fields";fields.append(a.box,b.box);
     const noteLabel=reviewNode("label","검토 사유"), note=document.createElement("input");note.maxLength=1000;noteLabel.append(note);
@@ -429,7 +440,7 @@ async function loadProposals(reset=true) {
     }
     yes.addEventListener("click",()=>submit("approve"));no.addEventListener("click",()=>submit("reject"));
     const actions=document.createElement("div");actions.className="index-controls";actions.append(yes,no);card.append(fields,noteLabel,actions);
-   } else if(row.status==="APPROVED" && row.assertion_id) {
+   } else if(row.status==="APPROVED" && row.assertion_id && !READ_ONLY) {
     try {await connectionEditor(row,card,card.querySelector("h3"));}catch(e){card.append(reviewNode("p","연결 정보를 불러오지 못했습니다: "+e.message));}
    } else if(row.review_note) card.append(reviewNode("p","검토: "+row.review_note));
    fragment.append(card);
@@ -464,7 +475,7 @@ async function loadExtractionRuns(offset=0) {
    if(row.error_code)card.append(reviewNode("p",`오류: ${row.error_code}`));
    if(row.routing)card.append(reviewNode("p",`판단: ${row.routing.action} · ${row.routing.reason} · 모델 규칙 위반 관계 ${row.routing.rejected_relations || 0}개 제외`));
    const candidates=reviewNode("button","이 노트의 후보");candidates.type="button";candidates.addEventListener("click",()=>{proposalItem=row.knowledge_id;loadProposals();});card.append(candidates);
-   if(row.status==="FAILED") {
+   if(row.status==="FAILED" && !READ_ONLY) {
     const retry=reviewNode("button","실패 작업 재시도");retry.type="button";
     retry.addEventListener("click",async()=>{retry.disabled=true;try{await request(`/api/v1/graph/extraction/runs/${row.id}/retry`,{method:"POST"});await loadExtractionRuns(offset);}catch(e){reviewMessage(e.message);retry.disabled=false;}});card.append(retry);
    }
@@ -487,3 +498,180 @@ $("search-result-graph").addEventListener("click",()=>{
  $("workflow-status").textContent=`${flow.edges.length}개 관계 · ${flow.paths?.length || 0}개 연결 경로${flow.truncated || flow.paths_truncated?" · 일부만 표시":""} · 현재 원문 근거 기준`;
  renderWorkflow(flow); showNoteView("workflow");
 });
+
+
+// Data handling is performed through MCP; the web displays recorded clarification only.
+$("show-capture").addEventListener("click",()=>showNoteView("capture"));
+$("capture-refresh").addEventListener("click",()=>{if(selected)loadCapture(selected,contentGeneration);});
+async function loadCapture(item, version) {
+ $("capture-status").textContent="확인 내용을 불러오는 중…";
+ try {
+  const data=await request(`/api/v1/graph/reviews/${item.knowledge_id}/capture?revision_id=${encodeURIComponent(item.revision_id)}`);
+  if(version!==contentGeneration)return;
+  $("capture-content").replaceChildren();
+  const draft=data.capture;
+  if(!draft){$("capture-status").textContent="등록된 확인 질문이 없습니다.";$("capture-count").textContent="";return;}
+  const pending=draft.pending_question_keys.length;
+  $("capture-count").textContent=pending?`(${pending})`:"";
+  $("capture-status").textContent=!data.source_current?"이전 원문에 대한 기록":pending?`확인 대기 ${pending}개`:data.review.status==="COMPLETE"?"검토 완료":"답변 기록 완료 · 에이전트 반영 대기";
+  $("capture-content").append(element("p",draft.summary));
+  if(draft.hypotheses.length){const box=document.createElement("details");box.append(element("summary","추론 후보 · 확정 사실 아님"));for(const h of draft.hypotheses)box.append(element("p",h));$("capture-content").append(box);}
+  for(const q of draft.questions){
+   const card=document.createElement("section");card.className="capture-question";
+   card.append(element("h3",q.question),element("p",q.reason));
+   const evidence=document.createElement("details");evidence.append(element("summary","질문 근거"),element("blockquote",q.quote));card.append(evidence);
+   const labels={answered:"답변 기록됨",deferred:"미정 · 확인 대기",not_applicable:"해당 없음"};
+   card.append(element("strong",q.answer?labels[q.answer.disposition]:"아직 답변 없음"));
+   if(q.answer){card.append(element("p",q.answer.text),element("small","기록 시각: "+q.answer.recorded_at));}
+   $("capture-content").append(card);
+  }
+ }catch(error){if(version===contentGeneration){$("capture-status").textContent=error.message==="AUTH"?"연결 상태를 확인해 주세요.":"확인 내용을 불러오지 못했습니다. 다시 확인해 주세요.";}}
+}
+
+
+async function loadMemoryProfiles() {
+ const v=memoryGeneration;
+ const data=await request("/api/v1/agent-memory/profiles");
+ if(v!==memoryGeneration || !token)return;
+ const agent=$("memory-agent").value, thread=$("memory-thread").value;
+ for(const [kind,id,label] of [["agent","memory-agent","내 전체 에이전트"],["thread","memory-thread","내 전체 대화"]]) {
+  $(id).replaceChildren(new Option(label,""),...(data.items || []).filter(p=>p.kind===kind).map(p=>new Option(p.name+" · "+p.id.slice(0,8),p.id)));
+ }
+ $("memory-agent").value=agent; $("memory-thread").value=thread;
+}
+function readMemory(item) {
+ memorySelection=item; memoryEvidenceOffset=0; const detailVersion=++memoryDetailGeneration;
+ $("memory-evidence").replaceChildren(); $("memory-graph").replaceChildren(); $("memory-edges").replaceChildren(); $("memory-evidence-more").hidden=true;
+ loadMemoryEvidence(item,detailVersion); loadMemoryGraph(item,detailVersion);
+ $("memory-title").textContent=item.title;
+ $("memory-body").textContent=item.text;
+ $("memory-meta").textContent=[
+  "에이전트 메모리 · "+item.memory_type+" · "+item.status,
+  "에이전트: "+(item.agent_name || "지정 없음"),
+  "대화: "+(item.thread_name || item.thread_id || "지정 없음"),
+  "범위: "+item.scope, "기록 시점: "+(item.timestamp || "미상"), "ID: "+item.memory_id
+ ].join("\n");
+}
+async function loadMemories() {
+ const v=++memoryGeneration;
+ memoryDetailGeneration++; memorySelection=null; $("memory-evidence").replaceChildren(); $("memory-graph").replaceChildren(); $("memory-edges").replaceChildren(); $("memory-evidence-status").textContent=""; $("memory-graph-status").textContent=""; $("memory-evidence-more").hidden=true;
+ $("memory-status").textContent="메모리를 불러오는 중…";
+ $("memory-results").replaceChildren(); $("memory-body").textContent=""; $("memory-meta").textContent=""; $("memory-title").textContent="메모리를 선택하세요";
+ try {
+  const data=await request("/api/v1/agent-memory/search",{method:"POST",body:JSON.stringify({
+   query:listMode?"":$("query").value.trim(), agent_id:$("memory-agent").value || null,
+   thread_id:$("memory-thread").value || null, scope:$("scope").value.trim() || null,
+   offset:memoryOffset,limit:10,include_invalid:$("memory-history").checked
+  })});
+  if(v!==memoryGeneration)return;
+  $("connection").textContent="연결됨"; $("connect-form").hidden=true; $("connected").hidden=false;
+  memoryNext=data.next_offset; $("memory-prev").disabled=memoryOffset===0; $("memory-next").disabled=memoryNext==null;
+  $("memory-page").textContent=(memoryOffset/10+1)+" 페이지";
+  $("memory-status").textContent=data.status==="NOT_CONFIGURED"?"에이전트 메모리 연결이 필요합니다. 기존 업무 지식은 계속 조회할 수 있습니다.":data.truncated?"조회 상한에 도달했습니다. 검색어나 필터로 좁혀 주세요.":data.items.length?"":"저장된 메모리가 없습니다.";
+  for(const item of data.items) {
+   const row=element("button",""); row.className="note-row";
+   row.append(element("strong",item.title),element("small","에이전트 메모리 · "+(item.agent_name || "공통")+" · "+item.status));
+   row.addEventListener("click",()=>readMemory(item)); $("memory-results").append(row);
+  }
+  if(data.items[0])readMemory(data.items[0]);
+  status(storeView==="all"?"업무 지식과 에이전트 메모리를 각각 조회합니다.":"");
+ } catch(error) {if(v===memoryGeneration){$("memory-status").textContent="메모리 조회에 실패했습니다. 기존 업무 지식 조회와는 별도입니다."; handleError(error);}}
+}
+for(const button of document.querySelectorAll("#store-tabs button"))button.addEventListener("click",async()=>{
+ if(!mayLeave())return;
+ storeView=button.dataset.store; memoryGeneration++; generation++; controller?.abort();
+ const tabGeneration=memoryGeneration;
+ for(const b of document.querySelectorAll("#store-tabs button"))b.setAttribute("aria-pressed",String(b===button));
+ $("memory-panel").hidden=!["memory","all"].includes(storeView);
+ $("search-graph").hidden=storeView==="memory";
+ $("kind").closest("label").hidden=storeView==="memory";
+ document.querySelector(".workspace").hidden=storeView==="memory";
+ $("graph-review-panel").hidden=storeView==="memory";
+ memoryOffset=0; offset=0; activeIndex=null;
+ if(!token){status("먼저 연결해 주세요.");return;}
+ if(["memory","all"].includes(storeView)){try{await loadMemoryProfiles();}catch(error){handleError(error);}}
+ if(tabGeneration!==memoryGeneration)return;
+ if(storeView==="graph"){$("search-graph").click();return;}
+ await load();
+});
+for(const id of ["memory-agent","memory-thread","memory-history"])$(id).addEventListener("change",()=>{memoryOffset=0;loadMemories();});
+$("memory-prev").addEventListener("click",()=>{memoryOffset=Math.max(0,memoryOffset-10);loadMemories();});
+$("memory-next").addEventListener("click",()=>{if(memoryNext!=null){memoryOffset=memoryNext;loadMemories();}});
+$("search-form").addEventListener("submit",()=>{memoryOffset=0;});
+$("browse").addEventListener("click",()=>{memoryOffset=0;});
+
+let memoryDetailGeneration=0,memorySelection=null,memoryEvidenceOffset=0,noteMemoryOffset=0;
+function chooseStore(view){
+ storeView=view;generation++;controller?.abort();memoryGeneration++;
+ for(const b of document.querySelectorAll("#store-tabs button"))b.setAttribute("aria-pressed",String(b.dataset.store===view));
+ $("memory-panel").hidden=view!=="memory";document.querySelector(".workspace").hidden=view==="memory";
+ $("graph-review-panel").hidden=view==="memory";$("search-graph").hidden=view==="memory";$("kind").closest("label").hidden=view==="memory";
+}
+async function loadMemoryEvidence(item,version){
+ $("memory-evidence-status").textContent="근거를 확인하는 중…";
+ try{
+  const data=await request("/api/v1/agent-memory/references?"+new URLSearchParams({memory_id:item.memory_id,offset:String(memoryEvidenceOffset),limit:"20"}));
+  if(version!==memoryDetailGeneration)return;
+  if(memoryEvidenceOffset===0)$("memory-evidence").replaceChildren();
+  for(const link of data.items){
+   const card=element("section","");card.className="memory-evidence-card";
+   const b=element("button",link.title+" · "+(link.status==="CURRENT"?"현재 근거":"재검토 필요"));
+   b.addEventListener("click",()=>{chooseStore("knowledge");read({knowledge_id:link.knowledge_id,revision_id:link.revision_id,title:link.title,scope:link.scope});});
+   card.append(b,element("blockquote",link.quote),element("small","원문 버전 "+link.revision_id),element("p",link.reason));$("memory-evidence").append(card);
+  }
+  $("memory-evidence-status").textContent=data.items.length?"인용을 선택하면 당시 원문 버전을 엽니다.":"연결된 근거가 없습니다.";
+  memoryEvidenceOffset=data.next_offset;$("memory-evidence-more").hidden=memoryEvidenceOffset==null;
+ }catch(e){if(version===memoryDetailGeneration){$("memory-evidence-status").textContent="근거 조회 불가";handleError(e);}}
+}
+async function loadMemoryGraph(item,version){
+ $("memory-graph-status").textContent="기억 관계를 확인하는 중…";
+ try{
+  const graph=await request("/api/v1/agent-memory/graph",{method:"POST",body:JSON.stringify({memory_id:item.memory_id,depth:2,max_edges:30})});
+  if(version!==memoryDetailGeneration)return;
+  $("memory-graph-status").textContent=graph.edges.length?graph.edges.length+"개 관계"+(graph.truncated?" · 일부만 표시":""):"등록된 기억 관계가 없습니다.";
+  renderMemoryGraph(graph);
+ }catch(e){if(version===memoryDetailGeneration){$("memory-graph-status").textContent="기억 관계 조회 불가";handleError(e);}}
+}
+function renderMemoryGraph(graph){
+ $("memory-graph").replaceChildren();$("memory-edges").replaceChildren();if(!graph.edges.length)return;
+ const ns="http://www.w3.org/2000/svg",svg=document.createElementNS(ns,"svg"),height=Math.max(140,graph.nodes.length*75);
+ svg.setAttribute("viewBox","0 0 740 "+height);svg.setAttribute("role","img");svg.setAttribute("aria-label","기억 관계 그래프. 아래 목록에서 방향과 근거를 확인하세요.");
+ const defs=document.createElementNS(ns,"defs"),marker=document.createElementNS(ns,"marker"),arrow=document.createElementNS(ns,"path");
+ for(const [k,v] of Object.entries({id:"memory-arrow",viewBox:"0 0 10 10",refX:"10",refY:"5",markerWidth:"6",markerHeight:"6",orient:"auto-start-reverse"}))marker.setAttribute(k,v);
+ arrow.setAttribute("d","M 0 0 L 10 5 L 0 10 z");arrow.setAttribute("fill","#7b8790");marker.append(arrow);defs.append(marker);svg.append(defs);
+ const positions=new Map(graph.nodes.map((n,i)=>[n.id,{x:90+(i%2)*330,y:40+i*70}]));
+ for(const e of graph.edges){
+  const a=positions.get(e.source),b=positions.get(e.target);if(!a||!b)continue;
+  const line=document.createElementNS(ns,"line");for(const [k,v] of Object.entries({x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:"#7b8790","stroke-width":2,"marker-end":"url(#memory-arrow)"}))line.setAttribute(k,String(v));svg.append(line);
+ }
+ for(const n of graph.nodes){
+  const p=positions.get(n.id),circle=document.createElementNS(ns,"circle");circle.setAttribute("cx",p.x);circle.setAttribute("cy",p.y);circle.setAttribute("r","8");circle.setAttribute("fill",n.status==="valid"?"#00798c":"#999");svg.append(circle);
+  const text=document.createElementNS(ns,"text");text.setAttribute("x",p.x+12);text.setAttribute("y",p.y-12);text.setAttribute("font-size","12");text.textContent=n.title.slice(0,18);svg.append(text);
+ }
+ $("memory-graph").append(svg);
+ const nodes=new Map(graph.nodes.map(n=>[n.id,n]));
+ for(const e of graph.edges){
+  const row=element("div","");row.className="memory-evidence-card";
+  for(const [id,label] of [[e.source,"출발"],[e.target,"대상"]]){
+   const n=nodes.get(id);if(!n)continue;const b=element("button",label+": "+n.title+" · "+n.status);
+   b.addEventListener("click",()=>readMemory({...n,memory_id:n.id}));row.append(b);if(label==="출발")row.append(element("span"," → "+e.relation+" → "));
+  }
+  row.append(element("p",e.reason));$("memory-edges").append(row);
+ }
+}
+async function loadNoteMemories(){
+ if(!selected)return;const item=selected,version=contentGeneration;$("note-memory-status").textContent="관련 기억을 확인하는 중…";
+ try{
+  const data=await request("/api/v1/agent-memory/references?"+new URLSearchParams({knowledge_id:item.knowledge_id,offset:String(noteMemoryOffset),limit:"20"}));
+  if(version!==contentGeneration)return;if(noteMemoryOffset===0)$("note-memories").replaceChildren();
+  for(const link of data.items){
+   const b=element("button",link.memory.title+" · "+(link.status==="CURRENT"?"현재 근거":"재검토 필요"));b.className="note-row";
+   b.addEventListener("click",()=>{chooseStore("memory");readMemory({...link.memory,memory_id:link.memory.id});});$("note-memories").append(b);
+  }
+  $("note-memory-status").textContent=data.items.length?"":"연결된 에이전트 메모리가 없습니다.";
+  noteMemoryOffset=data.next_offset;$("note-memories-more").hidden=noteMemoryOffset==null;
+ }catch(e){if(version===contentGeneration)$("note-memory-status").textContent="에이전트 메모리 연결을 조회할 수 없습니다.";}
+}
+$("memory-evidence-more").addEventListener("click",()=>{if(memorySelection&&memoryEvidenceOffset!=null)loadMemoryEvidence(memorySelection,memoryDetailGeneration);});
+$("show-references").addEventListener("click",()=>{noteMemoryOffset=0;loadNoteMemories();});
+$("note-memories-more").addEventListener("click",()=>{if(noteMemoryOffset!=null)loadNoteMemories();});

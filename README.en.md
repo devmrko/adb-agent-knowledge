@@ -218,3 +218,14 @@ ADMIN/SYS/SYSTEM are rejected. Supply your own private configuration and explici
 This invokes shipped setup code, then checks Oracle triggers/rollback and a synthetic source/graph using
 configured embeddings. Synthetic test notes persist; it does not delete existing data. This is not a
 production JWT/HTTPS or Kev benchmark. [Detailed guide](docs/guides/runtime-installation.md).
+
+
+[Guided knowledge capture](docs/guides/guided-capture.md): Existing review/history tables support agent-authored clarification questions, persistent answers and explicit reconciliation. No new tables or separate LLM required; not automatic ontology generation.
+
+The web displays knowledge, relations and clarification records read-only. Submit answers and data changes through MCP.
+
+### Optional Oracle Agent Memory
+
+An opt-in SDK adapter stores agent experiences separately from business knowledge. The web UI provides separate memory and knowledge views. Install the agent-memory extra, run Alembic and scripts.setup_agent_memory, then enable AGENT_MEMORY_ENABLED. No generation LLM or automatic migration of existing notes is required. Exact knowledge-revision references, stale-evidence review tasks and SDK memory graph visualization are supported. Links require semantic confirmation by the calling agent; there is no automatic truth resolution. See [setup and scope](docs/guides/agent-memory.md).
+
+The Korean model is not an Oracle SDK default: our `IEmbedder` bridge injects the application embedding provider. See [SDK vs. embedding responsibilities](docs/guides/agent-memory.en.md).

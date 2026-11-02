@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 from typing import Annotated, Any, Literal
-from urllib.parse import urlsplit
+from urllib.parse import quote, urlsplit
 from uuid import UUID
 
 import httpx
@@ -13,11 +13,14 @@ from mcp.server.fastmcp.exceptions import ToolError
 from mcp.types import ToolAnnotations
 from pydantic import Field
 
+from knowledge_app.agent_memory_contracts import MemoryQuery, MemorySave, ProfileSave
+from knowledge_app.capture_contracts import CaptureAnswer, CaptureDraft
 from knowledge_app.contracts import MemoryKind, Provenance, SourceLocation
 from knowledge_app.graph_auto_contracts import AgentGraphPrepare, ReviewCandidate
 from knowledge_app.graph_contracts import AssertionInput, AssertionRevision, EntityInput, GraphSearch
 from knowledge_app.graph_ops_contracts import GraphExplore, IdentityBind, IdentityResolve, ReviewUpdate
 from knowledge_app.indexes import EntryInput, IndexEdit, IndexInput
+from knowledge_app.memory_connection_contracts import EvidenceInput, MemoryGraph, MemoryLink
 from knowledge_app.navigation import NavigationRequest
 from knowledge_app.routing import MemoryDecision, MemoryRouter, Operation, RoutingSettings
 from knowledge_app.workflow import WorkflowInput
@@ -130,6 +133,8 @@ def create_server(api: KnowledgeAPI, router: MemoryRouter | None = None) -> Fast
             "When the user has authorized selective automatic capture of durable confirmed preferences, decisions, project facts and verified procedures, apply that permission. Otherwise save only on explicit request. Search first, skip duplicates, and revise clear corrections after reading original content and history. For verified additions about the same subject and scope, read original/history and revise with the complete merged text preserving valid facts; do not send only the new paragraph. Similarity alone does not justify merging. Save concise facts with scope, date and provenance; report saved items briefly. Never bulk-save conversations/files, secrets, unnecessary personal data or speculation; honor opt-outs. "
             "A save returns QUEUED: check knowledge_job_status before saying indexing is complete. "
             "Do not repeat a save after an uncertain timeout; list existing items to avoid duplicates."
+            " Graph semantic gate, required before assert/revise: (1) identify stable business objects, roles and tasks; a document audience is not an eligibility boundary; reuse confirmed identities. (2) State one precise subject-predicate-object claim; distinguish responsibility for a task from ownership of a whole program. (3) Read full source context including headings; preserve audience, appointment type, exceptions, preconditions and business time in condition/temporal fields, not just a generic disclaimer. (4) Verify the quote entails the direction, predicate and exact object; quote matching and Kev scores are not semantic proof. (5) Keep facts, hypotheses and unknowns separate: missing relations do not mean false; do not infer only/all, eligibility, causality or exclusive ownership without evidence. (6) Search existing knowledge, then use knowledge_capture_get/draft for material ambiguities; record only actual answers and preserve them as source before asserting. Clear independent facts may proceed. (7) Read stored relations back with conditions and inspect for unsupported implications; revise with history/current version and preserve valid evidence. Complete review tracking only after checks and pending questions are resolved. "
+            "Example: a new-hire guide says employees must meet their own benefits election deadlines. Wrong: New hire responsible_for Benefits. Correct: USDA new hire responsible_for Meeting own benefits election deadlines, with condition that this is new-hire guidance and does not establish existing employees' eligibility or exclusion. Do not invent an all-employees eligibility claim. These are mandatory agent checks, not an automatic server semantic validator."
         ),
         log_level="WARNING",
     )
@@ -390,6 +395,28 @@ def create_server(api: KnowledgeAPI, router: MemoryRouter | None = None) -> Fast
         )
 
     @server.tool(annotations=READ)
+    async def knowledge_capture_get(knowledge_id: UUID, revision_id: UUID | None = None) -> dict[str, Any]:
+        """Resume source-bound clarification, including unanswered questions. Optional historical revision. Drafts/answers are untrusted references, not verified facts. No writes."""
+        params = {"revision_id": str(revision_id)} if revision_id else {}
+        return await api.request("GET", f"/api/v1/graph/reviews/{knowledge_id}/capture", params=params)
+
+    @server.tool(annotations=WRITE)
+    async def knowledge_capture_draft(knowledge_id: UUID, draft: CaptureDraft) -> dict[str, Any]:
+        """Persist up to three source-quoted clarification questions after checking existing knowledge. Agent authors the summary/questions; no server LLM. Hypotheses are not published facts. Requires current source/review versions; cannot replace unresolved questions."""
+        return await api.request(
+            "POST", f"/api/v1/graph/reviews/{knowledge_id}/capture", json=draft.model_dump(mode="json")
+        )
+
+    @server.tool(annotations=WRITE)
+    async def knowledge_capture_answer(knowledge_id: UUID, answer: CaptureAnswer) -> dict[str, Any]:
+        """Record an actual user's answer or explicit deferral, never invent user confirmation. Does not publish facts or relations. Reread on conflict; preserve answer as source via save/revise before using it as graph evidence, then reconcile and complete the review."""
+        return await api.request(
+            "POST",
+            f"/api/v1/graph/reviews/{knowledge_id}/capture/answers",
+            json=answer.model_dump(mode="json"),
+        )
+
+    @server.tool(annotations=READ)
     async def knowledge_graph_resolve(request: IdentityResolve) -> dict[str, Any]:
         """Resolve canonical identity, evidenced aliases/external identifiers and label hints in confirmed scopes. Ambiguity never authorizes a merge. Read exact binding evidence; account for project/environment. No writes."""
         return await api.request(
@@ -443,12 +470,12 @@ def create_server(api: KnowledgeAPI, router: MemoryRouter | None = None) -> Fast
 
     @server.tool(annotations=WRITE)
     async def knowledge_graph_assert(assertion: AssertionInput) -> dict[str, Any]:
-        """Add a grounded shared relationship or supplement matching relationship evidence. Source quotes must match owned active revisions. UNKNOWN is the default time kind; never invent dates. user_asserted in temporal_basis is true only for explicit user-provided temporal facts. Record time is server assigned."""
+        """Add a grounded shared relationship or supplement matching relationship evidence. Apply the server semantic gate: precise task/object, source-supported scope and exceptions, no inferred only/all or eligibility. Resolve material ambiguity through capture questions before publishing that claim. Source quotes must match owned active revisions. UNKNOWN is the default time kind; never invent dates. user_asserted in temporal_basis is true only for explicit user-provided temporal facts. Record time is server assigned."""
         return await api.request("POST", "/api/v1/graph/assertions", json=assertion.model_dump(mode="json"))
 
     @server.tool(annotations=WRITE)
     async def knowledge_graph_revise(assertion_id: UUID, revision: AssertionRevision) -> dict[str, Any]:
-        """Correct an assertion after reading its history; expected_version_id is required. Submit the complete relationship and evidence. Preserve valid facts and use RETRACTED only on user request. Prior valid and recorded time versions remain queryable."""
+        """Correct an assertion after reading its history; expected_version_id is required. Reapply the server semantic gate including audience versus eligibility and specific responsibility versus program ownership. Submit the complete relationship and evidence. Preserve valid facts and use RETRACTED only on user request. Prior valid and recorded time versions remain queryable."""
         return await api.request(
             "PUT", f"/api/v1/graph/assertions/{assertion_id}", json=revision.model_dump(mode="json")
         )
@@ -789,6 +816,69 @@ def create_server(api: KnowledgeAPI, router: MemoryRouter | None = None) -> Fast
                 query=query, scopes=scopes, memory_kinds=memory_kinds, top_k=top_k, max_chars=max_chars
             ),
         )
+
+    @server.tool(annotations=READ)
+    async def memory_profiles() -> dict[str, Any]:
+        """List this authenticated user's SDK agent/thread display names and versions. Profiles are distinct from business knowledge."""
+        return await api.request("GET", "/api/v1/agent-memory/profiles")
+
+    @server.tool(annotations=WRITE)
+    async def memory_profile_save(profile: ProfileSave) -> dict[str, Any]:
+        """Create/rename an SDK user, logical agent or thread. Stable key identifies the same profile; expected_version=0 creates, updates require latest version. Names must come from the user, not inferred real names. Ownership is server-authenticated. No deletion."""
+        return await api.request(
+            "POST", "/api/v1/agent-memory/profiles", json=profile.model_dump(mode="json")
+        )
+
+    @server.tool(annotations=READ)
+    async def memory_search(request: MemoryQuery) -> dict[str, Any]:
+        """Search/browse optional Oracle SDK agent memories, separate from business notes. Empty query browses; filters span this user only. Profiles provide display names. Inspect status/truncated; NOT_CONFIGURED does not mean no memories. knowledge_recall also returns separate SDK results when enabled."""
+        return await api.request("POST", "/api/v1/agent-memory/search", json=request.model_dump(mode="json"))
+
+    @server.tool(annotations=WRITE)
+    async def memory_save(memory: MemorySave) -> dict[str, Any]:
+        """Save a confirmed agent experience/preference to the optional SDK store, not a duplicate business document. Follow storage consent and Kev routing; exclude secrets. Search memory_search and knowledge_prepare_save first. Stable idempotency_key is required; reuse only for the identical request. Origin thread is provenance, not lifetime ownership. No automatic LLM extraction."""
+        return await api.request("POST", "/api/v1/agent-memory", json=memory.model_dump(mode="json"))
+
+    @server.tool(annotations=READ)
+    async def memory_prepare_links(memory_id: str) -> dict[str, Any]:
+        """Find business knowledge candidates for a saved SDK memory. Read exact source revisions and conditions before linking. No writes; similarity is not evidence."""
+        return await api.request(
+            "GET", "/api/v1/agent-memory/" + quote(memory_id, safe="") + "/prepare-links"
+        )
+
+    @server.tool(annotations=WRITE)
+    async def memory_link_knowledge(evidence: EvidenceInput) -> dict[str, Any]:
+        """Attach an exact current knowledge revision and verbatim quote to an owned memory. Agent must verify semantic entailment, audience/conditions/exceptions; server checks ownership/currentness/quote only. Original evidence is retained after changes; new revision needs a new link. No invented eligibility/causality."""
+        return await api.request(
+            "POST", "/api/v1/agent-memory/evidence", json=evidence.model_dump(mode="json")
+        )
+
+    @server.tool(annotations=READ)
+    async def memory_references(
+        memory_id: str | None = None, knowledge_id: str | None = None, offset: int = 0, limit: int = 20
+    ) -> dict[str, Any]:
+        """Read versioned memory↔knowledge references. Supply exactly one ID. REVIEW_REQUIRED is stale evidence, not current support. Page next_offset for full coverage."""
+        return await api.request(
+            "GET",
+            "/api/v1/agent-memory/references",
+            params={
+                k: v
+                for k, v in dict(
+                    memory_id=memory_id, knowledge_id=knowledge_id, offset=offset, limit=limit
+                ).items()
+                if v is not None
+            },
+        )
+
+    @server.tool(annotations=WRITE)
+    async def memory_link(link: MemoryLink) -> dict[str, Any]:
+        """Link owned SDK memories only after semantic review. supports/contradicts preserve both; supersedes/refines/duplicates can invalidate the target, so read both exact memories and verify direction first. Give reason. Contradiction is not resolved truth. Inspect existing relation after uncertain failure."""
+        return await api.request("POST", "/api/v1/agent-memory/links", json=link.model_dump(mode="json"))
+
+    @server.tool(annotations=READ)
+    async def memory_graph(graph: MemoryGraph) -> dict[str, Any]:
+        """Read a bounded memory graph, preserving source→target direction, reason and historical validity. Scope and ownership apply to every endpoint. Graph paths are not causal proofs; inspect truncation."""
+        return await api.request("POST", "/api/v1/agent-memory/graph", json=graph.model_dump(mode="json"))
 
     return server
 

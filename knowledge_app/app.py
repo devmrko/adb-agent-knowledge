@@ -1,3 +1,4 @@
+import asyncio
 import secrets
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -11,8 +12,12 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from pydantic import ValidationError
 from sqlalchemy import text
 
+from knowledge_app.agent_memory_contracts import MemoryQuery, MemorySave, ProfileSave
+from knowledge_app.agent_memory_repository import SDKRepository
+from knowledge_app.agent_memory_service import AgentMemoryService
 from knowledge_app.audit_service import AuditService, ResolveReview
 from knowledge_app.browser_session import BrowserSessions, install_browser_sessions
+from knowledge_app.capture_contracts import CaptureAnswer, CaptureDraft
 from knowledge_app.contracts import (
     ContextRequest,
     CreateKnowledge,
@@ -40,6 +45,8 @@ from knowledge_app.graph_ops_contracts import GraphExplore, IdentityBind, Identi
 from knowledge_app.graph_ops_service import GraphOpsService
 from knowledge_app.graph_service import GraphService
 from knowledge_app.indexes import EntryInput, IndexEdit, IndexInput, IndexService
+from knowledge_app.memory_connection_contracts import EvidenceInput, MemoryGraph, MemoryLink
+from knowledge_app.memory_connections import MemoryConnections
 from knowledge_app.navigation import NavigationRequest, NavigationService
 from knowledge_app.routing import MemoryRouter, RoutingSettings
 from knowledge_app.service import KnowledgeService, fail
@@ -100,6 +107,9 @@ def create_app(
     )
     engine = database(settings)
     service = KnowledgeService(sessions(engine), embedder or create_embedder(settings), settings)
+    memory_repo = SDKRepository(settings, service.embedder)
+    memories = AgentMemoryService(memory_repo, engine, settings.agent_memory_enabled)
+    connections = MemoryConnections(memories, service, sessions(engine))
     graph_service = GraphService(sessions(engine), settings)
     graph_ops = GraphOpsService(sessions(engine), settings)
     audit = AuditService(sessions(engine), settings.workflow_rdf_enabled)
@@ -112,6 +122,7 @@ def create_app(
         try:
             yield
         finally:
+            memory_repo.close()
             engine.dispose()
 
     app = FastAPI(title="Agent Knowledge for Oracle ADB", version="0.2.0", lifespan=lifespan)
@@ -119,6 +130,8 @@ def create_app(
     install_browser_sessions(app, settings)
     app.state.service, app.state.engine = service, engine
     app.state.auto_graph = auto_graph
+    app.state.agent_memory = memories
+    app.state.memory_connections = connections
 
     assets = Path(__file__).parent / "static"
     ui_headers = {
@@ -178,6 +191,76 @@ def create_app(
         with engine.connect() as con:
             con.execute(text("SELECT 1 FROM DUAL" if engine.dialect.name == "oracle" else "SELECT 1"))
         return {"status": "UP"}
+
+    @app.get("/api/v1/agent-memory/profiles")
+    def memory_profiles(actor: ActorDep) -> dict[str, Any]:
+        return memories.profiles(actor)
+
+    @app.post("/api/v1/agent-memory/profiles")
+    def memory_profile_save(command: ProfileSave, actor: ActorDep) -> dict[str, Any]:
+        return memories.save_profile(command, actor)
+
+    @app.get("/api/v1/agent-memory/references")
+    def memory_references(
+        actor: ActorDep,
+        memory_id: str | None = None,
+        knowledge_id: str | None = None,
+        offset: Annotated[int, Query(ge=0, le=100000)] = 0,
+        limit: Annotated[int, Query(ge=1, le=50)] = 20,
+    ) -> dict[str, Any]:
+        return connections.references(
+            actor, memory_id=memory_id, knowledge_id=knowledge_id, offset=offset, limit=limit
+        )
+
+    @app.get("/api/v1/agent-memory/{memory_id}/prepare-links")
+    def memory_prepare_links(memory_id: str, actor: ActorDep) -> dict[str, Any]:
+        return connections.prepare(memory_id, actor)
+
+    @app.post("/api/v1/agent-memory/evidence")
+    def memory_evidence(command: EvidenceInput, actor: ActorDep) -> dict[str, Any]:
+        return connections.link_evidence(command, actor)
+
+    @app.post("/api/v1/agent-memory/links")
+    def memory_link(command: MemoryLink, actor: ActorDep) -> dict[str, Any]:
+        return connections.link(command, actor)
+
+    @app.post("/api/v1/agent-memory/graph")
+    def memory_graph(command: MemoryGraph, actor: ActorDep) -> dict[str, Any]:
+        return connections.graph(command, actor)
+
+    @app.post("/api/v1/agent-memory/search")
+    def memory_search(command: MemoryQuery, actor: ActorDep) -> dict[str, Any]:
+        result = memories.query(command, actor)
+        if command.include_connections:
+            for item in result["items"][:5]:
+                try:
+                    item["references"] = connections.references(
+                        actor,
+                        memory_id=item["memory_id"],
+                        limit=5,
+                        scopes=[command.scope] if command.scope else None,
+                    )
+                    item["graph"] = connections.graph(
+                        MemoryGraph(
+                            memory_id=item["memory_id"],
+                            depth=1,
+                            max_edges=10,
+                            scopes=[command.scope] if command.scope else None,
+                        ),
+                        actor,
+                    )
+                except BusinessError:
+                    item["connections_status"] = "UNAVAILABLE"
+            result["connections_limit"] = 5
+        return result
+
+    @app.post("/api/v1/agent-memory")
+    def memory_save(command: MemorySave, actor: ActorDep) -> dict[str, Any]:
+        result = memories.save(command, actor)
+        result["next_step"] = (
+            "Use memory_prepare_links, read exact revisions and conditions, then memory_link_knowledge only for supported claims. Inspect memory_graph before adding memory links."
+        )
+        return result
 
     @app.post("/api/v1/knowledge", status_code=202)
     def create(command: CreateKnowledge, actor: ActorDep) -> dict[str, str]:
@@ -293,7 +376,41 @@ def create_app(
 
     @app.post("/api/v1/knowledge/recall")
     async def recall(command: NavigationRequest, actor: ActorDep) -> dict[str, Any]:
-        return await navigation.execute(actor, command)
+        result = await navigation.execute(actor, command)
+        if command.include_agent_memory and settings.agent_memory_enabled and not command.contains_sensitive:
+            memory_items: dict[str, Any] = {}
+            statuses = []
+            memory_scopes: list[str | None] = list(command.scopes) if command.scopes else [None]
+            for scope in memory_scopes:
+                try:
+                    found = await asyncio.to_thread(
+                        memory_search,
+                        MemoryQuery(
+                            query=command.text[:2000],
+                            scope=scope,
+                            limit=5,
+                            include_connections=command.graph_mode == "always"
+                            or (command.graph_mode == "auto" and result.get("plan", {}).get("graph", False)),
+                        ),
+                        actor,
+                    )
+                    memory_items.update({i["memory_id"]: i for i in found["items"]})
+                    statuses.append(
+                        {
+                            "scope": scope,
+                            "status": found["status"],
+                            "truncated": found.get("truncated", False),
+                        }
+                    )
+                except BusinessError:
+                    statuses.append({"scope": scope, "status": "UNAVAILABLE"})
+            result["agent_memories"] = {
+                "items": list(memory_items.values()),
+                "scopes": statuses,
+                "time_filters_applied": False,
+                "note": "Separate SDK results; scores are not merged with knowledge.",
+            }
+        return result
 
     @app.post("/api/v1/knowledge/prepare-save")
     async def prepare_save(command: NavigationRequest, actor: ActorDep) -> dict[str, Any]:
@@ -319,6 +436,18 @@ def create_app(
     @app.post("/api/v1/graph/reviews/{item_id}")
     def graph_review_update(item_id: str, command: ReviewUpdate, actor: ActorDep) -> dict[str, Any]:
         return graph_ops.review(actor, item_id, command)
+
+    @app.get("/api/v1/graph/reviews/{item_id}/capture")
+    def capture_get(item_id: str, actor: ActorDep, revision_id: str | None = None) -> dict[str, Any]:
+        return graph_ops.capture_get(actor, item_id, revision_id)
+
+    @app.post("/api/v1/graph/reviews/{item_id}/capture")
+    def capture_draft(item_id: str, command: CaptureDraft, actor: ActorDep) -> dict[str, Any]:
+        return graph_ops.capture_write(actor, item_id, command)
+
+    @app.post("/api/v1/graph/reviews/{item_id}/capture/answers")
+    def capture_answer(item_id: str, command: CaptureAnswer, actor: ActorDep) -> dict[str, Any]:
+        return graph_ops.capture_write(actor, item_id, command)
 
     @app.get("/api/v1/graph/entities/{entity_id}/identities")
     def graph_entity_identities(

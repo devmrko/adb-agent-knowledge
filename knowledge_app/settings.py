@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=ROOT / ".env", extra="ignore", populate_by_name=True)
+    agent_memory_enabled: bool = False
+    agent_memory_store_id: str = Field(default="AKMEMORY", pattern=r"^[A-Z][A-Z0-9_]{0,15}$")
     api_host: str = "127.0.0.1"
     ui_auto_connect: bool = True
     web_public_origin: str = ""

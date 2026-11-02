@@ -75,3 +75,20 @@ input[type="checkbox"] { min-height: auto; accent-color: var(--accent); }
 @media (max-width:760px) { .graph-proposal .identity-fields { grid-template-columns: 1fr; } }
 
 .relation-filter{display:flex;align-items:center;gap:.5rem;margin:.75rem 0;font-size:.9rem}.relation-filter input{width:auto;margin:0}
+
+.capture-question{border-top:1px solid var(--border,#ddd);padding:1rem 0;display:grid;gap:.65rem}.capture-question label{display:grid;gap:.3rem}.capture-question textarea{width:100%;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.capture-question blockquote{white-space:pre-wrap;overflow-wrap:anywhere}.capture-question button{justify-self:start}
+
+#store-tabs {margin: 12px 0;}
+#store-tabs [aria-pressed=true] {font-weight:700; border-bottom:3px solid currentColor;}
+#memory-panel {padding:16px; margin-bottom:16px;}
+.memory-workspace {display:grid; grid-template-columns:minmax(220px, 32%) minmax(0, 1fr); gap:20px;}
+.memory-workspace pre {white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.65;}
+#memory-meta {font-size:12px; opacity:.75;}
+#memory-results .note-row {width:100%;}
+@media (max-width:700px) {.memory-workspace {grid-template-columns:1fr;}}
+
+#memory-panel .filters label:has(#memory-history) {display:flex; align-items:center; gap:8px;}
+#memory-history {width:auto; flex:none; margin:0;}
+
+.memory-evidence-card {padding:12px 0;border-bottom:1px solid #ddd;}
+#memory-graph svg {width:100%;max-height:600px;}

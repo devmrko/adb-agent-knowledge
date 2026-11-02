@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from knowledge_app import navigation_rdf
 from knowledge_app.audit_context import audited_uow
 from knowledge_app.audit_models import ChangeContext, ChangeEvent, ChangeOutbox, ChangeReview
+from knowledge_app.memory_evidence_models import MemoryEvidence
 from knowledge_app.models import GraphClaim, GraphEvidence, Item, Revision, now, uid
 from knowledge_app.service import fail, owner_id
 from knowledge_app.summaries import extract_summary
@@ -200,6 +201,26 @@ class AuditService:
 
     def consume(self, session: Session, event: ChangeEvent) -> None:
         before, after = json.loads(event.before_json or "{}"), json.loads(event.after_json or "{}")
+        if event.table_name == "vk_item":
+            old_source = before.get("active_revision_id")
+            source_changed = old_source != after.get("active_revision_id")
+            unavailable = after.get("lifecycle_status") != "ACTIVE"
+            if old_source and (source_changed or unavailable or event.context_id is None):
+                links = session.scalars(
+                    select(MemoryEvidence).where(
+                        MemoryEvidence.owner_id == event.owner_id,
+                        MemoryEvidence.knowledge_id == event.target_id,
+                        MemoryEvidence.revision_id == old_source,
+                    )
+                ).all()
+                for link in links:
+                    self.review(
+                        session,
+                        event,
+                        "MEMORY_EVIDENCE",
+                        link.id,
+                        "SOURCE_UNAVAILABLE" if unavailable else "SOURCE_REVIEW_REQUIRED",
+                    )
         if event.context_id is None:
             self.review(session, event, event.table_name, event.target_id, "DIRECT_SQL_CHANGE")
             return

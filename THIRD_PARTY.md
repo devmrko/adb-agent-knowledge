@@ -4,6 +4,9 @@ The root MIT license covers this project's original code. It does not relicense 
 models, data or services. No model weights, Wallet or database credentials are distributed here.
 
 - Oracle Database / Autonomous Database: provision your own service and follow Oracle terms.
+- Optional oracleagentmemory 26.8.0 SDK: installed distribution metadata declares
+  Apache-2.0 OR UPL-1.0. Its own license terms apply; it is not relicensed under this project's MIT.
+  The SDK and transitive dependencies are installed separately through the agent-memory extra.
 - Kev: separately installed from https://github.com/jaredpalmer/kev ; retain its license and the
   selected model/base model conditions. The repository pins a Kev source commit in setup_kev.sh.
 - Embeddings: https://huggingface.co/dragonkue/snowflake-arctic-embed-l-v2.0-ko ; check the pinned

@@ -18,6 +18,7 @@ from python_foundation.security import Actor
 
 
 class NavigationRequest(BaseModel):
+    include_agent_memory: bool = True
     model_config = ConfigDict(extra="forbid")
     text: str = Field(min_length=1, max_length=6000)
     scopes: list[str] | None = Field(default=None, min_length=1, max_length=10)

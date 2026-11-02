@@ -20,10 +20,16 @@ class GraphOpsRepository:
     def __init__(self, session: Session):
         self.session = session
 
-    def source(self, owner: str, item_id: str, revision_id: str) -> tuple[Item, Revision] | None:
-        item = self.session.scalar(
-            select(Item).where(Item.owner_id == owner, Item.id == item_id).with_for_update()
+    def current_revision(self, owner: str, item_id: str) -> str | None:
+        return self.session.scalar(
+            select(Item.active_revision_id).where(Item.owner_id == owner, Item.id == item_id)
         )
+
+    def source(
+        self, owner: str, item_id: str, revision_id: str, *, lock: bool = True
+    ) -> tuple[Item, Revision] | None:
+        stmt = select(Item).where(Item.owner_id == owner, Item.id == item_id)
+        item = self.session.scalar(stmt.with_for_update() if lock else stmt)
         if item is None:
             return None
         revision = self.session.scalar(
@@ -33,12 +39,11 @@ class GraphOpsRepository:
         )
         return (item, revision) if revision else None
 
-    def review(self, owner: str, revision_id: str) -> GraphReview | None:
-        return self.session.scalar(
-            select(GraphReview)
-            .where(GraphReview.owner_id == owner, GraphReview.revision_id == revision_id)
-            .with_for_update()
+    def review(self, owner: str, revision_id: str, *, lock: bool = True) -> GraphReview | None:
+        stmt = select(GraphReview).where(
+            GraphReview.owner_id == owner, GraphReview.revision_id == revision_id
         )
+        return self.session.scalar(stmt.with_for_update() if lock else stmt)
 
     def ensure_review(self, owner: str, item_id: str, revision_id: str) -> GraphReview:
         row = self.review(owner, revision_id)
@@ -169,6 +174,33 @@ class GraphOpsRepository:
                 version=row.version,
                 actor=actor,
                 snapshot_json=json.dumps(snapshot(row), ensure_ascii=False),
+                created_at=now(),
+            )
+        )
+
+    def capture(self, owner: str, target_id: str) -> dict[str, Any] | None:
+        row = self.session.scalar(
+            select(GraphOperation)
+            .where(
+                GraphOperation.owner_id == owner,
+                GraphOperation.target_id == target_id,
+                GraphOperation.kind == "CAPTURE",
+            )
+            .order_by(GraphOperation.version.desc())
+            .limit(1)
+        )
+        return json.loads(row.snapshot_json) if row else None
+
+    def record_capture(self, owner: str, row: GraphReview, data: dict[str, Any], actor: str) -> None:
+        self.session.add(
+            GraphOperation(
+                id=uid(),
+                owner_id=owner,
+                target_id=row.id,
+                kind="CAPTURE",
+                version=row.version,
+                actor=actor,
+                snapshot_json=json.dumps(data, ensure_ascii=False),
                 created_at=now(),
             )
         )
