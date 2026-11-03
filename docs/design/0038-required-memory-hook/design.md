@@ -16,3 +16,11 @@ Validation: mock routing/ownership-scope shape, secret handling, failures, timeo
 real read-only MCP hook run and host event tests. macOS/Linux tested first; Windows unsupported for process-group cleanup.
 
 Validation: 283 tests; real MCP read success; Claude event dispatch confirmed but provider expiry prevented model verification; Codex untrusted hook skipped, user trust still required.
+
+## Explicit related scopes (2026-11-03)
+A real Claude prompt executed the hook but could not find the 22-tool record because the legacy
+workspace queried project:vector_knowledge while the record belongs to project:adb-agent-knowledge.
+Allow each scope_roots value to be one scope or an explicit nonempty list (max 10).
+Longest path matching and global inclusion remain; no inferred aliases, no unscoped fallback,
+no data relocation or cross-owner access. Inject selected scopes for agent follow-up.
+Tests: backward compatibility, deduplication, invalid entries, nested paths, live legacy-cwd retrieval.

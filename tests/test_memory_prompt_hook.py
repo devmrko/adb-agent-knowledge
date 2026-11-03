@@ -103,3 +103,20 @@ def test_timeout_blocks(tmp_path):
         timeout=8,
     )
     assert json.loads(result.stdout)["decision"] == "block"
+
+
+def test_explicit_related_scopes_and_validation():
+    import pytest
+
+    config = {
+        "scope_roots": {
+            "/work": ["project:legacy", "project:public", "project:legacy"],
+            "/work/independent": "project:other",
+        }
+    }
+    assert scopes_for("/work/child", config) == ["global", "project:legacy", "project:public"]
+    assert scopes_for("/work/independent", config) == ["global", "project:other"]
+    assert scopes_for("/elsewhere", config) == ["global"]
+    for value in [[], [None], ["global"], ["project:"], ["project:has space"], ["project:x"] * 11]:
+        with pytest.raises(ValueError):
+            scopes_for("/work", {"scope_roots": {"/work": value}})

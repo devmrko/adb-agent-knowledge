@@ -259,6 +259,6 @@ Do not register all profiles at once. Existing tool names, HTTP endpoints and st
 
 Normal MCP calls can be omitted by the agent. Memory preserves ongoing working context, so checking it belongs at the start of every request. An optional client-side UserPromptSubmit hook executes that MCP routing/lookup before the model responds.
 It is separate from MCP connection setup; Codex requires /hooks trust. Real Codex context injection has
-been observed. Claude hook dispatch was verified, but model consumption remains unverified after a client expiry error.
+been observed. A follow-up Claude test also verified an answer based on the injected source and check ID. Each installation still needs scope mapping and activation checks.
 
 [Install, activate, verify, troubleshoot and remove the hook](docs/guides/required-memory-hook.en.md) · [한국어](docs/guides/required-memory-hook.md)

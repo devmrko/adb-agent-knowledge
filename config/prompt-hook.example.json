@@ -4,6 +4,10 @@
   ],
   "timeout_seconds": 35,
   "scope_roots": {
-    "/absolute/path/to/your/project": "project:your-confirmed-project-key"
+    "/absolute/path/to/your/project": "project:your-confirmed-project-key",
+    "/absolute/path/to/related-workspace": [
+      "project:related-workspace",
+      "project:your-confirmed-project-key"
+    ]
   }
 }

@@ -95,3 +95,16 @@ Claude dispatch/MCP reads were observed; model consumption after the expiry erro
   as a model-selected tool bubble; verify the audit and injected check_id instead.
 
 Removal affects only the hook, not stored knowledge. Startup tool profiles and hook activation are independent.
+
+## Explicit related project scopes
+
+A scope_roots value accepts either one project scope string or a nonempty list of up to ten scopes.
+Use explicit related scopes when a legacy workspace and a public deployment repository store records separately.
+Global is included automatically; the longest matching directory wins. No project identity is inferred or merged,
+and read-scope expansion does not change the destination of writes.
+Keep the hook's supplied scopes in agent follow-up retrieval.
+A real legacy-cwd test previously missed the 22-tool configuration because it excluded the public project scope.
+Adding that confirmed scope returned the exact record and source. 284 tests passed.
+An outdated local checkout or a top-k miss is not evidence that the record/implementation does not exist.
+
+Follow-up Claude end-to-end verification succeeded on 2026-11-03: with model tool calls disabled and the legacy cwd, Claude answered MCP_TOOL_PROFILE=memory and 22 tools, citing the injected source title and check_id. This supersedes the initial expiry-related pending status above.
