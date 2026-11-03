@@ -75,10 +75,17 @@ agent 모드에서도 LLM은 에이전트 쪽에서 사용하며 해당 사용�
 
 ```mermaid
 flowchart TD
-    Request["사용자 요청"] --> Need{"에이전트 + Kev<br/>과거 지식이 필요한가?"}
-    Need -->|불필요| Continue["조회 없이 작업 진행"]
+    Request["사용자 요청"] --> Hook["활성화된 UserPromptSubmit 훅"]
+    Hook --> Principles["사용자 원칙 정확 조회<br/>검색 여부와 관계없이 전달"]
+    Hook --> Need{"Kev<br/>과거 기억·지식이 필요한가?"}
+    Need -->|불필요| Continue["기억 검색 생략<br/>사용자 원칙은 적용"]
+    Principles --> Answer
+    Continue --> Answer
     Need -->|필요 · 명시적 조회 요청| Recall["knowledge_recall"]
-    Recall --> Route{"Kev: 어떤 경로로 찾을까?"}
+    Recall --> Memory["에이전트 메모리 검색<br/>활성화된 Oracle AI Agent Memory"]
+    Memory --> MemoryEvidence["경험·선호·이전 작업 기억<br/>필요한 기억 관계·근거 확인"]
+    MemoryEvidence --> Answer
+    Recall --> Route{"Kev: 업무 지식은 어떤 경로로 찾을까?"}
     Route -->|직접 검색| Search["질의 임베딩<br/>Oracle 벡터 + 키워드 검색"]
     Route -->|인덱스 탐색| Index["관련 인덱스 선택<br/>목록·항목 탐색"]
     Route -->|양쪽| Both["직접 검색 + 인덱스 탐색"]
@@ -93,7 +100,9 @@ flowchart TD
     Read --> Answer["근거를 바탕으로 답변·작업"]
 ```
 
-`knowledge_decide(operation="lookup")`로 선택적 조회 여부를 먼저 판단할 수 있습니다.
+위 흐름은 훅을 설치·활성화한 경우입니다. 훅이 없으면 에이전트가 MCP 호출 여부를 선택합니다.
+에이전트 메모리는 활성화 설정과 `include_agent_memory`에 따라 함께 조회하며, 업무 지식과 별도 결과로 반환합니다.
+`knowledge_decide(operation="lookup")`로 조회 필요성을 판단합니다.
 `knowledge_recall`은 직접 검색·인덱스·양쪽 경로를 선택하고, 특정 질의는 `knowledge_search`로
 바로 검색할 수 있습니다. 관계 조회는 `graph_mode=auto/always/never`로 제어합니다.
 인덱스가 비거나 라우팅이 불확실하면 직접 검색 등의 대체 경로를 제공합니다.
@@ -102,7 +111,13 @@ flowchart TD
 필요하면 프로젝트·서비스·배포 환경의 관계와 당시 근거를 따라갑니다. 전체 문서를 한꺼번에
 읽는 대신 **요약 → 상세 지식 → 필요한 원본·연결 지식** 순서로 확인합니다.
 
-### 저장: 새로 저장할지, 기존 지식을 보완할지 판단
+### 저장: 내용에 맞는 곳에 기록하고 기존 내용을 확인
+
+- **사용자 원칙:** 웹에서 명시적으로 승인·수정합니다. 일반 기억을 자동으로 원칙으로 승격하지 않습니다.
+- **에이전트 메모리:** 경험·선호·이전 작업 기억은 `memory_search`로 중복을 확인하고 `memory_save`로 저장합니다. 현재 본문 수정·삭제 도구는 제공하지 않으며, 이름 정정은 `memory_rename`을 사용합니다.
+- **업무 지식:** 문서·업무 사실·원문 근거는 아래 저장·수정 흐름을 따릅니다. 같은 본문을 두 저장소에 중복 저장하지 않고 필요한 근거를 참조로 연결합니다.
+
+에이전트 메모리는 API에서 동기 임베딩·저장 후 READY를 반환합니다. 아래 QUEUED → 워커 → READY는 **업무 지식**의 비동기 처리입니다. 저장은 사용자 허용 범위에서 에이전트가 수행하며 훅 자체는 저장하지 않습니다.
 
 ```mermaid
 flowchart TD
@@ -121,8 +136,8 @@ flowchart TD
     Queue --> Worker["워커: 청크 생성 → 임베딩<br/>Oracle에 벡터 저장·원문 버전 활성화"]
     Worker --> Ready["READY 확인 후 검색 가능"]
     Ready --> Index["확인된 인덱스에 연결"]
-    Ready --> Prepare["knowledge_graph_prepare<br/>원문 버전·후보·규칙 + Kev 판단"]
-    Prepare --> AgentGraph["Codex·Claude: 원문 확인·관계 추출<br/>기존 관계와 개체 확인"]
+    Ready --> GraphPrepare["knowledge_graph_prepare<br/>원문 버전·후보·규칙 + Kev 판단"]
+    GraphPrepare --> AgentGraph["Codex·Claude: 원문 확인·관계 추출<br/>기존 관계와 개체 확인"]
     AgentGraph --> Assert["knowledge_graph_assert / revise"]
     Assert --> Publish["서비스: 소유권·근거·버전 검증<br/>Oracle 관계·이력 저장"]
 ```

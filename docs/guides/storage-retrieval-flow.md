@@ -29,6 +29,17 @@ flowchart LR
 - **설정한 생성 모델**은 service 모드에서만 자동 관계 추출과 별도 의미 검토에 사용한다. agent 모드에서는 Codex·Claude가 추출한다. 임베딩과는 다른 처리다.
 - 웹 지식·메모리는 조회 전용이다. 별도의 사용자 원칙 설정은 웹에서 승인·편집하며 Kev의 허가를 기다리지 않는다.
 
+## 저장 대상과 처리 방식
+
+| 대상 | 역할 | 처리 |
+|---|---|---|
+| 사용자 원칙 | 승인된 응답·작업 기준 | 웹 승인·버전 이력, 매 요청 정확 조회 |
+| 에이전트 메모리 | 경험·선호·이전 작업 기억 | memory_search로 확인 후 memory_save, 동기 READY |
+| 업무 지식 | 문서·업무 사실·원문 근거 | 아래 비동기 저장·수정 흐름 |
+
+에이전트 메모리는 Oracle AI Agent Memory를 사용하며 SDK는 구현 연결 방식입니다.
+본문 수정·삭제 도구는 현재 없고 memory_rename은 이름만 정정합니다. 동일 본문을 이중 저장하지 않습니다.
+
 ## 1. 저장과 기존 지식 보완
 
 ```mermaid
@@ -108,9 +119,15 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    Request["사용자 요청"] --> Need{"Kev + 에이전트<br/>저장된 지식 조회가 필요한가"}
-    Need -->|불필요| Direct["기억 조회 없이 작업 진행"]
+    Request["사용자 요청"] --> Hook["활성화된 클라이언트 훅"]
+    Hook --> Principles["사용자 원칙 정확 조회·항상 전달"]
+    Principles --> Answer
+    Hook --> Need{"Kev + 에이전트<br/>저장된 지식 조회가 필요한가"}
+    Need -->|불필요| Direct["기억 검색 생략·원칙 적용"]
+    Direct --> Answer
     Need -->|필요 또는 명시적 조회 요청| Recall["knowledge_recall<br/>직접 검색 · 인덱스 · 양쪽 경로 선택"]
+    Recall --> Memory["활성화된 에이전트 메모리 검색"]
+    Memory --> References
     Recall --> Vector["질의의 한국어 임베딩 생성<br/>Oracle 벡터 + 키워드 검색"]
     Recall --> Index["인덱스 목록·항목을 순차 탐색"]
     Vector --> Results["관련 지식 ID · 요약 · 발췌 · 원문 버전"]

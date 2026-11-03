@@ -66,13 +66,39 @@ flowchart LR
 - Record confirmed aliases/external identifiers and review progress for each active source revision.
 - Keep source ownership, project scope, temporal evidence, and update conflicts separate.
 
-For optional retrieval, the agent asks Kev whether to look up memory. Retrieval can use direct search,
-indexes, or graph context. Explicit requests and clearly needed past context override a mistaken skip.
-Kev failures return `agent_review`; scores are not proof that a fact is true.
+With the client hook enabled, every request resolves approved user principles and asks Kev whether
+memory lookup is needed. A skip still delivers principles. Without the hook, the agent chooses whether
+to call MCP. Explicit past-context requests override mistaken skips; Kev failures return agent_review.
 
-For storage, the agent checks value and duplicate candidates, reads existing content/history, and chooses
-new knowledge or a complete revised version. Saving returns QUEUED; the worker must reach READY before
-claiming the source is searchable. Similarity alone never authorizes merging memories or entities.
+```mermaid
+flowchart TD
+    Request[User request] --> Hook[Enabled UserPromptSubmit hook]
+    Hook --> Principles[Exact lookup of approved user principles]
+    Hook --> Kev{Memory lookup needed?}
+    Kev -->|skip| Answer[Answer and work with approved principles]
+    Kev -->|lookup or agent_review| Recall[knowledge_recall]
+    Recall --> Memory[Agent memory: experiences and previous work]
+    Recall --> Knowledge[Business knowledge: search and indexes]
+    Memory --> Evidence[Check relevant sources and bounded relationships]
+    Knowledge --> Evidence
+    Evidence --> Answer
+    Principles --> Answer
+```
+
+Agent memory is included only when configured and requested; its results remain separate from business
+knowledge. Graph expansion depends on settings, Kev routing or explicit requests. Scores do not prove truth.
+
+For storage, choose the appropriate destination before writing:
+
+| Destination | Workflow |
+|---|---|
+| User principles | Explicit web approval, versioned configuration; never auto-promote retrieved text |
+| Agent memory | Check memory_search, then authorized memory_save; synchronous embedding/save returns READY |
+| Business knowledge | knowledge_prepare_save, inspect originals/history, choose knowledge_save or knowledge_revise; QUEUED → embedding worker → READY |
+
+Agent-memory body editing/deletion tools are not currently available; memory_rename corrects only titles.
+Business-knowledge revisions preserve prior versions. Avoid duplicate bodies across stores; connect exact
+source evidence through references. The hook does not save knowledge. Similarity alone never authorizes merging.
 
 ### v1 and v2
 
