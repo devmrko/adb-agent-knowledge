@@ -1,0 +1,85 @@
+{
+  "store_id": "JPROBE11031355",
+  "vectors": "synthetic; no semantic quality claim",
+  "cases": [
+    {
+      "name": "json_roundtrip_1024",
+      "status": "PASS",
+      "seconds": 1.121,
+      "detail": {
+        "content_chars": 368,
+        "content_utf8_bytes": 1070,
+        "metadata_utf8_bytes": 1117
+      }
+    },
+    {
+      "name": "json_roundtrip_32768",
+      "status": "PASS",
+      "seconds": 1.154,
+      "detail": {
+        "content_chars": 10136,
+        "content_utf8_bytes": 32816,
+        "metadata_utf8_bytes": 32863
+      }
+    },
+    {
+      "name": "json_roundtrip_262144",
+      "status": "PASS",
+      "seconds": 3.149,
+      "detail": {
+        "content_chars": 80712,
+        "content_utf8_bytes": 262188,
+        "metadata_utf8_bytes": 262235
+      }
+    },
+    {
+      "name": "json_roundtrip_1048576",
+      "status": "PASS",
+      "seconds": 6.888,
+      "detail": {
+        "content_chars": 322692,
+        "content_utf8_bytes": 1048623,
+        "metadata_utf8_bytes": 1048670
+      }
+    },
+    {
+      "name": "json_roundtrip_4194304",
+      "status": "PASS",
+      "seconds": 25.408,
+      "detail": {
+        "content_chars": 1290608,
+        "content_utf8_bytes": 4194350,
+        "metadata_utf8_bytes": 4194397
+      }
+    },
+    {
+      "name": "filters_and_index_text",
+      "status": "PASS",
+      "seconds": 10.374,
+      "detail": "nested/array predicates, owner isolation, separate index chunks and filtered vector search"
+    },
+    {
+      "name": "update_semantics",
+      "status": "PASS",
+      "seconds": 2.417,
+      "detail": "metadata replaces object (no deep merge/no embedding); content+index update invokes embedder"
+    },
+    {
+      "name": "mapping_content_support",
+      "status": "FAIL",
+      "error_type": "ValueError"
+    },
+    {
+      "name": "persisted_index_and_json_sql",
+      "status": "PASS",
+      "seconds": 1.462,
+      "detail": "stored chunk replaced, vector equals updated input encoding, nested JSON SQL predicate matches"
+    },
+    {
+      "name": "current_app_limit",
+      "status": "PASS",
+      "seconds": 0.0,
+      "detail": "current MCP DTO permits 12000 characters; rejects 12001"
+    }
+  ]
+}

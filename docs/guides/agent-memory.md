@@ -170,3 +170,7 @@ SDK 스키마의 직접 수정·외부 삭제를 자동 복구하는 기능은 �
 memory_rename corrects title metadata only, with memory_id, expected_title, title and reason. It preserves SDK content, embeddings, relationships and validity. Ownership is checked; conflicting titles return a conflict. The last 20 title changes are kept in metadata, not as full content revisions. Same-target retries are idempotent.
 
 The read-only web shows full wrapping titles in relationship cards. Expand the numbered overview for topology and memory record details for raw relation/state values. This does not change Oracle SDK semantics.
+
+## 업무 지식 통합 가능성 실험
+
+[JSON 키·값, 용량, 검색·갱신 검증](agent-memory-json-evaluation.md)을 참고하세요. SDK 실험 결과이며 현재 MCP의 기능 확장이나 운영 이관 완료를 뜻하지 않습니다.
