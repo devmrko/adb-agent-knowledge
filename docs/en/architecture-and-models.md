@@ -104,7 +104,7 @@ do not also start local Kev with `--kev`.
 Lookup defaults to a 0.2 threshold; capture defaults to 0.7, with an agent-review interval. Explicit requests,
 storage opt-outs, and sensitive content rules override scores. Failures return `agent_review` rather than
 pretending that Kev is working. Only short relevant text should be sent, not secrets or entire conversations.
-These decisions are invoked by tool/skill flow, not a universal mandatory hook on every user message.
+Base MCP/skill usage leaves invocation to the agent. The optional client UserPromptSubmit hook runs the check on every request once installed and trusted. It also resolves approved principles independently of Kev; it is not enabled by MCP registration alone. See [hook setup](../guides/required-memory-hook.en.md).
 
 ## Generative relationship extraction
 
@@ -143,7 +143,7 @@ checks. This dedicated key maps to one configured actor; it is not multi-user JW
 Graph date inputs use browser local time and are converted to UTC for the API.
 
 Stop all writers before applying updates. Run setup.sh, apply the latest Alembic migrations (including
-vk0011), restart API/workers at matching versions, reinstall copied skills and reconnect MCP. For RDF
+vk0014), restart API/workers at matching versions, reinstall copied skills and reconnect MCP. For RDF
 initialization use scripts.prepare_knowledge_rdf; do not blindly rerun setup_workflow_rdf on an existing
 namespace. Property Graph setup remains separate and optional. Oracle DDL auto-commits.
 
@@ -151,3 +151,7 @@ Service-mode extraction currently uses the operations-v3 schema; this is distinc
 States include PARTIAL as well as DONE: neither means all proposed relationships were published.
 Policies are review (default), auto_existing and auto_verified. Agent mode requires an agent follow-up;
 source READY alone does not create relationships or complete the review ledger.
+
+## Approved user principles
+
+The API stores owner-approved configuration and revisions in Oracle, separately from vectors and SDK memories. The web edits it with existing session/CSRF authentication. A client hook always resolves active scoped rules, even on Kev skip, and presents them separately from untrusted sources. No extra inference model or MCP tool is required. See [user principles](../guides/user-principles.en.md).

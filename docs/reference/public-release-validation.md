@@ -1,5 +1,7 @@
 # 공개 preview 검증 — 2026-10-29
 
+> 작성 당시의 검증 기록입니다. 현재 상태는 [최신 상태·업데이트 순서](current-status.md)를 보세요. 과거의 미검증·도구 수·마이그레이션 번호를 현재값으로 해석하지 마세요.
+
 > Historical, dated evidence: this record does not certify the current deployment or repeat earlier live tests. See [current documentation](../README.md).
 
 ## 배포본 범위

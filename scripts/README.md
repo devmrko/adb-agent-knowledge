@@ -43,3 +43,7 @@
 `./uvw run python -m scripts.demo_graph_relations --apply`는 project:graph-demo에 가상 Cafesto
 원문·개체·관계를 등록하고 별칭과 근거/의존 경로를 조회합니다. --apply 없이 실행하면 쓰지 않습니다.
 [초기화·SQL·조회 예제](../docs/guides/oracle-graph-examples.md)를 먼저 확인하세요.
+
+## 클라이언트 훅
+
+`install_memory_hook.py codex|claude --config <절대경로>`는 해당 클라이언트에 UserPromptSubmit 훅을 설치합니다. `memory_prompt_hook.py`는 원칙 정확 조회와 Kev 판단·필요한 기억 조회를 수행하며 쓰기는 하지 않습니다. 최신 API/MCP·vk0014 적용 후 설치하고 실제 요청으로 확인하세요. [훅 안내](../docs/guides/required-memory-hook.md).

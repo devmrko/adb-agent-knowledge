@@ -67,3 +67,7 @@ vk0008에서 이력/처리 테이블 4개와 Oracle 트리거 10개를 추가하
 공식 근거: [Oracle JSON_OBJECT](https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/JSON_OBJECT.html), [SYS_CONTEXT](https://docs.oracle.com/en/database/oracle/oracle-database/26/sqlrf/SYS_CONTEXT.html).
 
 Oracle 연결은 세션 TIME_ZONE을 UTC로 설정합니다. 앱의 UTC timestamp 바인딩과 DB 비교 시각을 맞춰 후속 이벤트가 지역 시간 차이만큼 지연되지 않게 합니다.
+
+## 사용자 원칙 이력 (vk0014)
+
+사용자 원칙은 vk_principle_bundle과 vk_principle_revision에 별도로 저장됩니다. 인증 API의 수정과 이력 기록은 같은 트랜잭션이며 expected_version 충돌을 검사합니다. 기존 지식/그래프 감사 트리거 대상에 자동 포함되는 것은 아닙니다. 직접 SQL 변경 감사·이력 수정 차단 트리거는 이 기능에 추가하지 않았습니다. [원칙 이력](user-principles.md).

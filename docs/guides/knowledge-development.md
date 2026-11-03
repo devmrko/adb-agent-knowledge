@@ -79,3 +79,7 @@ source_part는 body/notes다. 기존 데이터는 source_part=null일 수 있다
 `./uvw run --extra knowledge --extra mcp alembic -c alembic.ini upgrade head`
 Oracle DDL은 자동 커밋이므로 중간 실패 시 상태를 확인하고 수동 복구해야 한다.
 이력 삭제를 막기 위해 vk0002 자동 downgrade는 제공하지 않는다.
+
+## 사용자 원칙 API
+
+GET/PUT `/api/v1/principles`, POST `/api/v1/principles/resolve`, GET `/api/v1/principles/history`는 인증된 사용자의 설정만 처리합니다. PUT은 전체 규칙·expected_version·approved:true·change_note가 필요하며 충돌은 409입니다. 최신 migration은 vk0014이며 원칙 수정은 임베딩 작업을 만들지 않고 동기 READY를 반환합니다. [계약·이력·권한](user-principles.md).

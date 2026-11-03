@@ -5,7 +5,7 @@
 > Kev·임베딩·검색은 유지합니다. [v2 아키텍처](v2-agent-extraction.md).
 
 
-2026-10-30 공개 preview 구현 기준. 에이전트의 저장·조회 판단, API의 실제 처리, 비동기 관계 연결을 구분한다.
+2026-11-03 공개 preview 구현 기준. 에이전트의 저장·조회 판단, API의 실제 처리, 비동기 관계 연결을 구분한다.
 
 ## 구성
 
@@ -27,7 +27,7 @@ flowchart LR
 - **Kev**는 처리 필요성과 경로를 판단한다. 임베딩 생성, 관계 추출, 사실 확정은 담당하지 않는다.
 - **임베딩 모델**은 local이면 API·워커 머신에서 실행하고, 원격이면 API·워커가 OpenAI 호환 endpoint를 호출한다. Oracle DB 내부나 MCP 어댑터에서 추론하지 않는다. 기본 로컬 한국어 모델은 `dragonkue/snowflake-arctic-embed-l-v2.0-ko`다.
 - **설정한 생성 모델**은 service 모드에서만 자동 관계 추출과 별도 의미 검토에 사용한다. agent 모드에서는 Codex·Claude가 추출한다. 임베딩과는 다른 처리다.
-- 웹 화면에서 직접 수행한 저장·조회는 Kev의 허가를 기다리지 않는다.
+- 웹 지식·메모리는 조회 전용이다. 별도의 사용자 원칙 설정은 웹에서 승인·편집하며 Kev의 허가를 기다리지 않는다.
 
 ## 1. 저장과 기존 지식 보완
 
@@ -146,3 +146,24 @@ flowchart TD
 - [Codex·Claude 설치](agent-installation.md)
 
 [서비스 내부 LLM 인터페이스](llm-providers.md): 선택적 service 모드의 그래프 워커가 호출한다. 기본 agent 모드는 Codex·Claude가 관계를 추출하며, 두 모드 모두 Oracle DB 내부 생성 모델 추론은 사용하지 않는다.
+
+## 매 요청의 원칙·기억 확인
+
+```mermaid
+flowchart TD
+    Prompt[사용자 요청] --> Hook[클라이언트 UserPromptSubmit 훅]
+    Hook --> Decide[knowledge_decide / principle_scopes]
+    Decide --> Rules[Oracle 사용자 원칙 정확 조회]
+    Decide --> Kev[Kev 조회 판단]
+    Kev -->|lookup 또는 agent_review| Recall[기억 검색과 원문 확인]
+    Kev -->|skip| Skip[검색 생략]
+    Rules --> Context[원칙과 검색 참고 자료를 분리해 전달]
+    Recall --> Context
+    Skip --> Context
+    Context --> Answer[에이전트 답변·작업]
+    Web[웹에서 승인한 원칙] --> Rules
+```
+
+원칙은 벡터/SDK 기억과 분리된 사용자 설정이며 검색 순위에 의존하지 않습니다. 훅은 쓰지 않습니다.
+원칙/연결 실패는 요청을 차단하고, 원칙은 시스템 지침을 대체하거나 권한을 부여하지 않습니다.
+[훅 설치](required-memory-hook.md) · [사용자 원칙](user-principles.md).

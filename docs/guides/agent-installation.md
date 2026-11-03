@@ -113,8 +113,7 @@ Claude의 별도 자동 로컬 메모리 생성을 끄려면 사용자 선택으
 
 Codex CLI 0.165.0에서 `/mcp`는 상태 목록이며 재연결 메뉴가 아니다. `/quit` 후 터미널에서
 `codex resume --last`로 재개한다. Claude Code에서는 `/mcp`에서 서버를 선택하고 Reconnect한다.
-`connected` 표시만으로 새 코드 적용을 확인할 수는 없다. `knowledge_search`를
-`graph_mode=always`로 호출해 `graph.paths`, `graph.related_knowledge`, `graph.retrieval_lanes`가
+`connected` 표시만으로 새 코드 적용을 확인할 수는 없다. core에도 있는 `knowledge_recall(request={text: "확인할 관계", scopes: ["global", "project:확인된범위"], graph_mode: "always"})`을 호출해 `graph.paths`, `graph.related_knowledge`, `graph.retrieval_lanes`가
 반환되는지 확인한다. 빈 배열은 관계가 없는 정상 결과일 수도 있다.
 
 ## 이전 스킬 이름에서 업데이트
@@ -124,3 +123,7 @@ Codex CLI 0.165.0에서 `/mcp`는 상태 목록이며 재연결 메뉴가 아니
 제거해 동일 서비스에 두 지침이 중복 적용되지 않게 한다. 기존 MCP 별칭을 그대로 사용할
 경우 `--mcp-name vector_knowledge`로 새 스킬에 해당 연결을 지정할 수 있다.
 기존 지침 블록 식별자와 메모리 정책 백업 경로의 `vector-knowledge`는 복구 호환성을 위해 유지한다.
+
+## 매 요청 기억 확인과 사용자 원칙
+
+MCP/스킬 설치와 매 요청 훅 설치는 별개입니다. [기억 확인 훅](required-memory-hook.md)을 클라이언트 머신에 설치하고, [사용자 원칙](user-principles.md)을 웹에서 승인·관리하세요. 새 훅은 원칙 조회 응답이 필요하므로 서버 API/MCP 업데이트 → vk0014 migration → API 재시작/MCP 재연결 → 클라이언트 훅 업데이트 순서를 지킵니다. 훅은 Kev skip에도 활성 원칙을 전달합니다. 같은 서비스·인증 사용자로 연결한 머신은 같은 원칙을 읽으며, 프로젝트별 적용은 각 머신의 명시적인 scope_roots 설정을 따릅니다. 원칙 본문을 로컬 메모리에 복제하지 않습니다.

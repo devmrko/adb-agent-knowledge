@@ -14,6 +14,18 @@ audit/RDF/Property Graph setup and real embedding retrieval. This does not certi
 or all operating systems. [Live validation](docs/reference/oracle-installation-validation.md).
 MIT covers this project's code, not every model or dependency.
 
+## Current setup at a glance (2026-11-03)
+
+Latest migration: **vk0014**. API/MCP + embeddings + Kev provide the base service. SDK agent memory, RDF and Property Graph require their own optional setup. MCP registration alone does not activate prompt hooks. Install the client hook separately, then manage approved principles in the web UI.
+
+| Store / setting | Purpose | Update path |
+|---|---|---|
+| Knowledge | Documents, summaries, source revisions and relationships | MCP/API |
+| Optional SDK memory | Agent experiences and memory relationships | MCP/API |
+| User principles | Approved behavior preferences on every enabled hook invocation | Authenticated web editor/API |
+
+[Memory hook](docs/guides/required-memory-hook.en.md) · [User principles](docs/guides/user-principles.en.md) · [Current status and rollout](docs/reference/current-status.md)
+
 ## Where models run
 
 **`EMBEDDING_PROVIDER=local` means local to the Knowledge API and ingestion worker processes.**
@@ -222,11 +234,11 @@ production JWT/HTTPS or Kev benchmark. [Detailed guide](docs/guides/runtime-inst
 
 [Guided knowledge capture](docs/guides/guided-capture.md): Existing review/history tables support agent-authored clarification questions, persistent answers and explicit reconciliation. No new tables or separate LLM required; not automatic ontology generation.
 
-The web displays knowledge, relations and clarification records read-only. Submit answers and data changes through MCP.
+The web displays knowledge, relations and clarification records read-only. Submit knowledge answers and data changes through MCP. User principles are a separate editable configuration in the web UI.
 
 ### Optional Oracle Agent Memory
 
-An opt-in SDK adapter stores agent experiences separately from business knowledge. The web UI provides separate memory and knowledge views. Install the agent-memory extra, run Alembic and scripts.setup_agent_memory, then enable AGENT_MEMORY_ENABLED. No generation LLM or automatic migration of existing notes is required. Exact knowledge-revision references, stale-evidence review tasks and SDK memory graph visualization are supported. Links require semantic confirmation by the calling agent; there is no automatic truth resolution. See [setup and scope](docs/guides/agent-memory.md).
+An opt-in SDK adapter stores agent experiences separately from business knowledge. The web UI provides separate memory and knowledge views. Install the agent-memory extra, run Alembic and scripts.setup_agent_memory, then enable AGENT_MEMORY_ENABLED. No generation LLM or automatic migration of existing notes is required. Exact knowledge-revision references, stale-evidence review tasks and SDK memory graph visualization are supported. Links require semantic confirmation by the calling agent; there is no automatic truth resolution. See [setup and scope](docs/guides/agent-memory.en.md).
 
 The Korean model is not an Oracle SDK default: our `IEmbedder` bridge injects the application embedding provider. See [SDK vs. embedding responsibilities](docs/guides/agent-memory.en.md).
 

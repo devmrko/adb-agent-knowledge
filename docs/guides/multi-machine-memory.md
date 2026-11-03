@@ -92,3 +92,7 @@ python3 scripts/configure_agent_memory.py --restore /path/to/manifest.json --app
 ## 5. 확인
 
 새 세션에서 `knowledge_client_info`로 머신 ID를 확인하고, 알려진 지식을 `knowledge_recall`로 조회한 뒤 정확한 revision 내용을 확인합니다. 쓰기 테스트를 위해 불필요한 샘플 지식을 만들 필요는 없습니다. API에 연결되지 않으면 저장/검색 성공을 주장하지 않습니다. 다른 머신에서 실제 적용됐다는 보장은 그 머신에서 이 절차를 실행한 뒤에만 할 수 있습니다.
+
+## 매 요청 기억 확인과 사용자 원칙
+
+MCP/스킬 설치와 매 요청 훅 설치는 별개입니다. [기억 확인 훅](required-memory-hook.md)을 클라이언트 머신에 설치하고, [사용자 원칙](user-principles.md)을 웹에서 승인·관리하세요. 새 훅은 원칙 조회 응답이 필요하므로 서버 API/MCP 업데이트 → vk0014 migration → API 재시작/MCP 재연결 → 클라이언트 훅 업데이트 순서를 지킵니다. 훅은 Kev skip에도 활성 원칙을 전달합니다. 같은 서비스·인증 사용자로 연결한 머신은 같은 원칙을 읽으며, 프로젝트별 적용은 각 머신의 명시적인 scope_roots 설정을 따릅니다. 원칙 본문을 로컬 메모리에 복제하지 않습니다.

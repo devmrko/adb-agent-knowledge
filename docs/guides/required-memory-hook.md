@@ -22,8 +22,11 @@ MCP는 저장·검색 기능을 제공하고, 훅은 그 확인 절차가 누락
 
 ## 실행 흐름
 
-요청 → 훅 → knowledge_decide(Kev) → lookup/agent_review이면 knowledge_recall → 원문 최대 2개 확인 →
-결과를 모델 컨텍스트에 주입 → 답변·작업.
+요청 → 훅 → knowledge_decide(principle_scopes) → 승인 원칙 정확 조회 + Kev 판단 →
+lookup/agent_review이면 knowledge_recall과 원문 최대 2개 확인 →
+사용자 원칙과 검색 참고 자료를 분리해 모델 컨텍스트에 전달 → 답변·작업.
+
+원칙은 skip·민감 요청에서도 전달합니다. API/MCP 코드와 vk0014 마이그레이션을 먼저 업데이트해야 합니다.
 
 Kev skip도 실제 MCP 판단 호출이 끝난 결과입니다. 명시적인 과거 참조는 skip보다 우선합니다.
 조회 결과가 없다는 것과 조회 실패를 구분하며, MCP 실패·내부 시간초과에는 요청을 차단합니다.
@@ -115,7 +118,7 @@ printf '%s' '{"hook_event_name":"UserPromptSubmit","prompt":"이전 배포 결�
 - 실제 답변 컨텍스트에 해당 check_id와 근거가 전달되는가.
 - MCP가 실패할 때 답변을 진행하지 않고 차단하는가.
 
-감사 파일에는 실행 ID·시간·상태·도구명만 남깁니다. 프롬프트·본문·검색 결과를 로컬 기억 사본으로 저장하지 않습니다.
+감사 파일에는 실행 ID·시간·상태·도구명·principle_version을 남깁니다. 프롬프트·본문·검색 결과를 로컬 기억 사본으로 저장하지 않습니다.
 필요하면 config의 audit_dir를 지정할 수 있습니다.
 
 ## 데이터·실패 처리
@@ -144,16 +147,13 @@ Codex의 호스트 자체 시간초과·프로세스 강제 종료까지 이 스
 공식 스펙: [Codex Hooks](https://learn.chatgpt.com/docs/hooks),
 [Claude Hooks](https://code.claude.com/docs/en/hooks).
 
-## 2026-11-03 실측 상태
+## 현재 검증 상태 (2026-11-03)
 
-- 전체 283개 테스트 통과. 스크립트 직접 실행에서 원격 MCP 판단·기억 조회·원문 확인 성공, 약 4.3초.
-- Claude Code 실제 UserPromptSubmit에서 COMPLETE 감사 기록과 4개 읽기 호출을 확인했다.
-  별도 Claude 실행은 만료 오류로 끝나 답변에 컨텍스트가 반영되는 단계까지는 확인하지 못했다.
-- Codex 초기 시험은 미신뢰 상태라 HOOK_MISSING이었다. 이후 실제 사용자 요청에서
-  답변 전에 Memory check completed가 주입되는 것을 확인했다. skip 결과와 lookup 결과
-  (정확한 원문 버전·발췌 포함)을 모두 관찰했다. 이 설치의 실제 동작 확인이며 다른 설치도 신뢰·검증이 필요하다.
-- 새 설정은 기존 Orca 훅을 보존했다. 기록 자동 저장이나 모든 앱 UI에서의 동작은 이 검증 범위에 없다.
-
+- 전체 290개 테스트와 ruff/format/mypy 통과. A10 Oracle vk0014 적용 및 API 재시작 완료.
+- 실제 Codex 요청에서 훅 컨텍스트 전달 확인. Claude도 훅 원문으로 답하는 후속 검증 성공.
+- 승인 원칙 version 1의 6개 항목이 실제 훅의 Kev skip 결과에서도 모두 전달됨을 확인.
+- 각 머신은 신뢰·scope·실제 요청 검증이 필요합니다. 모델 준수율이나 검색 관련성을 보장하지 않습니다.
+- 초기 Codex 미신뢰·Claude 만료 및 관련 scope 누락은 과거 문제입니다. 현재 장애로 해석하지 마세요.
 
 ## 자주 생기는 혼동과 해결 순서
 
@@ -215,6 +215,6 @@ project:adb-agent-knowledge에 저장된 '22개 도구 설정'을 놓쳤습니�
 
 후속 실제 Claude 검증 성공(2026-11-03): 기존 폴더에서 추가 모델 도구 호출을 비활성화한 읽기 전용 요청을 보냈고, Claude는 훅이 주입한 원문만으로 MCP_TOOL_PROFILE=memory, 22개, 기록 제목과 check_id를 정확히 답했다. 초기 만료/검색 범위 문제 이후 답변 컨텍스트 전달까지 확인된 상태다.
 
-## User-approved principles
+## 사용자 원칙
 
-The hook now requires principle resolution from the server even on Kev skip. Upgrade API/MCP and migrate vk0014 before upgrading this script. No extra MCP tools. See [principles](user-principles.md) / [English](user-principles.en.md).
+새 훅은 Kev skip에도 원칙 조회 성공을 요구합니다. API/MCP·vk0014를 먼저 적용하고 훅을 업데이트하세요. 도구 수는 늘지 않습니다. [원칙 관리](user-principles.md) · [English](user-principles.en.md).

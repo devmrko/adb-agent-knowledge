@@ -14,11 +14,23 @@ Kev가 조회·저장과 검색 경로를 판단합니다. 모델은 로컬 또�
 
 **릴리스 상태: v2 preview (0.2.0).** 기존 테스트 ADB의 빈 스키마에서 migration·감사 트리거·RDF·Property Graph·실제 임베딩 검색을 검증했습니다. 새 ADB 서비스 생성과 모든 OS 지원을 보장하지는 않습니다. [실검증 범위](docs/reference/oracle-installation-validation.md).
 
-****모델까지 설치·점검:** `./scripts/setup.sh --with-models --verify-models`. [OS 지원·설치 옵션·테스트 DB 검증](docs/guides/runtime-installation.md).
+**모델까지 설치·점검:** `./scripts/setup.sh --with-models --verify-models`. [OS 지원·설치 옵션·테스트 DB 검증](docs/guides/runtime-installation.md).
 
-새 사용자:** [설치 구성과 모델 선택](docs/guides/portable-setup.md)부터 확인하세요.
+**새 사용자:** [설치 구성과 모델 선택](docs/guides/portable-setup.md)부터 확인하세요.
 
 [시작하기](docs/guides/quickstart.md) · [검색 화면](docs/guides/search-ui.md) · [Codex / Claude 연결](docs/guides/agent-installation.md) · [다른 머신에 적용](docs/guides/multi-machine-memory.md) · [전체 문서](docs/README.md)
+
+## 현재 구성 한눈에 보기 (2026-11-03)
+
+최신 마이그레이션은 **vk0014**입니다. API/MCP·임베딩·Kev가 기본 구성이고, SDK 에이전트 메모리·RDF·Property Graph는 선택 기능별 초기화가 필요합니다. MCP 연결만으로 훅은 활성화되지 않습니다. 클라이언트 훅을 별도로 설치하고 웹에서 사용자 원칙을 관리합니다.
+
+| 저장 대상 | 역할 | 변경 방법 |
+|---|---|---|
+| 업무 지식 | 문서·요약·원문 버전·관계 | MCP/API |
+| 선택적 SDK 메모리 | 에이전트 경험·기억 관계 | MCP/API |
+| 사용자 원칙 | 매 요청에 전달할 승인된 행동 선호 | 인증된 웹 편집기/API |
+
+[기억 확인 훅](docs/guides/required-memory-hook.md) · [사용자 원칙](docs/guides/user-principles.md) · [현재 상태·업데이트 순서](docs/reference/current-status.md)
 
 ## v2: 별도 생성형 LLM 운영을 줄이는 기본 구성
 
@@ -57,7 +69,7 @@ agent 모드에서도 LLM은 에이전트 쪽에서 사용하며 해당 사용�
 에이전트가 매 요청에서 저장된 지식의 필요성을 판단하고, 필요한 경우 MCP 도구를 호출합니다.
 **Kev는 조회·저장 필요성과 탐색 경로에 점수를 주는 판단 모델**입니다. 답변 작성, 임베딩 생성,
 원문을 읽고 기존 지식을 보충할지 결정하는 일, 관계 추출은 각각 다른 역할입니다.
-이 흐름은 스킬 지침과 도구 호출로 동작하며, 모든 대화를 가로채는 강제 실행 훅은 아닙니다.
+기본 연결은 스킬 지침과 도구 호출로 동작합니다. 매 요청의 기억 확인을 빠뜨리지 않으려면 별도 클라이언트 훅을 설치합니다. 활성화된 훅은 사용자 원칙을 항상 전달하고, Kev 판단에 따라 필요한 기억을 조회합니다. [훅 설치](docs/guides/required-memory-hook.md).
 
 ### 조회: 필요한 기억을 찾고 근거까지 확인
 
@@ -430,11 +442,6 @@ AGENTS.md·CLAUDE.md는 개발 에이전트 지침이며 지식 데이터 사본
 
 자동 그래프: [추출 모델 설정·후보 검토·운영 안내](docs/guides/automatic-graph.md)
 
-## 라이선스
-
-프로젝트 코드는 [MIT](LICENSE)입니다. 모델 가중치, 외부 서비스와 의존성은 각자의 라이선스·이용 조건을 따릅니다. [외부 구성 요소](THIRD_PARTY.md)를 참고하세요.
-
-
 [대화형 지식 수집](docs/guides/guided-capture.md): 에이전트가 모호한 내용을 질문하고 답변을 기존 검토·이력 테이블에 보관합니다. 새 테이블이나 별도 LLM 없이 재개할 수 있으며, 답변을 검토한 뒤 기존 지식·관계 도구로 반영합니다. 웹에서는 질문·답변·미정 상태를 조회하고, 데이터 변경은 MCP에서 진행합니다. 업무별 온톨로지 자동 생성은 아직 포함하지 않습니다.
 
 ### 선택적 Oracle Agent Memory
@@ -444,29 +451,22 @@ SDK 기반 에이전트 기억을 업무 지식과 분리해 저장·조회할 �
 SDK가 한국어 임베딩 모델을 내장한 것은 아닙니다. 이 프로젝트의 `IEmbedder` 연결부가 앱의 임베딩 제공자를 SDK에 주입합니다. [SDK·임베딩 역할과 실행 위치](docs/guides/agent-memory.md)를 확인하세요.
 
 
-## MCP tool profiles
+## MCP 도구 묶음
 
-Default core exposes **17 tools**: 16 everyday tools plus knowledge_tools.
-Call knowledge_tools(profile="memory" | "graph" | "organize" | "operations") when a follow-up needs more tools.
-The selected group replaces the previous optional group; it does not accumulate. After a temporary switch, restore the profile active before the task unless the user chose a new default. Do not assume core: deployments may start in memory (22 tools). Explicitly pass the intended profile to knowledge_tools; its omitted argument defaults to core. The deployment setting and a temporary connection switch are distinct.
-- memory: SDK profiles, evidence attachment and memory relationships (22 tools total).
-- graph: business relationship preparation, identities, authoring and review (31 total).
-- organize: indexes, guided capture and URL import (28 total).
-- operations: change reviews, retirement/restoration and service extraction operations (29 total).
-- full: every tool, for explicit advanced workflows (64 total).
+| 프로필 | 도구 수 | 용도 |
+|---|---:|---|
+| core | 17 | 일상 저장·조회 |
+| memory | 22 | SDK 프로필·근거·기억 관계 |
+| graph | 31 | 업무 관계·개체·검토 |
+| organize | 28 | 인덱스·대화형 수집·URL 가져오기 |
+| operations | 29 | 변경 검토·폐기/복원·서비스 추출 |
+| full | 64 | 전체 도구 |
 
-The server advertises tools.listChanged and sends notifications/tools/list_changed after a change.
-This is implemented for one-client-per-process stdio. A client must refresh tools/list to expose new tools
-to its model. Protocol behavior is tested; automatic refresh in every Codex/Claude version is not guaranteed.
-If refresh does not work, set MCP_TOOL_PROFILE to the desired profile in the server checkout .env and reconnect,
-or launch scripts/run_knowledge_mcp.sh --tool-profile graph (replace graph as needed).
-SSH clients must configure the remote checkout; local env is not automatically forwarded.
-
-Core recall still returns bounded graph/memory results. Switch to the relevant profile for new relationships
-or index memberships; never claim unavailable follow-up work completed. Selective automatic storage permission
-still applies; changing the tool catalog neither writes knowledge nor grants permissions.
-Do not register all profiles at once. Existing tool names, HTTP endpoints and stored records are unchanged.
-
+공개 기본값은 core이며 운영자가 `MCP_TOOL_PROFILE=memory` 등으로 시작값을 선택합니다.
+`knowledge_tools(profile="graph")`는 현재 연결만 전환합니다. 임시 작업 후에는 **작업 전 프로필**로 복귀합니다.
+클라이언트가 도구 목록 변경을 반영하지 않으면 서버 시작 설정을 확인하고 재연결하세요.
+사용자 원칙은 기존 `knowledge_decide` 응답을 확장하므로 도구 수를 늘리지 않습니다.
+[프로필 사용과 재연결](docs/guides/mcp-tool-profiles.md).
 
 ## 답변 전에 기억을 확인하게 하기
 
@@ -478,3 +478,7 @@ Codex 실제 요청의 컨텍스트 주입과 Claude의 원문 근거 기반 답
 [설치·활성화·검증·문제 해결·다른 머신 적용·제거 안내](docs/guides/required-memory-hook.md) · [English](docs/guides/required-memory-hook.en.md)
 
 사용자 원칙은 벡터 검색과 별도로 매 요청에 전달하고 웹에서 승인·관리할 수 있습니다. [사용자 원칙 설정](docs/guides/user-principles.md). 서버의 vk0014 마이그레이션 후 훅을 업데이트하세요.
+
+## 라이선스
+
+프로젝트 코드는 [MIT](LICENSE)입니다. 모델 가중치, 외부 서비스와 의존성은 각자의 라이선스·이용 조건을 따릅니다. [외부 구성 요소](THIRD_PARTY.md)를 참고하세요.

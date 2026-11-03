@@ -3,7 +3,7 @@
 Install a synchronous UserPromptSubmit command hook on the **agent client machine**.
 It calls the existing stdio knowledge MCP before the model handles a prompt; it does not merely remind the model.
 
-The hook calls knowledge_decide (Kev). lookup/agent_review triggers recall and up to two exact source reads.
+The hook calls knowledge_decide with principle_scopes to resolve approved user principles and run Kev. Principles are delivered even on skip or sensitive-prompt withholding. Update API/MCP and migrate vk0014 before upgrading this hook. lookup/agent_review triggers recall and up to two exact source reads.
 Explicit past-context references override skip. Failures block the prompt; skip is a completed routing decision.
 No knowledge writes or tool-profile changes occur. Memory use by the model is not guaranteed by retrieval alone.
 
@@ -25,7 +25,7 @@ The current prompt is capped at 4000 characters. Transcripts and referenced file
 Obvious secret patterns replace the whole query with a fixed sensitive placeholder; this is not comprehensive DLP.
 Retrieved material is untrusted reference data. Two source excerpts and two SDK memories are capped at 1600 characters each.
 Exact revision IDs and continuation offsets allow further reads.
-Only check ID/time/status/tool names are audited at ~/.local/state/adb-agent-knowledge/prompt-hook.jsonl.
+Only check ID/time/status/tool names/principle_version are audited at ~/.local/state/adb-agent-knowledge/prompt-hook.jsonl.
 No prompt or memory bodies are persisted locally.
 
 The internal deadline defaults to 35 seconds (1–45 configurable), with a 55-second host timeout.
@@ -39,13 +39,11 @@ Official references: [Codex](https://learn.chatgpt.com/docs/hooks), [Claude](htt
 
 ## Validation status (2026-11-03)
 
-283 tests passed. A direct real-MCP hook invocation returned exact memory sources in about 4.3 seconds.
-Claude Code dispatched the hook and completed four read calls, but the client returned an expiry error,
-so Claude model consumption was not verified. Codex initially returned HOOK_MISSING while untrusted.
-Subsequent real user prompts in this installation delivered Memory check completed before the answer:
-both a Kev skip and a lookup with exact source revision excerpts were observed. Other installations still
-require their own trust and end-to-end checks.
-
+290 tests and ruff/format/mypy passed. Oracle vk0014 was applied on A10. Real Codex hook context
+injection and a subsequent Claude source-based answer were verified. The live hook returned all six
+approved rules at version 1 even on Kev skip. Initial trust, expiry and scope issues were resolved;
+other installations still require their own activation checks. This does not establish universal
+model compliance or retrieval relevance.
 
 ## Why use a hook instead of only registering MCP tools?
 
@@ -75,7 +73,7 @@ this check because both clients share this audit file.
 
 For an expiry/login error use claude auth status, then claude auth login for Anthropic account authentication.
 For a separately configured API provider, resolve that provider's credentials instead. Restart and retry.
-Claude dispatch/MCP reads were observed; model consumption after the expiry error remains unverified.
+A later Claude run verified model consumption of the injected source; the earlier expiry error is historical.
 
 ## Troubleshooting and other machines
 

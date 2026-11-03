@@ -1,5 +1,9 @@
 # adb-agent-knowledge 매뉴얼
 
+## 현재 상태와 최근 기능
+
+[현재 구성·배포·검증 범위](reference/current-status.md) · [매 요청 기억 확인 훅](guides/required-memory-hook.md) · [웹 사용자 원칙](guides/user-principles.md) · [SDK 에이전트 메모리](guides/agent-memory.md) · [MCP 도구 묶음](guides/mcp-tool-profiles.md)
+
 [English documentation](en/README.md) · [English README](../README.en.md)
 
 제품명: **Agent Knowledge for Oracle ADB**. 저장소·체크아웃 폴더는 `adb-agent-knowledge`이며,
@@ -26,7 +30,7 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 | MCP 서비스의 LLM API·SDK 인터페이스 | [LLM 호출 구조와 확장](guides/llm-providers.md) |
 | Kev·한국어 임베딩·추출 LLM 이해 | [모델 구성](guides/local-models.md) |
 
-[2026-10-30 문서 점검·migration 검증 범위](reference/documentation-audit.md)
+[현재 문서·배포 상태](reference/current-status.md) · [2026-10-30 과거 문서 점검](reference/documentation-audit.md)
 
 ## 운영하거나 개선하는 분
 
@@ -43,6 +47,13 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 | 과거 검색 실측 기록 | [검색 실측](reference/knowledge-validation.md) |
 | Codex 연결 문제 해결 | [Codex 연결](guides/codex-knowledge.md) |
 | Claude 연결 문제 해결 | [Claude 연결](guides/claude-knowledge.md) |
+
+## 최근 설계
+
+- [SDK 에이전트 메모리](design/0034-agent-memory-integration/design.md)
+- [기억 근거와 관계](design/0035-memory-evidence-graph/design.md)
+- [필수 기억 확인 훅](design/0038-required-memory-hook/design.md)
+- [사용자 원칙](design/0039-user-principles/design.md)
 
 ## 설계 자료
 

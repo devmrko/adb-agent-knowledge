@@ -46,3 +46,7 @@ claude mcp get adb_agent_knowledge
 
 [공통 사용 규칙](codex-knowledge.md#사용과-확인), [관계·근거 검색](related-retrieval.md),
 [검증 범위](../reference/public-release-validation.md)를 참고한다.
+
+## 매 요청 기억 확인과 사용자 원칙
+
+MCP/스킬 설치와 매 요청 훅 설치는 별개입니다. [기억 확인 훅](required-memory-hook.md)을 클라이언트 머신에 설치하고, [사용자 원칙](user-principles.md)을 웹에서 승인·관리하세요. 새 훅은 원칙 조회 응답이 필요하므로 서버 API/MCP 업데이트 → vk0014 migration → API 재시작/MCP 재연결 → 클라이언트 훅 업데이트 순서를 지킵니다. 훅은 Kev skip에도 활성 원칙을 전달합니다. 같은 서비스·인증 사용자로 연결한 머신은 같은 원칙을 읽으며, 프로젝트별 적용은 각 머신의 명시적인 scope_roots 설정을 따릅니다. 원칙 본문을 로컬 메모리에 복제하지 않습니다.

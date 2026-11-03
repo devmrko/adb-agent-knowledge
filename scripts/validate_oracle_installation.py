@@ -11,6 +11,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
+from alembic.config import Config
+from alembic.script import ScriptDirectory
 from dotenv import dotenv_values
 from sqlalchemy import DateTime, Integer, text
 from sqlalchemy.exc import DatabaseError
@@ -37,7 +39,8 @@ def audit_probe(settings: Settings) -> None:
     try:
         with engine.connect() as con:
             guard_schema(str(con.scalar(text("SELECT USER FROM DUAL"))), settings.user_name)
-            assert con.scalar(text("SELECT version_num FROM vk_alembic_version")) == "vk0011"
+            expected_head = ScriptDirectory.from_config(Config(str(ROOT / "alembic.ini"))).get_current_head()
+            assert con.scalar(text("SELECT version_num FROM vk_alembic_version")) == expected_head
             assert con.scalar(text("SELECT count(*) FROM user_errors WHERE type='TRIGGER'")) == 0
             triggers = con.execute(
                 text("SELECT trigger_name,status FROM user_triggers WHERE trigger_name LIKE 'VK_AUDIT_%'")
