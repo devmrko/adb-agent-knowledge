@@ -172,9 +172,7 @@ def test_opt_in_http_content_uses_sdk_with_owner_boundary(tmp_path, monkeypatch)
         assert source.process_one()
         actor = Actor("test", "alice", frozenset())
         kid, rid = note["knowledge_id"], note["revision_id"]
-        t.enqueue(actor, kid, rid)
-        assert t.process_one()
-        transition(t, actor, rid, "activate")
+        assert t.status(actor, rid)["status"] == "ACTIVE"
         with SqlAlchemyUnitOfWork(source.factory) as uow:
             uow.session.get(Revision, rid).content_text = None
         uri = f"/api/v1/knowledge/{kid}/revisions/{rid}/content"

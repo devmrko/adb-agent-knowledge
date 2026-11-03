@@ -22,3 +22,5 @@ imply that new deployment combinations have been tested. Code, migrations, and r
 part of the implementation contract.
 
 - [v3 source transfer](../guides/v3-source-transfer.md#english-summary)
+
+- [v3 primary source/search storage and retained history](../guides/v3-primary-store.en.md)

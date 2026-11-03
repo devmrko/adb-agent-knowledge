@@ -91,6 +91,8 @@ class KnowledgeService:
         *,
         reranker: Reranker | None = None,
     ) -> None:
+        self.ingestion_stage: Callable[[str, str, str, str], str] | None = None
+        self.ingestion_commit: Callable[[Session, str, str, str, str], None] | None = None
         self.content_reader: Callable[[str, str, str], dict[str, Any] | None] | None = None
         self.factory, self.embedder, self.settings = factory, embedder, settings
         self.reranker = (reranker or CrossEncoderReranker(settings)) if settings.reranker_enabled else None
@@ -612,12 +614,19 @@ class KnowledgeService:
                 "content_uri": f"/api/v1/knowledge/{item_id}/revisions/{revision_id}/content",
             }
 
+    def _search_repository(self, session: Session) -> Repository:
+        store = (
+            self.settings.knowledge_v3_store_id if self.settings.knowledge_source_backend == "v3" else None
+        )
+        return Repository(session, sdk_store_id=store)
+
     def _search(self, actor: Actor, command: Search) -> dict[str, Any]:
         with SqlAlchemyUnitOfWork(self.factory, read_only=True) as uow:
-            if Repository(uow.session).incompatible_profile(
-                owner_id(actor), self.embedder.profile_id, command
-            ):
+            search_repo = self._search_repository(uow.session)
+            if search_repo.incompatible_profile(owner_id(actor), self.embedder.profile_id, command):
                 raise fail("EMBEDDING_PROFILE_MISMATCH", ErrorCategory.CONFLICT)
+            if search_repo.sdk_incomplete(owner_id(actor), self.embedder.profile_id, command):
+                raise fail("V3_SEARCH_INCOMPLETE", ErrorCategory.UNAVAILABLE)
         try:
             vectors = self.embedder.encode([command.query], query=True)
             validate_vectors(vectors, 1, self.embedder.dimensions)
@@ -626,7 +635,7 @@ class KnowledgeService:
         if self.reranker is not None:
             return self._search_reranked(actor, command, vectors[0])
         with SqlAlchemyUnitOfWork(self.factory, read_only=True) as uow:
-            rows = Repository(uow.session).candidates(
+            rows = self._search_repository(uow.session).candidates(
                 owner_id(actor), self.embedder.profile_id, vectors[0], command
             )
             result: dict[str, dict[str, Any]] = {}
@@ -681,7 +690,7 @@ class KnowledgeService:
     def _search_reranked(self, actor: Actor, command: Search, vector: list[float]) -> dict[str, Any]:
         candidates: dict[str, dict[str, Any]] = {}
         with SqlAlchemyUnitOfWork(self.factory, read_only=True) as uow:
-            rows = Repository(uow.session).candidates(
+            rows = self._search_repository(uow.session).candidates(
                 owner_id(actor), self.embedder.profile_id, vector, command
             )
             for row in rows:
@@ -766,7 +775,7 @@ class KnowledgeService:
                 assert job is not None
                 revision = Repository(uow.session).revision(job.owner_id, job.revision_id)
                 assert revision is not None
-                owner, revision_id = job.owner_id, revision.id
+                owner, revision_id, item_id = job.owner_id, revision.id, revision.item_id
                 data, mime = revision.original_data, revision.mime_type
                 source_url = revision.source_url
             if source_url:
@@ -779,6 +788,11 @@ class KnowledgeService:
                 raise ExtractionError("NO_TEXT")
             vectors = self.embedder.encode([piece.text for piece in pieces])
             validate_vectors(vectors, len(pieces), self.embedder.dimensions)
+            staged_digest = None
+            if self.settings.knowledge_source_backend == "v3":
+                if self.ingestion_stage is None or self.ingestion_commit is None:
+                    raise fail("V3_WRITER_NOT_CONFIGURED", ErrorCategory.UNAVAILABLE)
+                staged_digest = self.ingestion_stage(owner, item_id, revision_id, content)
             with audited_uow(self.factory, None, "SOURCE_ACTIVATED", owner=owner) as uow:
                 repo = Repository(uow.session)
                 revision = repo.revision(owner, revision_id)
@@ -830,6 +844,9 @@ class KnowledgeService:
                     navigation_rdf.revision_rows(revision, item.scope, item.memory_kind),
                     self.settings.workflow_rdf_enabled,
                 )
+                if staged_digest is not None:
+                    assert self.ingestion_commit is not None
+                    self.ingestion_commit(uow.session, owner, item.id, revision_id, staged_digest)
                 job.status, job.stage = "READY", "COMPLETE"
         except Exception as error:
             logging.getLogger("python_foundation.worker").error(

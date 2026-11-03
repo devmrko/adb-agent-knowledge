@@ -96,3 +96,5 @@ Foundation 자체 자료는 [내부 패키지](../packages/python-foundation/REA
 [Required pre-response memory MCP hook / 답변 전 기억 확인 훅](guides/required-memory-hook.md) — optional client-side installation; Codex requires hook trust.
 
 - [v3 source transfer / 원문 이관](guides/v3-source-transfer.md)
+
+- [v3 원문·검색 주 저장소와 이력](guides/v3-primary-store.md)

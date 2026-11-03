@@ -296,7 +296,9 @@ def test_revision_history_failure_and_late_completion(knowledge):
     assert client.get(path).json()["revision_id"] == third["revision_id"]
     history = client.get(path + "/history").json()
     assert [r["revision_no"] for r in history["revisions"]] == [1, 2, 3]
-    assert [e["event_type"] for e in history["events"] if e["event_type"] != "SOURCE_ACTIVATED"] == [
+    assert [
+        e["event_type"] for e in history["events"] if e["event_type"] not in {"SOURCE_ACTIVATED", "V3_INGEST"}
+    ] == [
         "CREATED",
         "REVISED",
         "REVISED",
@@ -357,7 +359,7 @@ def test_retire_restore_and_authorization(knowledge):
     assert [
         e["event_type"]
         for e in client.get(path + "/history").json()["events"]
-        if e["event_type"] != "SOURCE_ACTIVATED"
+        if e["event_type"] not in {"SOURCE_ACTIVATED", "V3_INGEST"}
     ] == [
         "CREATED",
         "RETIRED",

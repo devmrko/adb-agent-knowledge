@@ -1,7 +1,7 @@
 # v3 원문 이관·검증·전환 / Source transfer
 
-v3 준비 단계의 **선택적 원문 조회 전환**입니다. 제품 기본값은 여전히 v2 preview 0.2.0이며
-운영 데이터 전체를 Agent Memory로 옮긴 상태가 아닙니다.
+v3의 **기존 데이터 이관 도구**입니다. 신규 저장·수정·주 검색을 포함한 현재 구성은
+[v3 주 저장소 안내](v3-primary-store.md)를 참조하세요. 기존 설치의 기본값은 legacy입니다.
 
 ## 바뀐 경로
 
@@ -70,18 +70,12 @@ ACTIVE 버전에 SDK 원문 조회가 적용됩니다. 미이관/VERIFIED 버전
 전체 설정을 legacy로 되돌리면 모든 원문을 기존 경로에서 읽지만, 이는 개별 rollback 이력을
 만들지 않는 구성 변경입니다. 관리 가능한 복구에는 버전별 rollback을 사용하세요.
 
-## 그대로인 부분과 한계
+## v3 주 경로와의 관계
 
-일반 저장·수정·임베딩 작업자·벡터/키워드 검색은 아직 기존 v2입니다. 새 원문 버전은 별도로
-enqueue/검증/activate해야 합니다. **이 설정만으로 쓰기와 검색까지 Agent Memory로 통합되지 않습니다.**
-요약 갱신·워크플로우 등 다른 쓰기 기능도 기존 원문을 사용하므로 원본을 지우면 안 됩니다.
-요약/출처를 변경한 버전은 해시가 달라져 이관 충돌이 날 수 있으며 자동 재작성하지 않습니다.
-
-관계 ID·수명·업무/기록 시점·소유권은 기존 RDB 테이블 기준입니다. RDF/Property Graph는 기존 기능을
-그대로 사용합니다. `GraphService.assertion`의 인용 검증과 원문 content 조회만 전환됐습니다.
-파일 바이트/추출 메타데이터 전체 대응, 주 검색 경로 전환, 검색 동등성, 대규모 backfill 성능,
-실제 다중 프로세스 경쟁/강제 종료 시험은 후속 과제입니다. 벡터 검사는 구조적 무결성 검사이며
-검색 품질이나 내용의 사실성을 보증하지 않습니다. MCP 도구 수는 늘리지 않았습니다.
+vk0016 이상에서 API/워커를 v3로 함께 실행하면 신규 저장·수정과 주 벡터/키워드 검색도 SDK를 사용합니다.
+이 CLI는 기존 자료의 명시적 이관·복구용입니다. 기존 원문/벡터는 복구와 관계형 기능 호환을 위해 유지하며,
+첨부 BLOB·도메인 이력·그래프 기준 테이블도 삭제하지 않습니다. 상세한 기능별 역할·전환·복구는
+[v3 주 저장소 안내](v3-primary-store.md)에 있습니다.
 
 ## 격리 검증
 
@@ -99,25 +93,8 @@ VKV_/OAM_TEST_ 테스트 계정만 허용합니다. 최신 migration을 적용�
 
 ## English summary
 
-This is an opt-in source-read migration, not a v3 release or a production cutover.
-The `vk0015` migration creates a durable per-owner/per-revision manifest. A worker claims a 15-minute
-lease, writes immutable JSON and chunk vectors into a separate Oracle Agent Memory store, and verifies
-content hashes, exact chunks and vector structure. An operator explicitly activates a VERIFIED revision
-using its current generation. Stale workers cannot complete a replacement worker's job.
-
-Use the commands above only as a trusted database operator. Supply the source owner's exact authenticated
-issuer and subject, not display names or owner hashes. `init` initializes the SDK store separately from
-Alembic. `process` is bounded and exits; inspect status, then activate. The API must restart with
-`KNOWLEDGE_SOURCE_BACKEND=v3`. The default is `legacy`. No new public operator endpoints or MCP tools are added.
-
-Active content reads and graph assertion quote validation use the SDK body. SDK errors fail closed.
-Explicit rollback validates the retained legacy source and works during SDK outages. Activation, retry
-and rollback append events. No source copies or original files are deleted.
-
-Normal writes, revisions, summary updates, workers and main vector/keyword search still use v2.
-New revisions need another explicit transfer. This is not unified SDK storage/search yet. Do not delete
-legacy bodies. Full metadata/file coverage, main search equivalence, bulk scheduling, large-scale
-performance and actual multiprocess crash testing remain pending. Test results are scoped to isolated
-Oracle service-level checks and unit tests; they are not deployment or retrieval-quality guarantees.
-
-2026-11-03 격리 Oracle 실행에서 위 다섯 검증 항목을 통과했습니다. 실제 프로세스를 강제 종료한 시험은 아니며, SDK 쓰기 후 오류를 주입하고 SDK 연결을 새로 생성해 재개했습니다.
+This CLI migrates existing source versions with durable leases, integrity checks and explicit activation/rollback.
+Use it as a trusted DB operator with exact authenticated issuer/subject, not a public user endpoint.
+Current v3 (vk0016+) also handles new writes/revisions and main retrieval automatically through SDK storage.
+See the [current primary-store guide](v3-primary-store.en.md) for setup, identity, history and rollback.
+The results linked above describe the earlier isolated transfer test, not the full production cutover.

@@ -1,4 +1,4 @@
--- Oracle relational table/index reference through vk0015 (2026-11-03); NOT an install script.
+-- Oracle relational table/index reference through vk0016 (2026-11-03); NOT an install script.
 -- Generated from current ORM metadata plus SDK owner lock metadata.
 -- Physical upgraded column types/constraints follow migration history, not create_all output.
 -- Install/upgrade with Alembic. vk0008/vk0011 initialize knowledge/graph audit triggers.
@@ -837,6 +837,7 @@ CREATE TABLE vk_memory_lock (
 -- vk0015 opt-in source transfer manifest; transitions are application-event audited.
 
 CREATE TABLE vk_source_transfer (
+	sdk_record_id VARCHAR2(64 CHAR) NOT NULL,
 	owner_id VARCHAR2(64 CHAR) NOT NULL,
 	revision_id VARCHAR2(36 CHAR) NOT NULL,
 	knowledge_id VARCHAR2(36 CHAR) NOT NULL,
@@ -856,3 +857,6 @@ CREATE TABLE vk_source_transfer (
 )
 
 ;
+
+-- vk0016 persisted immutable SDK record-key mapping
+CREATE UNIQUE INDEX ix_vk_source_sdk_key ON vk_source_transfer (sdk_record_id);

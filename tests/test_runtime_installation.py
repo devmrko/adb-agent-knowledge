@@ -54,3 +54,15 @@ def test_oracle_validation_rejects_admin_and_wrong_schema(actual, expected):
 
 def test_oracle_validation_accepts_explicit_test_schema():
     guard_schema("AK_TEST_01", "ak_test_01")
+
+
+def test_v3_setup_retains_sdk_dependency(tmp_path, monkeypatch):
+    monkeypatch.setattr(setup_runtime, "ROOT", tmp_path)
+    monkeypatch.delenv("KNOWLEDGE_SOURCE_BACKEND", raising=False)
+    monkeypatch.delenv("AGENT_MEMORY_ENABLED", raising=False)
+    (tmp_path / ".env").write_text("KNOWLEDGE_SOURCE_BACKEND=v3\n")
+    assert setup_runtime.configured_agent_memory()
+    assert "agent-memory" in setup_runtime.commands(False, False, True)[0]
+    assert "knowledge" in setup_runtime.commands(False, False, True)[0]
+    monkeypatch.setenv("KNOWLEDGE_SOURCE_BACKEND", "legacy")
+    assert not setup_runtime.configured_agent_memory()

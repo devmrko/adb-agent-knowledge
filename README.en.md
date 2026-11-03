@@ -16,9 +16,9 @@ MIT covers this project's code, not every model or dependency.
 
 ## Current setup at a glance (2026-11-03)
 
-Latest migration: **vk0015**. API/MCP + embeddings + Kev provide the base service. Agent Memory, RDF and Property Graph require their own optional setup. MCP registration alone does not activate prompt hooks. Install the client hook separately, then manage approved principles in the web UI.
+Latest migration: **vk0016**. API/MCP + embeddings + Kev provide the base service. Agent Memory, RDF and Property Graph require their own optional setup. MCP registration alone does not activate prompt hooks. Install the client hook separately, then manage approved principles in the web UI.
 
-v3 preparation: [resumable source transfer and opt-in reads](docs/guides/v3-source-transfer.md#english-summary). Defaults, main search and writes remain v2.
+**v3 primary storage:** [Agent Memory writes, revisions, search and retained history](docs/guides/v3-primary-store.en.md). Existing installations are not switched automatically. In v3, new revisions must pass SDK validation before READY; public source IDs, RDF/Property Graph and audit history remain intact.
 
 | Store / setting | Purpose | Update path |
 |---|---|---|

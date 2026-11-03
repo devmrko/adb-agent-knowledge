@@ -125,7 +125,7 @@ def create_app(
             service.embedder,
         )
         transfer = SourceTransferService(VersionedMemoryPilot(service, transfer_repo, graph_service))
-        service.content_reader = transfer.content_owned
+        transfer.attach()
         graph_service.source_reader = transfer.content_owned
     graph_ops = GraphOpsService(sessions(engine), settings)
     audit = AuditService(sessions(engine), settings.workflow_rdf_enabled)
@@ -143,7 +143,7 @@ def create_app(
             memory_repo.close()
             engine.dispose()
 
-    app = FastAPI(title="Agent Knowledge for Oracle ADB", version="0.2.0", lifespan=lifespan)
+    app = FastAPI(title="Agent Knowledge for Oracle ADB", version="0.3.0", lifespan=lifespan)
     install_web(app, Security(foundation, verifier=verifier))
     install_browser_sessions(app, settings)
     app.state.service, app.state.engine = service, engine

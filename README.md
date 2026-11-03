@@ -12,7 +12,7 @@ Kev가 조회·저장과 검색 경로를 판단합니다. 모델은 로컬 또�
 
 **필수 저장소: Oracle Autonomous Database.** 현재 Oracle 벡터·RDF·SQL Property Graph에 맞춘 구현이며 다른 DB로 교체하는 어댑터는 제공하지 않습니다. SQLite는 테스트용입니다.
 
-**릴리스 상태: v2 preview (0.2.0).** 기존 테스트 ADB의 빈 스키마에서 migration·감사 트리거·RDF·Property Graph·실제 임베딩 검색을 검증했습니다. 새 ADB 서비스 생성과 모든 OS 지원을 보장하지는 않습니다. [실검증 범위](docs/reference/oracle-installation-validation.md).
+**릴리스 상태: v3 preview (0.3.0).** 기존 테스트 ADB의 빈 스키마에서 migration·감사 트리거·RDF·Property Graph·실제 임베딩 검색을 검증했습니다. 새 ADB 서비스 생성과 모든 OS 지원을 보장하지는 않습니다. [실검증 범위](docs/reference/oracle-installation-validation.md).
 
 **모델까지 설치·점검:** `./scripts/setup.sh --with-models --verify-models`. [OS 지원·설치 옵션·테스트 DB 검증](docs/guides/runtime-installation.md).
 
@@ -22,9 +22,9 @@ Kev가 조회·저장과 검색 경로를 판단합니다. 모델은 로컬 또�
 
 ## 현재 구성 한눈에 보기 (2026-11-03)
 
-최신 마이그레이션은 **vk0015**입니다. API/MCP·임베딩·Kev가 기본 구성이고, 에이전트 메모리·RDF·Property Graph는 선택 기능별 초기화가 필요합니다. MCP 연결만으로 훅은 활성화되지 않습니다. 클라이언트 훅을 별도로 설치하고 웹에서 사용자 원칙을 관리합니다.
+최신 마이그레이션은 **vk0016**입니다. API/MCP·임베딩·Kev가 기본 구성이고, 에이전트 메모리·RDF·Property Graph는 선택 기능별 초기화가 필요합니다. MCP 연결만으로 훅은 활성화되지 않습니다. 클라이언트 훅을 별도로 설치하고 웹에서 사용자 원칙을 관리합니다.
 
-v3 준비: [버전별 원문 이관·검증·선택적 조회 전환](docs/guides/v3-source-transfer.md). 기본값은 v2이며 주 검색·쓰기 경로 전환은 아직 아닙니다.
+**v3 주 저장소:** [Agent Memory 기반 저장·수정·검색과 이력 보존](docs/guides/v3-primary-store.md). 기존 설치는 자동 전환하지 않습니다. v3 활성화 후 새 원문도 SDK 검증을 통과해야 READY가 되며, 기존 지식·버전 ID와 RDF/Property Graph·감사 이력은 유지합니다.
 
 | 저장 대상 | 역할 | 변경 방법 |
 |---|---|---|

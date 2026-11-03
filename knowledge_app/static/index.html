@@ -21,6 +21,7 @@
 <section aria-labelledby="sql-selected-title"><h3 id="sql-selected-title">선택한 항목 SQL</h3><p id="sql-selected-label">노트나 메모리를 선택하고 ‘이 항목 SQL’을 누르세요.</p><p>SQLcl / SQL*Plus에서 앱 스키마로 실행하는 읽기 전용 스크립트입니다. owner_id는 API 키가 아닌 인증 소유자 ID를 직접 지정해야 합니다. Agent Memory 접두사는 기본 AKMEMORY이며 설치 설정에 맞게 바꾸세요.</p><label for="sql-selected-code">조회 스크립트</label><textarea id="sql-selected-code" readonly spellcheck="false" rows="12" placeholder="선택한 항목이 없습니다."></textarea><div class="actions"><button id="sql-selected-copy" type="button" disabled>SQL 복사</button><button id="sql-selected-download" type="button" disabled>SQL 다운로드</button></div><p id="sql-selected-status" role="status" aria-live="polite"></p></section>
 <p>각 기능이 어디에서 실행되고 무엇을 저장·조회하는지 설명합니다. SQL은 설명용 예제이며 방금 실행한 요청의 SQL 로그가 아닙니다. 이 화면은 SQL을 실행하지 않습니다.</p>
 <p>SQL은 권한 있는 DB 도구(SQLcl·Database Actions 등)에서 바인드 값을 지정해 사용합니다. DB 직접 접근에는 앱의 사용자 인증이 자동 적용되지 않습니다. 실제 사용자 ID·비밀번호·벡터를 이 안내에 표시하지 않습니다.</p>
+<p><strong>v3 모드:</strong> 업무 지식 원문과 검색 벡터는 별도 Agent Memory 저장소에 보관합니다. 기존 지식/버전 ID, 수정 이력, 감사 기록, 첨부, RDF·Property Graph는 유지합니다. 선택한 노트의 ‘이 항목 SQL’은 실제 원문 저장 경로를 표시합니다. 아래 vk_revision/vk_chunk 예제는 legacy 경로와 보존된 복구 사본 설명입니다.</p>
 <details><summary>업무 지식 · 목록과 원문 조회</summary><p>Oracle에서 실행하는 설명용 SQL입니다. :owner_id는 앱이 인증 주체에서 계산한 소유자 ID이며 API 키나 DB 사용자명이 아닙니다. :scope는 project:example 같은 범위입니다.</p><pre><code>SELECT i.id, i.title, i.scope, r.id AS revision_id,
        r.summary_text, r.content_text
 FROM vk_item i
@@ -56,7 +57,9 @@ knowledge_revise(knowledge_id=&quot;&lt;지식 ID&gt;&quot;,
 
 API: POST /api/v1/knowledge
 Oracle: vk_item → vk_revision → vk_job
-임베딩 워커: 원문 청크 → 임베딩 → vk_chunk
+legacy 워커: 원문 청크 → 임베딩 → vk_chunk
+v3 워커: Agent Memory 원문·청크·벡터 검증 → 이관 상태와 현재 버전·READY 함께 공개
+v3 검색: SDK RECORD_CHUNKS 벡터·키워드 + 기존 소유자/범위/상태 필터
 이력: 원문 버전 보존 + 설정된 변경 추적/후속 검토</code></pre><p class="flow-help">구현 근거: knowledge_app/mcp_server.py · service.py · worker.py · migrations/</p></details>
 <details><summary>에이전트 메모리 · SQL 조회</summary><p>SQL로 조회할 수 있습니다. 아래 AKMEMORY는 AGENT_MEMORY_STORE_ID=AKMEMORY인 설치 예입니다. 다른 설치는 접두사를 확인하세요. :owner_id는 앱의 인증 소유자 ID입니다. 상태를 임의로 현재 사실로 해석하지 않도록 함께 표시합니다.</p><pre><code>SELECT record_id, memory_type, content, status,
        JSON_VALUE(metadata, &#x27;$.title&#x27;) AS title,

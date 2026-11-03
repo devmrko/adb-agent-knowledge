@@ -1,0 +1,19 @@
+{
+  "checks": [
+    "AUTOMATIC_SDK_WRITE_PUBLICATION_VECTOR_KEYWORD_SEARCH_OWNER_FILTER",
+    "LEGACY_AND_SDK_RANKED_TARGET_MATCH",
+    "POST_SDK_WRITE_FAILURE_KEEPS_OLD_SEARCH_AND_GRAPH_CURRENT",
+    "RETRY_REUSES_SDK_RECORD_PRESERVES_SOURCE_GRAPH_AND_CHANGE_HISTORY",
+    "RETIRE_RESTORE_ORIGINAL_ATTACHMENT_STABLE_ID"
+  ],
+  "stage": "isolated primary SDK lifecycle",
+  "date": "2026-11-03",
+  "schema": "vk0016",
+  "sdk_version": "26.8.0",
+  "embedding_model": "dragonkue/snowflake-arctic-embed-l-v2.0-ko",
+  "vector_format": "SDK FLOAT64 converted to FLOAT32 for exact cosine query",
+  "limits": [
+    "Isolated service-level integration, not performance benchmark",
+    "Post-write failure injection, not operating-system crash"
+  ]
+}

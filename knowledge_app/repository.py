@@ -17,9 +17,11 @@ from knowledge_app.models import (
     Item,
     Job,
     Revision,
+    SourceTransfer,
     Vector,
     now,
 )
+from knowledge_app.sdk_search import sdk_chunk_model, sdk_chunks
 
 
 @dataclass
@@ -62,8 +64,9 @@ def has_active_relations() -> Exists:
 
 
 class Repository:
-    def __init__(self, session: Session) -> None:
+    def __init__(self, session: Session, *, sdk_store_id: str | None = None) -> None:
         self.session = session
+        self.sdk_store_id = sdk_store_id
 
     def item(self, owner: str, item_id: str) -> Item | None:
         return self.session.scalar(select(Item).where(Item.owner_id == owner, Item.id == item_id))
@@ -199,13 +202,65 @@ class Repository:
             statement = statement.where(has_active_relations())
         return self.session.scalar(statement.limit(1)) is not None
 
+    def sdk_incomplete(self, owner: str, profile: str, command: Search) -> bool:
+        if self.sdk_store_id is None:
+            return False
+        sdk = sdk_chunks(self.sdk_store_id)
+        statement = (
+            select(Chunk.id)
+            .join(Item, (Item.owner_id == Chunk.owner_id) & (Item.active_revision_id == Chunk.revision_id))
+            .outerjoin(
+                SourceTransfer,
+                (SourceTransfer.owner_id == Chunk.owner_id)
+                & (SourceTransfer.revision_id == Chunk.revision_id),
+            )
+            .outerjoin(
+                sdk,
+                (sdk.c.source_id == SourceTransfer.sdk_record_id)
+                & (sdk.c.user_id == Chunk.owner_id)
+                & (sdk.c.source_record_type == "memory")
+                & (sdk.c.chunk_seq == Chunk.chunk_no + 1),
+            )
+            .where(
+                Chunk.owner_id == owner,
+                or_(
+                    SourceTransfer.status.is_(None),
+                    SourceTransfer.status != "ACTIVE",
+                    SourceTransfer.store_id != self.sdk_store_id,
+                    SourceTransfer.profile_id != profile,
+                    sdk.c.source_id.is_(None),
+                    sdk.c.embedding.is_(None),
+                    sdk.c.chunk_text.is_(None),
+                ),
+            )
+        )
+        if command.has_relations:
+            statement = statement.where(has_active_relations())
+        if command.category is not None:
+            statement = statement.where(Item.category == command.category)
+        if command.knowledge_type is not None:
+            statement = statement.where(Item.knowledge_type == command.knowledge_type)
+        if command.memory_kinds is not None:
+            statement = statement.where(Item.memory_kind.in_(command.memory_kinds))
+        if command.scopes is not None:
+            statement = statement.where(Item.scope.in_(command.scopes))
+        if not command.include_retired:
+            statement = statement.where(Item.lifecycle_status == "ACTIVE")
+        return self.session.scalar(statement.limit(1)) is not None
+
     def candidates(self, owner: str, profile: str, vector: list[float], command: Search) -> list[Candidate]:
+        chunk_model = sdk_chunk_model(self.sdk_store_id) if self.sdk_store_id else Chunk
         statement: Select[Any] = (
-            select(Chunk, Item)
-            .join(Revision, (Revision.id == Chunk.revision_id) & (Revision.owner_id == Chunk.owner_id))
+            select(chunk_model, Item)
+            .join(
+                Revision,
+                (Revision.id == chunk_model.revision_id) & (Revision.owner_id == chunk_model.owner_id),
+            )
             .join(Item, (Item.id == Revision.item_id) & (Item.owner_id == Revision.owner_id))
             .where(
-                Chunk.owner_id == owner, Chunk.profile_id == profile, Item.active_revision_id == Revision.id
+                chunk_model.owner_id == owner,
+                chunk_model.profile_id == profile,
+                Item.active_revision_id == Revision.id,
             )
         )
         if command.has_relations:
@@ -224,13 +279,20 @@ class Repository:
         params: dict[str, Any] = {}
         vector_rows: list[Any]
         if oracle:
+            # SDK 26.8 stores JSON-derived vectors as FLOAT64, while our query bind is FLOAT32.
+            # Normalize the stored value for exact search; never compare differing vector formats.
+            stored_vector = (
+                func.to_vector(chunk_model.embedding, literal_column("1024"), literal_column("FLOAT32"))
+                if self.sdk_store_id
+                else chunk_model.embedding
+            )
             distance = func.vector_distance(
-                Chunk.embedding, bindparam("query_vector", type_=Vector()), literal_column("COSINE")
+                stored_vector, bindparam("query_vector", type_=Vector()), literal_column("COSINE")
             )
             statement = statement.add_columns(distance)
             params["query_vector"] = vector
             vector_rows = list(
-                self.session.execute(statement.order_by(distance, Chunk.id).limit(100), params).all()
+                self.session.execute(statement.order_by(distance, chunk_model.id).limit(100), params).all()
             )
         else:
             vector_rows = [
@@ -259,13 +321,13 @@ class Repository:
             for term in terms:
                 predicates.extend(
                     [
-                        func.lower(Chunk.text).contains(term, autoescape=True),
+                        func.lower(chunk_model.text).contains(term, autoescape=True),
                         func.lower(Item.title).contains(term, autoescape=True),
                         func.lower(Item.tags_json).contains(term, autoescape=True),
                     ]
                 )
             keyword_statement = statement.where(or_(*predicates)).order_by(
-                sum((case((p, 1), else_=0) for p in predicates), literal(0)).desc(), Chunk.id
+                sum((case((p, 1), else_=0) for p in predicates), literal(0)).desc(), chunk_model.id
             )
             keyword_rows: list[Any] = list(self.session.execute(keyword_statement.limit(100), params).all())
             if not oracle:

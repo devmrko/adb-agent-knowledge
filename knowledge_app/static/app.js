@@ -59,11 +59,13 @@ async function read(item) {
  try {
   const data=await request(`/api/v1/knowledge/${item.knowledge_id}/revisions/${item.revision_id}/content`,{signal:contentController.signal});
   if(version!==contentGeneration) return;
+  selected.source_storage=data.source_storage || null;
   $("note-sql").disabled=false;
   original=data.text; originalSummary=data.summary || ""; $("reader-summary").value=originalSummary; $("summary-kind").textContent=data.summary_kind==="EXTRACTIVE"?"원문 발췌 요약 · 전체 내용은 상세에서 확인":"작성된 요약 · "+data.summary_kind; $("reader-body").value=original; updateLines(); $("edit").disabled=READ_ONLY;
   $("edit-origin").hidden=data.edit_origin!=="HUMAN"; $("edit-origin").textContent="사용자 편집";
   const sources=(data.sources || []).map(s=>`${s.kind}: ${s.location}${s.machine_id ? " · 머신 "+s.machine_id : ""}${s.version ? " · 버전 "+s.version : ""}${s.locator ? " · "+s.locator : ""}`);
   $("reader-meta").textContent=`지식 ${item.knowledge_id}\n버전 ${item.revision_id}\n범위 ${item.scope || ""}\n편집 경로 ${data.edit_origin || "UNKNOWN"}\n작성 머신 ${data.origin_machine_label || data.origin_machine_id || "기록 없음"}\n${sources.join("\n") || "출처 위치: 기록 없음"}`;
+  if(data.source_storage?.backend==="oracle_agent_memory") $("reader-meta").textContent+=`\n원문 저장소 Oracle Agent Memory · ${data.source_storage.store_id}\n저장 ID ${data.source_storage.record_id}`;
   noteStatus(""); loadCapture(item,version); if(graphVersion===graphGeneration)loadWorkflow(item,version);
  } catch(error) { if(version===contentGeneration) { noteStatus("원문을 불러오지 못했습니다.",true); handleError(error); } }
 }
@@ -827,6 +829,34 @@ EXEC :owner_id := NULL;
 SET LONG 100000
 SET LONGCHUNKSIZE 10000
 `;
+ if(kind==="knowledge" && uuid.test(item?.knowledge_id) && uuid.test(item?.revision_id) && item?.source_storage?.backend==="oracle_agent_memory") {
+  const store=item.source_storage.store_id, record=item.source_storage.record_id;
+  if(!/^[A-Z][A-Z0-9_]{0,15}$/.test(store) || !/^[a-f0-9]{64}$/.test(record)) throw new Error("저장소 ID를 확인할 수 없습니다.");
+  return head+`
+VARIABLE knowledge_id VARCHAR2(36)
+VARIABLE revision_id VARCHAR2(36)
+EXEC :knowledge_id := '${item.knowledge_id}';
+EXEC :revision_id := '${item.revision_id}';
+-- 원문 JSON은 Agent Memory, 버전·상태·이력은 기존 ID를 유지합니다.
+SELECT i.id, i.title, i.scope, i.lifecycle_status, r.id AS selected_revision_id,
+       t.sdk_record_id, t.status AS transfer_status, m.content AS source_json
+FROM vk_item i
+JOIN vk_revision r ON r.item_id = i.id AND r.owner_id = i.owner_id
+JOIN vk_source_transfer t ON t.owner_id=r.owner_id AND t.revision_id=r.id
+JOIN ${store}_MEMORY m ON m.user_id=t.owner_id AND m.record_id=t.sdk_record_id
+WHERE i.owner_id = :owner_id AND i.id = :knowledge_id AND r.id = :revision_id;
+
+SELECT c.chunk_seq, c.chunk_text, VECTOR_DIMENSION_COUNT(c.embedding) AS dimensions
+FROM ${store}_RECORD_CHUNKS c
+JOIN vk_source_transfer t ON t.sdk_record_id=c.source_id AND t.owner_id=c.user_id
+WHERE t.owner_id=:owner_id AND t.revision_id=:revision_id
+  AND c.source_record_type='memory' ORDER BY c.chunk_seq;
+
+SELECT event_type, revision_id, reason, created_at
+FROM vk_event WHERE owner_id=:owner_id AND item_id=:knowledge_id
+ORDER BY created_at, id;
+`;
+ }
  if(kind==="knowledge" && uuid.test(item?.knowledge_id) && uuid.test(item?.revision_id))return head+`
 VARIABLE knowledge_id VARCHAR2(36)
 VARIABLE revision_id VARCHAR2(36)

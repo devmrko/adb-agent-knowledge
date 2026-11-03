@@ -1,7 +1,8 @@
 # Application-owned tables versus Oracle Agent Memory
 
-[한국어](storage-backends.md) · 2026-11-03 · Current v2; proposed v3
+[한국어](storage-backends.md) · 2026-11-03 · Legacy comparison; v3 primary path implemented
 
+Current v3 implementation: [primary SDK source/search with retained domain history](v3-primary-store.en.md). The comparison below describes the legacy business store versus agent-experience integration.
 **Both store data in Oracle tables.** Agent Memory is a library managing schema, retrieval rows,
 search and memory relationships—not a separate cloud database. The distinction is who implements the behavior.
 
@@ -62,9 +63,9 @@ Neither approach removes application authorization, domain validation, immutable
 concurrency control or review workflows. No speed or accuracy superiority has been established.
 Memory supports/supersedes relationships are not interchangeable with business uses/deployed_on edges.
 
-## Proposed v3
+## Original v3 proposal (historical design)
 
-Current release remains v2 preview(0.2.0). **v3 is a design/validation proposal, not a released migration.**
+At proposal time the release was v2 preview(0.2.0). The following is the original plan; see the current v3 guide above.
 Unify the user-facing save/search entry point and evaluate Agent Memory as the common content/retrieval
 backend. Retain Kev, embedding-provider choice, RDF/Property Graph and exact evidence/history.
 
@@ -83,4 +84,4 @@ Sources: current models/repository/agent_memory_repository/agent_memory_service 
 
 ### v3 implementation progress
 
-An isolated [versioned JSON and graph pilot (Korean)](v3-pilot.md) is implemented. Production routing remains v2; this is not a completed migration.
+An isolated [versioned JSON and graph pilot (Korean)](v3-pilot.md) is implemented. That initial pilot predates the current primary SDK implementation linked above.

@@ -11,7 +11,7 @@ from knowledge_app.models import Event, Item, Job, Revision, SourceTransfer
 from knowledge_app.repository import Repository
 from knowledge_app.service import fail, owner_id, provenance_view
 from knowledge_app.source_transfer_repository import TransferRepository
-from knowledge_app.summaries import summary_view
+from knowledge_app.summaries import extract_summary, summary_view
 from knowledge_app.v3_pilot import SourceEnvelope, VersionedMemoryPilot, digest, record_key, serialized
 from python_foundation.database import SqlAlchemyUnitOfWork
 from python_foundation.errors import BusinessError, ErrorCategory
@@ -23,6 +23,72 @@ class SourceTransferService:
         self.pilot, self.factory = pilot, pilot.source.factory
         self.store_id = pilot.sdk.settings.agent_memory_store_id
         self.profile = pilot.source.embedder.profile_id
+
+    def attach(self) -> None:
+        self.pilot.source.content_reader = self.content_owned
+        self.pilot.source.ingestion_stage = self.prepare_ingestion
+        self.pilot.source.ingestion_commit = self.commit_ingestion
+
+    def prepare_ingestion(self, owner: str, kid: str, rid: str, content: str) -> str:
+        with SqlAlchemyUnitOfWork(self.factory, read_only=True) as uow:
+            repo = Repository(uow.session)
+            revision, item = repo.revision(owner, rid), repo.item(owner, kid)
+            if revision is None or item is None or revision.item_id != kid:
+                raise fail("KNOWLEDGE_NOT_FOUND", ErrorCategory.NOT_FOUND)
+            envelope = SourceEnvelope.model_validate(
+                dict(
+                    knowledge_id=kid,
+                    revision_id=rid,
+                    text=content,
+                    summary=revision.summary_text or extract_summary(content),
+                    source_url=revision.source_url,
+                    filename=revision.filename,
+                    **provenance_view(revision),
+                )
+            )
+            scope = item.scope
+        checksum = digest(serialized(envelope))
+        self.pilot.stage_owned(owner, envelope, scope)
+        self.validate_sdk(owner, kid, rid, checksum)
+        return checksum
+
+    def commit_ingestion(self, session: Session, owner: str, kid: str, rid: str, checksum: str) -> None:
+        # Called inside the source's final UOW: publication and manifest are one RDB commit.
+        row = TransferRepository(session).get(owner, rid)
+        if row is not None:
+            if (row.knowledge_id, row.content_digest, row.store_id, row.profile_id) != (
+                kid,
+                checksum,
+                self.store_id,
+                self.profile,
+            ):
+                raise fail("V3_TRANSFER_CONFLICT", ErrorCategory.CONFLICT)
+            row.status = "ACTIVE"
+            row.generation += 1
+        else:
+            session.add(
+                SourceTransfer(
+                    owner_id=owner,
+                    knowledge_id=kid,
+                    revision_id=rid,
+                    sdk_record_id=record_key(owner, kid, rid),
+                    store_id=self.store_id,
+                    profile_id=self.profile,
+                    content_digest=checksum,
+                    status="ACTIVE",
+                    generation=1,
+                    attempts=1,
+                )
+            )
+        session.add(
+            Event(
+                owner_id=owner,
+                item_id=kid,
+                revision_id=rid,
+                event_type="V3_INGEST",
+                reason="SDK source and index verified before publication",
+            )
+        )
 
     def snapshot(self, owner: str, kid: str, rid: str) -> tuple[SourceEnvelope, str]:
         with SqlAlchemyUnitOfWork(self.factory, read_only=True) as uow:
@@ -61,6 +127,7 @@ class SourceTransferService:
                 if row is None:
                     row = SourceTransfer(
                         owner_id=owner,
+                        sdk_record_id=record_key(owner, kid, rid),
                         revision_id=rid,
                         knowledge_id=kid,
                         store_id=self.store_id,
@@ -206,7 +273,15 @@ class SourceTransferService:
             if digest(serialized(envelope)) != checksum:
                 raise fail("V3_TRANSFER_INTEGRITY", ErrorCategory.CONFLICT)
             data = envelope.model_dump(mode="json", exclude={"schema_version"})
-            return {**summary_metadata, **data}
+            return {
+                **summary_metadata,
+                **data,
+                "source_storage": {
+                    "backend": "oracle_agent_memory",
+                    "store_id": self.store_id,
+                    "record_id": record_key(owner, kid, rid),
+                },
+            }
         except BusinessError:
             raise
         except Exception:

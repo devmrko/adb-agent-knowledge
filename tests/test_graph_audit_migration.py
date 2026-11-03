@@ -40,7 +40,7 @@ def test_migration_installs_graph_audit_preserves_rows_and_repeats_safely(tmp_pa
     command.upgrade(config, "head")
     with engine.begin() as con:
         install(con)
-        assert con.scalar(text("SELECT version_num FROM vk_alembic_version")) == "vk0015"
+        assert con.scalar(text("SELECT version_num FROM vk_alembic_version")) == "vk0016"
         if existing:
             assert con.scalar(text("SELECT id FROM vk_g_review WHERE id='old'")) == "old"
             assert con.scalar(text("SELECT count(*) FROM vk_change_event WHERE target_id='old'")) == 0

@@ -311,6 +311,7 @@ class NavigationSnapshot(Base):
 
 class SourceTransfer(Base):
     __tablename__ = "vk_source_transfer"
+    sdk_record_id: Mapped[str] = mapped_column(String(64), unique=True)
     owner_id: Mapped[str] = mapped_column(String(64), primary_key=True)
     revision_id: Mapped[str] = mapped_column(String(36), primary_key=True)
     knowledge_id: Mapped[str] = mapped_column(String(36))

@@ -27,3 +27,14 @@ test('SQL metacharacters and unsupported identifiers are rejected',()=>{
  }
  assert.throws(()=>build('other',{}));
 });
+
+test('v3 SQL uses stable source mapping and SDK chunks',()=>{
+ const item={knowledge_id:id,revision_id:rev,source_storage:{backend:'oracle_agent_memory',store_id:'AKKNOWLEDGEV3',record_id:'a'.repeat(64)}};
+ const sql=build('knowledge',item);
+ assert.ok(sql.includes('AKKNOWLEDGEV3_MEMORY'));
+ assert.ok(sql.includes('AKKNOWLEDGEV3_RECORD_CHUNKS'));
+ assert.ok(sql.includes('t.sdk_record_id'));
+ assert.ok(sql.includes('FROM vk_event'));
+ assert.ok(!sql.includes('r.content_text'));
+ assert.throws(()=>build('knowledge',{...item,source_storage:{...item.source_storage,store_id:'X;DROP'}}));
+});
