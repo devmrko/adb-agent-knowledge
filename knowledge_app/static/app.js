@@ -16,6 +16,7 @@ function dirty() { return editing && ($("reader-body").value !== original || $("
 function mayLeave() { return !saving && (!dirty() || window.confirm("저장하지 않은 수정 내용을 버릴까요?")); }
 function editMode(value) { value=READ_ONLY?false:value; editing=value; $("reader-body").readOnly=!value; $("reader-summary").readOnly=!value; $("edit").hidden=READ_ONLY || value; $("save").hidden=!value; $("cancel").hidden=!value; }
 function clearReader() {
+ clearSelectedSql(); $("note-sql").disabled=true;
  $("note-memories").replaceChildren(); $("note-memory-status").textContent=""; $("note-memories-more").hidden=true;
  $("capture-content").replaceChildren(); $("capture-count").textContent=""; $("capture-status").textContent="";
  graphGeneration++; graphController?.abort(); graphSource=null;
@@ -24,6 +25,7 @@ function clearReader() {
  $("reader-title").textContent="노트를 선택하세요"; $("reader-body").value=""; updateLines(); $("reader-meta").textContent=""; $("edit-origin").hidden=true; $("edit").disabled=true; $("check-job").hidden=true; noteStatus("");
 }
 function disconnect() {
+ memorySelection=null; $("memory-sql").disabled=true; clearSelectedSql();
  clearPrinciples();
  memoryDetailGeneration++; $("memory-evidence").replaceChildren(); $("memory-graph").replaceChildren(); $("memory-edges").replaceChildren(); $("note-memories").replaceChildren(); $("memory-evidence-status").textContent=""; $("memory-graph-status").textContent=""; $("note-memory-status").textContent="";
  memoryGeneration++; $("memory-results").replaceChildren(); $("memory-body").textContent=""; $("memory-meta").textContent=""; $("memory-title").textContent="메모리를 선택하세요"; $("memory-status").textContent=""; $("memory-agent").replaceChildren(new Option("내 전체 에이전트","")); $("memory-thread").replaceChildren(new Option("내 전체 대화",""));
@@ -57,6 +59,7 @@ async function read(item) {
  try {
   const data=await request(`/api/v1/knowledge/${item.knowledge_id}/revisions/${item.revision_id}/content`,{signal:contentController.signal});
   if(version!==contentGeneration) return;
+  $("note-sql").disabled=false;
   original=data.text; originalSummary=data.summary || ""; $("reader-summary").value=originalSummary; $("summary-kind").textContent=data.summary_kind==="EXTRACTIVE"?"원문 발췌 요약 · 전체 내용은 상세에서 확인":"작성된 요약 · "+data.summary_kind; $("reader-body").value=original; updateLines(); $("edit").disabled=READ_ONLY;
   $("edit-origin").hidden=data.edit_origin!=="HUMAN"; $("edit-origin").textContent="사용자 편집";
   const sources=(data.sources || []).map(s=>`${s.kind}: ${s.location}${s.machine_id ? " · 머신 "+s.machine_id : ""}${s.version ? " · 버전 "+s.version : ""}${s.locator ? " · "+s.locator : ""}`);
@@ -541,6 +544,7 @@ async function loadMemoryProfiles() {
  $("memory-agent").value=agent; $("memory-thread").value=thread;
 }
 function readMemory(item) {
+ clearSelectedSql(); $("memory-sql").disabled=false;
  memorySelection=item; memoryEvidenceOffset=0; const detailVersion=++memoryDetailGeneration;
  $("memory-evidence").replaceChildren(); $("memory-graph").replaceChildren(); $("memory-edges").replaceChildren(); $("memory-evidence-more").hidden=true;
  loadMemoryEvidence(item,detailVersion); loadMemoryGraph(item,detailVersion);
@@ -554,6 +558,7 @@ function readMemory(item) {
  ].join("\n");
 }
 async function loadMemories() {
+ clearSelectedSql(); $("memory-sql").disabled=true;
  const v=++memoryGeneration;
  memoryDetailGeneration++; memorySelection=null; $("memory-evidence").replaceChildren(); $("memory-graph").replaceChildren(); $("memory-edges").replaceChildren(); $("memory-evidence-status").textContent=""; $("memory-graph-status").textContent=""; $("memory-evidence-more").hidden=true;
  $("memory-status").textContent="메모리를 불러오는 중…";
@@ -806,4 +811,85 @@ $("sql-guide-toggle").addEventListener("click",()=>{
  panel.hidden=!open;
  $("sql-guide-toggle").setAttribute("aria-expanded",String(open));
  if(open)panel.scrollIntoView({block:"start"});
+});
+
+// BEGIN selected SQL builder (pure; no credentials or source text)
+function buildSelectedSql(kind, item) {
+ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+ const memoryId=/^(?:[0-9a-f]{64}|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i;
+ const head=`-- 설명용 읽기 SQL / SQLcl 또는 SQL*Plus / 앱 스키마로 접속
+-- 실제 요청 SQL 로그가 아니며 앱의 전체 필터를 재현하지 않습니다.
+-- owner_id는 API 키/DB 사용자명이 아닌 앱 인증 소유자 ID입니다.
+-- 아래 NULL을 올바른 소유자 ID 문자열로 바꾸세요. NULL이면 조회되지 않습니다.
+SET DEFINE OFF
+VARIABLE owner_id VARCHAR2(64)
+EXEC :owner_id := NULL;
+SET LONG 100000
+SET LONGCHUNKSIZE 10000
+`;
+ if(kind==="knowledge" && uuid.test(item?.knowledge_id) && uuid.test(item?.revision_id))return head+`
+VARIABLE knowledge_id VARCHAR2(36)
+VARIABLE revision_id VARCHAR2(36)
+EXEC :knowledge_id := '${item.knowledge_id}';
+EXEC :revision_id := '${item.revision_id}';
+-- 화면에서 선택한 정확한 원문 버전. 현재 버전과 다를 수 있습니다.
+SELECT i.id, i.title, i.scope, i.lifecycle_status,
+       i.active_revision_id, r.id AS selected_revision_id,
+       r.summary_text, r.content_text
+FROM vk_item i
+JOIN vk_revision r ON r.item_id = i.id AND r.owner_id = i.owner_id
+WHERE i.owner_id = :owner_id AND i.id = :knowledge_id
+  AND r.id = :revision_id;
+`;
+ if(kind==="memory" && memoryId.test(item?.memory_id))return head+`
+VARIABLE memory_id VARCHAR2(64)
+EXEC :memory_id := '${item.memory_id}';
+-- AKMEMORY를 해당 설치의 AGENT_MEMORY_STORE_ID 접두사로 바꾸세요.
+-- 과거/무효 상태도 포함하므로 status를 함께 확인하세요.
+SELECT record_id, memory_type, content, status,
+       JSON_VALUE(metadata, '$.title') AS title,
+       JSON_VALUE(metadata, '$.scope') AS scope,
+       agent_id, thread_id, created_at
+FROM AKMEMORY_MEMORY
+WHERE user_id = :owner_id AND record_id = :memory_id;
+
+SELECT relation_id, source_memory_id, relation_type, target_memory_id
+FROM AKMEMORY_MEMORY_LINK
+WHERE source_memory_user_id = :owner_id
+  AND target_memory_user_id = :owner_id
+  AND (source_memory_id = :memory_id OR target_memory_id = :memory_id);
+`;
+ throw new Error("선택한 항목의 ID를 확인할 수 없습니다. 다시 열어 주세요.");
+}
+// END selected SQL builder
+function clearSelectedSql(){
+ $("sql-selected-code").value="";
+ $("sql-selected-label").textContent="노트나 메모리를 선택하고 ‘이 항목 SQL’을 누르세요.";
+ $("sql-selected-status").textContent="";
+ $("sql-selected-copy").disabled=true; $("sql-selected-download").disabled=true;
+}
+function showSelectedSql(kind,item){
+ try {
+  const sql=buildSelectedSql(kind,item);
+  $("sql-selected-code").value=sql;
+  $("sql-selected-label").textContent=(kind==="memory"?"에이전트 메모리 · ":"업무 지식 · ")+(item.title || "선택 항목");
+  $("sql-selected-status").textContent="owner_id를 지정한 후 DB 도구에서 실행하세요. 이 화면에서는 실행하지 않습니다.";
+  $("sql-selected-copy").disabled=false; $("sql-selected-download").disabled=false;
+  $("sql-guide").hidden=false; $("sql-guide-toggle").setAttribute("aria-expanded","true");
+  $("sql-guide").scrollIntoView({block:"start"});
+ }catch(error){status(error.message,true);}
+}
+$("note-sql").addEventListener("click",()=>showSelectedSql("knowledge",selected));
+$("memory-sql").addEventListener("click",()=>showSelectedSql("memory",memorySelection));
+$("sql-selected-copy").addEventListener("click",async()=>{
+ const code=$("sql-selected-code"), text=code.value;if(!text)return;
+ try{await navigator.clipboard.writeText(text);if(code.value===text)$("sql-selected-status").textContent="SQL을 복사했습니다.";}
+ catch{if(code.value!==text)return;code.focus();code.select();$("sql-selected-status").textContent="자동 복사가 허용되지 않았습니다. 선택된 SQL을 Ctrl+C 또는 ⌘C로 복사하세요.";}
+});
+$("sql-selected-download").addEventListener("click",()=>{
+ const text=$("sql-selected-code").value;if(!text)return;
+ const url=URL.createObjectURL(new Blob([text],{type:"text/plain;charset=utf-8"}));
+ const a=document.createElement("a");a.href=url;a.download="selected-knowledge.sql";
+ a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ $("sql-selected-status").textContent="SQL 파일 다운로드를 요청했습니다.";
 });

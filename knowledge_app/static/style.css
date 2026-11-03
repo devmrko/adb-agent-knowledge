@@ -117,3 +117,5 @@ input[type="checkbox"] { min-height: auto; accent-color: var(--accent); }
 .sql-guide summary { cursor: pointer; font-weight: 600; }
 .sql-guide pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; background: #f4f5f6; color: #20252a; line-height: 1.6; }
 .sql-guide p { line-height: 1.7; }
+
+#sql-selected-code { width: 100%; box-sizing: border-box; font-family: monospace; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; resize: vertical; }
