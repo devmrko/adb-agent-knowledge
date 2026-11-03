@@ -1,6 +1,6 @@
 # 현재 상태와 업데이트 순서 / Current status
 
-기준: 2026-11-03, 사용자 원칙 구현 `063a9cc` 이후 문서 점검. 제품은 v3 preview 0.3.0입니다.
+기준: 2026-11-03, v3 주 저장·검색 구현 `e1a0e91` 운영 전환 확인. 제품은 v3 preview 0.3.0입니다.
 이 문서는 현재 계약을 요약하며, 날짜가 붙은 과거 검증 결과를 덮어쓰지 않습니다.
 
 | 구분 | 현재 동작 |
@@ -33,8 +33,9 @@
 
 ## 검증한 범위와 남은 한계
 
-- 최근 기능 검증: ruff/format/mypy와 290개 테스트 통과. 사용자 격리·버전 충돌·CSRF·토큰·마이그레이션 포함.
-- 운영 A10 Oracle vk0014 적용, 인증 API 원칙 6개 저장(version1)/이력 및 실제 훅 Kev skip 전달 확인.
+- v3 기능 검증: ruff/format/mypy와 Python 338개·JS 4개 테스트 및 Foundation wheel 검증 통과.
+- 이전 사용자 원칙 검증: 290개 테스트 통과. 사용자 격리·버전 충돌·CSRF·토큰·마이그레이션 포함.
+- 이전 원칙 배포 당시 Oracle vk0014 적용, 인증 API 원칙 6개 저장(version1)/이력 및 실제 훅 Kev skip 전달 확인.
 - Codex 실제 컨텍스트 주입, Claude 훅 원문 기반 답변은 앞선 검증에서 확인했습니다.
 - 웹 편집기 열기·초안 입력은 확인. 확인창에서 브라우저 자동화가 지연돼 전체 웹 저장 클릭 성공은 미검증입니다.
 - 원칙 전달은 모델 준수 보장이 아닙니다. 훅 첫 검색의 관련성, 짧은 후속 질문 검색어 개선은 남은 과제입니다.
@@ -51,7 +52,7 @@ hooks/skills and verify a real prompt. Model compliance is not guaranteed by con
 
 The web displays knowledge/memories/relations read-only; principles alone have an authenticated editor.
 Current tool presets are core17, memory22, graph31, organize28, operations29, full64. Temporary tool changes
-are not persisted startup configuration. Latest feature checks passed 290 tests plus static checks;
+are not persisted startup configuration. Latest v3 checks passed 338 Python tests, four JS checks and Foundation wheel validation. Earlier principle checks passed 290 tests;
 live Oracle migration, authenticated principle save/history and hook delivery succeeded. Browser editor
 loading/drafting was observed, but its full confirmation/save interaction remains unverified due to browser
 automation failure. Historical validation records describe their dates, not current unresolved failures.
@@ -70,3 +71,7 @@ vk0015는 버전별 이관 작업 상태를 추가합니다. 선택적 SDK 원�
 ## v3 주 저장·검색 구현
 
 이전의 원문 읽기 전환 단계에서 신규 저장·수정·주 검색까지 확장했습니다. v3 설정은 API/워커 양쪽에 적용하며 이력·첨부·감사·그래프 테이블을 보존합니다. 기존 설치를 자동 전환하지는 않습니다. [현재 계약](../guides/v3-primary-store.md).
+
+## 운영 v3 전환 완료 (2026-11-03)
+
+운영 schema는 vk0016이며 API·워커에 v3를 함께 적용했습니다. 기존 원문 462개 버전의 정확한 이관과 실제 MCP 신규 저장·수정·과거 원문/이력 조회, 공개 웹을 확인했습니다. 새 저장은 자동으로 SDK에 기록됩니다. 기본 설치 설정은 여전히 legacy이며 기존 사용자의 전환은 명시적입니다. [검증 결과와 한계](v3-production-validation.md).

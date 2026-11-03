@@ -72,3 +72,13 @@ Existing behavior contracts are rerun against v3. An isolated Oracle test covers
 writes, vector/keyword queries, failed revision publication, retry, historical sources and graphs, retirement,
 restoration and original bytes. [Oracle results](../reference/v3-primary-validation.json). These are functional
 checks, not large-scale quality, latency or multiprocess crash guarantees.
+
+## Production validation (2026-11-03)
+
+All 462 existing source versions were transferred and matched exactly. Production MCP save, revision
+and historical reads passed with a stable knowledge ID and distinct SDK record IDs for each version.
+See the [deployment validation record](../reference/v3-production-validation.md).
+
+Clients do not construct SDK IDs. Keep the `knowledge_id` returned by save; read `knowledge_history`
+before revising and pass its latest `revision_id` as `expected_revision_id`. The content response exposes
+`source_storage.store_id` and `source_storage.record_id` for the selected version. Titles are not IDs.

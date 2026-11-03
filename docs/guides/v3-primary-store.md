@@ -104,3 +104,14 @@ SDK 장애 시 새 저장은 READY가 되지 않고, 기존 SDK 원문 읽기는
 
 소규모 기능 검증이며 대용량 검색 품질·지연·다중 프로세스 강제 종료 시험은 별도입니다.
 이관 표의 ACTIVE만으로 전체 앱 전환이나 모든 데이터의 품질을 보증하지 않습니다.
+
+### 운영 전환 확인 (2026-11-03)
+
+기존 원문 462개 버전의 일치 확인과 이관 후 실제 MCP 신규 저장·수정·과거 원문 조회까지
+완료했습니다. 지식 ID는 유지되고 새 버전마다 SDK 레코드 ID가 달라짐을 확인했습니다.
+[운영 검증 결과](../reference/v3-production-validation.md)를 참고하세요.
+
+사용자는 SDK ID를 직접 만들 필요가 없습니다. 저장 응답의 `knowledge_id`를 보관하고,
+수정 전 `knowledge_history`에서 최신 `revision_id`를 확인해 `expected_revision_id`로 전달합니다.
+`knowledge_get_content`의 `source_storage.store_id`와 `source_storage.record_id`는
+해당 버전이 실제 저장된 Agent Memory 위치를 보여줍니다. 제목 변경으로 ID가 바뀌지는 않습니다.
