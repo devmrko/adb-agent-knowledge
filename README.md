@@ -403,6 +403,54 @@ Property Graph를 위해 별도 그래프 DB에 데이터를 복제하지 않습
 동일 지식의 보충·정정은 에이전트가 원문과 이력을 확인해 기존 항목을 수정합니다.
 [설치·업데이트·자동 저장 안내 →](docs/guides/agent-installation.md)
 
+### 매 요청에 기억을 확인하려면 훅도 등록하세요
+
+**MCP 연결만으로는 매 요청의 기억 확인이 보장되지 않습니다.** 일반 도구 호출은 에이전트가
+생략할 수 있습니다. 이전 결정·진행 상황을 잊거나 같은 잘못된 안내를 반복하지 않도록,
+답변 전에 실행되는 `UserPromptSubmit` 훅에 기억 확인을 등록합니다.
+에이전트 메모리를 지속적인 작업 맥락으로 쓰려면 아래 단계까지 진행하세요.
+
+훅은 **Codex·Claude가 실행되는 머신**에 설치합니다. API/MCP 서버에는 최신 코드와
+`vk0014` 마이그레이션을 먼저 적용해야 합니다. MCP/스킬 등록과 훅 등록은 별도입니다.
+
+1. 저장소 루트에서 훅 설정 예제를 복사합니다.
+
+   ```sh
+   mkdir -p ~/.config/adb-agent-knowledge
+   cp -n config/prompt-hook.example.json ~/.config/adb-agent-knowledge/prompt-hook.json
+   ```
+
+2. `prompt-hook.json`의 예시 절대 경로를 실제 경로로 바꿉니다.
+   `mcp_command`는 이 머신에서 실행 가능한 MCP 스크립트이고, `scope_roots`는 작업 폴더와
+   확인된 프로젝트 범위의 매핑입니다. 원격 서비스도 기존 SSH launcher를 사용할 수 있습니다.
+   매핑되지 않은 폴더는 `global`만 조회합니다. 비밀번호·API 키를 이 설정에 넣지 마세요.
+
+3. 사용하는 클라이언트에 등록합니다. 둘 다 쓰면 두 명령을 실행합니다.
+
+   ```sh
+   ./.venv/bin/python scripts/install_memory_hook.py codex --config "$HOME/.config/adb-agent-knowledge/prompt-hook.json"
+   ./.venv/bin/python scripts/install_memory_hook.py claude --config "$HOME/.config/adb-agent-knowledge/prompt-hook.json"
+   ```
+
+   Codex는 `~/.codex/hooks.json`, Claude는 `~/.claude/settings.json`의 `UserPromptSubmit`에
+   등록됩니다. 기존 훅은 보존합니다. **Codex에서는 `/hooks`에서 해당 명령을 검토하고 신뢰 승인**해야 합니다.
+   Claude는 새 세션에서 `/hooks`로 등록 상태를 확인합니다. 현재 구현은 macOS/Linux용입니다.
+
+4. 실제 요청을 보내 확인합니다. 예: “이전에 이 프로젝트에서 정한 배포 방법을 찾아줘.”
+   아래 감사 기록의 `COMPLETE`, `check_id`, `principle_version`과 실제 전달 결과를 확인합니다.
+
+   ```sh
+   tail -n 3 ~/.local/state/adb-agent-knowledge/prompt-hook.jsonl
+   ```
+
+**매번 전달하는 것:** 웹에서 승인한 활성 사용자 원칙과 기억 확인 결과입니다.
+**필요할 때 수행하는 것:** Kev 판단에 따른 기억 검색·원문 조회입니다. `skip`이어도 원칙은 전달하며,
+명시적인 과거 조회 요청은 잘못된 생략 판단보다 우선합니다. 원칙/기억 확인 실패 시 요청을 차단합니다.
+훅은 지식을 자동 저장하지 않으며, 모델의 완전한 준수를 보장하지도 않습니다.
+
+원칙은 웹 `/knowledge`의 **사용자 원칙 · 매 요청에 적용**에서 추가·수정·승인합니다.
+[문제 해결·제거·다른 머신 설정](docs/guides/required-memory-hook.md) · [원칙 관리](docs/guides/user-principles.md)
+
 ## 저장소 구조
 
 ```text

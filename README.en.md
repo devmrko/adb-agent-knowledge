@@ -169,6 +169,55 @@ Default MCP registration: `adb_agent_knowledge`; choose another with `--mcp-name
 from model endpoints. Reconnect the client after registration/tool changes. Installing a skill does not
 itself authorize automatic memory capture. [Detailed installation guide, Korean](docs/guides/agent-installation.md).
 
+### Register a hook for memory checks on every request
+
+**Connecting MCP alone does not guarantee a memory check on every request.** The agent may omit a
+normal tool call. Register a `UserPromptSubmit` hook so previous decisions and working context are
+checked before answering, reducing repeated mistakes and forgotten context. Complete this step when
+using the service as ongoing agent memory.
+
+Install it on the **machine running Codex or Claude**, separately from MCP/skill registration.
+Update API/MCP server code and apply migration `vk0014` first. The current hook supports macOS/Linux.
+
+1. From the repository root, copy the configuration example:
+
+   ```sh
+   mkdir -p ~/.config/adb-agent-knowledge
+   cp -n config/prompt-hook.example.json ~/.config/adb-agent-knowledge/prompt-hook.json
+   ```
+
+2. Replace example absolute paths in `prompt-hook.json`. `mcp_command` must launch a working MCP
+   connection on this machine; an existing SSH launcher can connect to a remote service. `scope_roots`
+   maps workspace paths to confirmed project scopes. Unmapped directories query `global` only.
+   Do not put passwords or API keys in this file.
+
+3. Register for each client you use; run both commands if you use both:
+
+   ```sh
+   ./.venv/bin/python scripts/install_memory_hook.py codex --config "$HOME/.config/adb-agent-knowledge/prompt-hook.json"
+   ./.venv/bin/python scripts/install_memory_hook.py claude --config "$HOME/.config/adb-agent-knowledge/prompt-hook.json"
+   ```
+
+   The installer adds `UserPromptSubmit` to `~/.codex/hooks.json` or `~/.claude/settings.json`, preserving
+   other hooks. **In Codex, review and trust the command in `/hooks`.** In Claude, open a fresh session
+   and inspect registration with `/hooks`.
+
+4. Submit a real request about a known previous project decision. Compare `COMPLETE`, `check_id`
+   and `principle_version` in the audit with the context actually delivered:
+
+   ```sh
+   tail -n 3 ~/.local/state/adb-agent-knowledge/prompt-hook.jsonl
+   ```
+
+**Always delivered:** approved active user principles and the result of the memory check.
+**Conditional:** memory search and exact-source reads according to Kev. A `skip` still delivers
+principles; explicit past-context requests override mistaken skips. Failed principle/memory checks
+block the request. The hook does not save knowledge or guarantee perfect model compliance.
+
+Manage principles in `/knowledge` under **사용자 원칙 · 매 요청에 적용**.
+[Troubleshooting, removal and other machines](docs/guides/required-memory-hook.en.md) ·
+[Principle management](docs/guides/user-principles.en.md)
+
 ## Identity, graph review, and Oracle roles
 
 Resolve existing canonical keys and source-backed aliases/external identifiers before creating entities.
