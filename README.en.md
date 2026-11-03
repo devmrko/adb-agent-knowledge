@@ -262,3 +262,5 @@ It is separate from MCP connection setup; Codex requires /hooks trust. Real Code
 been observed. A follow-up Claude test also verified an answer based on the injected source and check ID. Each installation still needs scope mapping and activation checks.
 
 [Install, activate, verify, troubleshoot and remove the hook](docs/guides/required-memory-hook.en.md) · [한국어](docs/guides/required-memory-hook.md)
+
+Manage approved user principles in the web UI and inject them independently of retrieval on every prompt-hook invocation. [User principles](docs/guides/user-principles.en.md). Upgrade the server to vk0014 before updating hooks.

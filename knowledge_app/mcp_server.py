@@ -647,10 +647,16 @@ def create_server(api: KnowledgeAPI, router: MemoryRouter | None = None, *, prof
         storage_allowed: bool = True,
         contains_sensitive: bool = False,
         verified: bool = False,
+        principle_scopes: Annotated[list[str] | None, Field(min_length=1, max_length=11)] = None,
     ) -> dict[str, Any]:
-        """Ask local Kev whether to lookup or save memory. For lookup pass the current request and short project context; for save pass a concise candidate, with verified=True only for confirmed facts/preferences or tested outcomes. Never pass secrets. Set explicit_request for a direct user instruction; set storage_allowed=False for opt-outs. Returns lookup/save/skip/agent_review; performs no search or write. On agent_review use your judgment. After save advice deduplicate, then use knowledge_save/revise and check status."""
+        """Ask local Kev whether to lookup or save memory. For lookup pass the current request and short project context; for save pass a concise candidate, with verified=True only for confirmed facts/preferences or tested outcomes. Never pass secrets. Set explicit_request for a direct user instruction; set storage_allowed=False for opt-outs. Returns lookup/save/skip/agent_review; performs no search or write. With principle_scopes, also reads the authenticated user's approved principles regardless of Kev outcome; these are explicit preferences, not retrieved source instructions. On agent_review use your judgment. After save advice deduplicate, then use knowledge_save/revise and check status."""
         assert router is not None
-        return await router.decide(
+        principles = None
+        if principle_scopes is not None:
+            principles = await api.request(
+                "POST", "/api/v1/principles/resolve", json={"scopes": principle_scopes}
+            )
+        result = await router.decide(
             MemoryDecision(
                 operation=operation,
                 text=text,
@@ -661,6 +667,9 @@ def create_server(api: KnowledgeAPI, router: MemoryRouter | None = None, *, prof
                 verified=verified,
             )
         )
+        if principles is not None:
+            result["user_principles"] = principles
+        return result
 
     @register(annotations=WRITE)
     async def knowledge_save(

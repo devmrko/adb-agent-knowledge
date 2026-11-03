@@ -24,6 +24,7 @@ function clearReader() {
  $("reader-title").textContent="노트를 선택하세요"; $("reader-body").value=""; updateLines(); $("reader-meta").textContent=""; $("edit-origin").hidden=true; $("edit").disabled=true; $("check-job").hidden=true; noteStatus("");
 }
 function disconnect() {
+ clearPrinciples();
  memoryDetailGeneration++; $("memory-evidence").replaceChildren(); $("memory-graph").replaceChildren(); $("memory-edges").replaceChildren(); $("note-memories").replaceChildren(); $("memory-evidence-status").textContent=""; $("memory-graph-status").textContent=""; $("note-memory-status").textContent="";
  memoryGeneration++; $("memory-results").replaceChildren(); $("memory-body").textContent=""; $("memory-meta").textContent=""; $("memory-title").textContent="메모리를 선택하세요"; $("memory-status").textContent=""; $("memory-agent").replaceChildren(new Option("내 전체 에이전트","")); $("memory-thread").replaceChildren(new Option("내 전체 대화",""));
  proposalGeneration++; $("graph-proposals").replaceChildren(); $("graph-review-status").textContent=""; $("graph-proposals-more").hidden=true;
@@ -34,7 +35,7 @@ function authHeaders() { return sessionMode ? {"X-CSRF-TOKEN":csrf} : {Authoriza
 async function request(path, options={}) {
  const method=(options.method || "GET").toUpperCase();
  const readPosts=["/api/v1/knowledge/search","/api/v1/graph/search","/api/v1/graph/identities/resolve","/api/v1/agent-memory/search","/api/v1/agent-memory/graph"];
- if(READ_ONLY && method!=="GET" && method!=="HEAD" && !(method==="POST" && readPosts.includes(path)))throw new Error("데이터 변경은 MCP에서 진행해 주세요. 웹은 조회 전용입니다.");
+ if(READ_ONLY && !(method==="PUT" && path==="/api/v1/principles") && method!=="GET" && method!=="HEAD" && !(method==="POST" && readPosts.includes(path)))throw new Error("데이터 변경은 MCP에서 진행해 주세요. 웹은 조회 전용입니다.");
  const response=await fetch(path,{...options,cache:"no-store",credentials:"same-origin",headers:{...authHeaders(),"Content-Type":"application/json"}});
  if(!response.ok) {
   if(response.status===401 || response.status===403) throw new Error("AUTH");
@@ -724,3 +725,78 @@ async function loadNoteMemories(){
 $("memory-evidence-more").addEventListener("click",()=>{if(memorySelection&&memoryEvidenceOffset!=null)loadMemoryEvidence(memorySelection,memoryDetailGeneration);});
 $("show-references").addEventListener("click",()=>{noteMemoryOffset=0;loadNoteMemories();});
 $("note-memories-more").addEventListener("click",()=>{if(noteMemoryOffset!=null)loadNoteMemories();});
+
+// User-approved principles are configuration, not editable retrieved knowledge.
+let principleVersion=null, principleRules=[], principleDirty=false, principleEpoch=0, principleHistoryOffset=0;
+const principleTemplates=[
+ ["formal","존댓말","사용자에게 한국어 존댓말로 답한다. 사용자의 말투에 따라 반말이나 퉁명스러운 표현으로 바꾸지 않는다."],
+ ["resolve","해결 중심","문제를 설명하는 데서 끝내지 않는다. 허용된 범위에서 해결을 진행하고, 막히면 구체적인 장애 원인과 다음 실행 방법을 제시한다."],
+ ["plan","행동 전 계획","여러 단계의 작업은 실행 전에 목표·주요 단계·완료 기준을 짧게 정리한다. 단순한 질문이나 수정에는 불필요하게 긴 계획을 만들지 않는다."],
+ ["simple","단순한 접근","요구를 충족하는 가장 단순한 방법부터 시도한다. 복잡한 구성이나 새 의존성은 필요한 이유가 확인됐을 때 추가한다."],
+ ["correct","오류 인정·개선","잘못 안내했으면 무엇이 틀렸는지 인정하고 짧게 사과한다. 원인을 확인해 수정하고, 결과를 검증한다."],
+ ["clear","쉬운 설명","배경지식이 없는 사람도 이해하도록 결론부터 설명한다. 어려운 용어는 풀어 쓰고 필요한 경우 구체적인 예를 든다. 정확성은 유지한다."]
+];
+const principleSuggestions={
+ facts:["facts","확인 수준 구분","확인한 사실·추정·아직 확인하지 못한 내용을 구분하고, 실행이나 검증 없이 완료했다고 말하지 않는다."],
+ context:["context","기존 맥락 유지","이어지는 요청에서는 기존 목표와 사용자 정정을 유지하고, 이미 알려준 정보를 반복해서 묻지 않는다."],
+ verify:["verify","완료 확인","변경 후 사용자 관점에서 실제로 동작하는지 확인한다. 테스트 통과와 실제 운영 검증을 구분한다."]
+};
+function clearPrinciples(){principleEpoch++;principleVersion=null;principleRules=[];principleDirty=false;$("principles-rules").replaceChildren();$("principles-preview").textContent="";$("principles-history").replaceChildren();$("principles-save").disabled=true;$("principles-note").value="";$("principles-status").textContent="";}
+function principlePreview(){
+ const scope=$("principles-preview-scope").value.trim().toLowerCase();
+ const rows=principleRules.filter(r=>r.enabled && (r.scope==="global" || r.scope===scope));
+ $("principles-preview").textContent=`사용자 승인 원칙 · ${principleDirty?"미저장 초안":"버전 "+principleVersion}\n상위 지침과 현재 사용자의 명시적 요청을 우선합니다.\n\n`+rows.map((r,i)=>`${i+1}. ${r.title}\n${r.instruction}`).join("\n\n");
+}
+function markPrinciples(){principleDirty=true;$("principles-status").textContent="미저장 초안 · 승인하고 적용해야 다음 요청에 반영됩니다.";principlePreview();}
+function renderPrinciples(){
+ $("principles-rules").replaceChildren();
+ principleRules.forEach((rule,index)=>{
+  const box=element("fieldset","");box.append(element("legend",`${index+1}. 원칙`));
+  for(const [key,label,max] of [["title","제목",100],["instruction","적용 문구",600],["scope","범위 (global 또는 project:이름)",108]]){
+   const l=element("label",label),input=document.createElement(key==="instruction"?"textarea":"input");input.value=rule[key];input.maxLength=max;input.addEventListener("input",()=>{rule[key]=input.value;markPrinciples();});l.append(input);box.append(l);
+  }
+  const enabled=document.createElement("input");enabled.type="checkbox";enabled.checked=rule.enabled;enabled.addEventListener("change",()=>{rule.enabled=enabled.checked;markPrinciples();});const label=element("label"," 활성화 ");label.prepend(enabled);box.append(label);
+  for(const [text,action,disabled] of [["위로",()=>{[principleRules[index-1],principleRules[index]]=[rule,principleRules[index-1]];},index===0],["아래로",()=>{[principleRules[index],principleRules[index+1]]=[principleRules[index+1],rule];},index===principleRules.length-1],["초안에서 제거",()=>principleRules.splice(index,1),false]]){
+   const button=element("button",text);button.type="button";button.disabled=disabled;button.addEventListener("click",()=>{action();markPrinciples();renderPrinciples();});box.append(button);
+  }
+  $("principles-rules").append(box);
+ });principlePreview();
+}
+async function loadPrinciples(){
+ if(principleDirty && !confirm("저장하지 않은 원칙 초안을 버리고 다시 불러올까요?"))return;
+ const epoch=++principleEpoch;
+ try{const data=await request("/api/v1/principles");if(epoch!==principleEpoch)return;principleVersion=data.version;principleRules=data.rules;principleDirty=false;$("principles-save").disabled=false;renderPrinciples();$("principles-status").textContent=`저장 버전 ${data.version} · ${data.rules.length}개`;}
+ catch(error){if(epoch===principleEpoch)handleError(error);}
+}
+function addPrinciple(template){
+ if(principleVersion===null){$("principles-status").textContent="먼저 저장된 원칙을 불러오세요.";return;}
+ if(principleRules.length>=20){$("principles-status").textContent="원칙은 최대 20개입니다.";return;}
+ if(template && principleRules.some(r=>r.id===template[0]))return;
+ principleRules.push({id:template?.[0] || crypto.randomUUID(),title:template?.[1] || "새 원칙",instruction:template?.[2] || "",scope:"global",enabled:true});markPrinciples();renderPrinciples();
+}
+async function savePrinciples(){
+ if(principleVersion===null)return;
+ const note=$("principles-note").value.trim();if(!note){$("principles-status").textContent="변경 이유를 입력해 주세요.";return;}
+ if(!confirm("이 원칙을 승인하고 이후 요청에 적용할까요?"))return;
+ const epoch=principleEpoch, submitted=JSON.stringify(principleRules);
+ $("principles-save").disabled=true;
+ try{const data=await request("/api/v1/principles",{method:"PUT",body:JSON.stringify({expected_version:principleVersion,approved:true,rules:JSON.parse(submitted),change_note:note})});if(epoch!==principleEpoch)return;principleVersion=data.version;principleDirty=JSON.stringify(principleRules)!==submitted;$("principles-note").value="";$("principles-status").textContent=`버전 ${data.version} 저장 완료 · ${principleDirty?"저장 중 편집한 내용은 아직 초안입니다":"원칙 지원 훅의 다음 요청부터 적용"}`;principlePreview();}
+ catch(error){if(epoch===principleEpoch){$("principles-status").textContent="저장 실패 · 초안은 유지됩니다. 충돌이면 초안을 복사한 뒤 다시 불러오세요.";handleError(error);}}
+ finally{if(epoch===principleEpoch)$("principles-save").disabled=false;}
+}
+async function principleHistory(reset){
+ if(reset){principleHistoryOffset=0;$("principles-history").replaceChildren();}const epoch=principleEpoch;
+ try{const data=await request(`/api/v1/principles/history?offset=${principleHistoryOffset}&limit=10`);if(epoch!==principleEpoch)return;
+ for(const row of data.items){const d=element("details","");d.append(element("summary",`버전 ${row.version} · ${row.created_at} · ${row.change_note}`),element("pre",JSON.stringify(row.rules,null,2)));$("principles-history").append(d);}
+ $("principles-history-more").hidden=data.next_offset===null;principleHistoryOffset=data.next_offset ?? 0;
+ }catch(error){if(epoch===principleEpoch)handleError(error);}
+}
+$("principles-load").addEventListener("click",loadPrinciples);
+$("principles-defaults").addEventListener("click",()=>principleTemplates.forEach(addPrinciple));
+$("principles-add").addEventListener("click",()=>addPrinciple(null));
+$("principles-suggest").addEventListener("click",()=>addPrinciple(principleSuggestions[$("principles-suggestion").value]));
+$("principles-save").addEventListener("click",savePrinciples);
+$("principles-preview-scope").addEventListener("input",principlePreview);
+$("principles-history-load").addEventListener("click",()=>principleHistory(true));
+$("principles-history-more").addEventListener("click",()=>principleHistory(false));
+window.addEventListener("beforeunload",event=>{if(principleDirty){event.preventDefault();event.returnValue="";}});

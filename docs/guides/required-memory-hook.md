@@ -214,3 +214,7 @@ project:adb-agent-knowledge에 저장된 '22개 도구 설정'을 놓쳤습니�
 284개 테스트 통과. 실제 MCP 원문 조회 결과로 범위를 검증했으며, 검색 상위 결과 누락을 부재 증명으로 쓰지 않습니다.
 
 후속 실제 Claude 검증 성공(2026-11-03): 기존 폴더에서 추가 모델 도구 호출을 비활성화한 읽기 전용 요청을 보냈고, Claude는 훅이 주입한 원문만으로 MCP_TOOL_PROFILE=memory, 22개, 기록 제목과 check_id를 정확히 답했다. 초기 만료/검색 범위 문제 이후 답변 컨텍스트 전달까지 확인된 상태다.
+
+## User-approved principles
+
+The hook now requires principle resolution from the server even on Kev skip. Upgrade API/MCP and migrate vk0014 before upgrading this script. No extra MCP tools. See [principles](user-principles.md) / [English](user-principles.en.md).

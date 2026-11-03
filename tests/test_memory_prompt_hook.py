@@ -16,7 +16,14 @@ class Session:
     async def call_tool(self, name, args):
         self.calls.append((name, args))
         result = {
-            "knowledge_decide": {"action": self.decision},
+            "knowledge_decide": {
+                "action": self.decision,
+                "user_principles": {
+                    "status": "READY",
+                    "version": 2,
+                    "rules": [{"id": "formal", "instruction": "존댓말을 사용한다"}],
+                },
+            },
             "knowledge_recall": {"items": [{"knowledge_id": "k1", "revision_id": "r1", "title": "title"}]},
             "knowledge_get_content": {"text": "exact source", "next_offset": None},
         }[name]

@@ -6,6 +6,16 @@
 <main class="page-content">
 <div class="breadcrumb">작업공간 / 지식 노트</div>
 <form id="connect-form"><label for="token">API 키</label><input id="token" type="password" autocomplete="off" required><button>연결</button></form>
+<details id="principles-panel" class="panel"><summary>사용자 원칙 · 매 요청에 적용</summary>
+<p>기억 검색과 별도로 항상 전달할 원칙입니다. 변경 후 ‘승인하고 적용’을 누르세요. 모델의 준수를 보장하거나 시스템 지침을 대체하지 않습니다.</p>
+<div class="index-controls"><button id="principles-load" type="button">저장된 원칙 불러오기</button><button id="principles-defaults" type="button">기본 6개 초안 추가</button><button id="principles-add" type="button">직접 추가</button></div>
+<label>추천 원칙<select id="principles-suggestion"><option value="facts">확인 수준 구분</option><option value="context">기존 맥락 유지</option><option value="verify">완료 확인</option></select></label><button id="principles-suggest" type="button">선택한 추천을 초안에 추가</button>
+<p id="principles-status" role="status"></p><div id="principles-rules"></div>
+<label>변경 이유<input id="principles-note" maxlength="500" placeholder="무엇을 바꿨는지 적어 주세요"></label>
+<button id="principles-save" type="button" disabled>승인하고 적용</button>
+<details><summary>적용 문구 미리보기</summary><label>프로젝트 범위<input id="principles-preview-scope" placeholder="project:example"></label><pre id="principles-preview"></pre></details>
+<details><summary>변경 이력</summary><button id="principles-history-load" type="button">이력 불러오기</button><div id="principles-history"></div><button id="principles-history-more" type="button" hidden>다음 이력</button></details>
+</details>
 <nav id="store-tabs" class="note-tabs" aria-label="저장소 종류"><button data-store="all" aria-pressed="false">전체</button><button data-store="memory" aria-pressed="false">에이전트 메모리</button><button data-store="knowledge" aria-pressed="true">업무 지식</button><button data-store="graph" aria-pressed="false">관계 그래프</button></nav>
 <form id="search-form" class="panel"><label class="sr-only" for="query">지식 검색</label><input id="query" type="search" maxlength="2000" placeholder="저장된 지식 검색"><button id="search-button" class="primary">검색</button><button id="browse" type="button">전체 목록</button><button id="search-graph" type="button">관련 그래프</button><details><summary>검색 조건</summary><div class="filters"><label>범위<input id="scope" placeholder="전체 · project:vector_knowledge" maxlength="108"></label><label>종류<select id="kind"><option value="">전체</option><option value="DOCUMENT">문서</option><option value="DECISION">결정</option><option value="PREFERENCE">선호</option><option value="FACT">사실</option><option value="PROCEDURE">절차</option><option value="EPISODE">경험</option></select></label></div></details></form>
 <p id="status" role="status" aria-live="polite">저장소에 연결하는 중…</p>

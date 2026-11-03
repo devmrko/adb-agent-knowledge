@@ -48,6 +48,7 @@ from knowledge_app.indexes import EntryInput, IndexEdit, IndexInput, IndexServic
 from knowledge_app.memory_connection_contracts import EvidenceInput, MemoryGraph, MemoryLink
 from knowledge_app.memory_connections import MemoryConnections
 from knowledge_app.navigation import NavigationRequest, NavigationService
+from knowledge_app.principles import PrincipleScopes, PrincipleService, PrincipleWrite
 from knowledge_app.routing import MemoryRouter, RoutingSettings
 from knowledge_app.service import KnowledgeService, fail
 from knowledge_app.settings import Settings
@@ -107,6 +108,7 @@ def create_app(
     )
     engine = database(settings)
     service = KnowledgeService(sessions(engine), embedder or create_embedder(settings), settings)
+    principles = PrincipleService(sessions(engine))
     memory_repo = SDKRepository(settings, service.embedder)
     memories = AgentMemoryService(memory_repo, engine, settings.agent_memory_enabled)
     connections = MemoryConnections(memories, service, sessions(engine))
@@ -191,6 +193,24 @@ def create_app(
         with engine.connect() as con:
             con.execute(text("SELECT 1 FROM DUAL" if engine.dialect.name == "oracle" else "SELECT 1"))
         return {"status": "UP"}
+
+    @app.get("/api/v1/principles")
+    def principle_current(actor: ActorDep) -> dict[str, Any]:
+        return principles.current(actor)
+
+    @app.put("/api/v1/principles")
+    def principle_replace(command: PrincipleWrite, actor: ActorDep) -> dict[str, Any]:
+        return principles.replace(actor, command)
+
+    @app.post("/api/v1/principles/resolve")
+    def principle_resolve(command: PrincipleScopes, actor: ActorDep) -> dict[str, Any]:
+        return principles.resolve(actor, command)
+
+    @app.get("/api/v1/principles/history")
+    def principle_history(
+        actor: ActorDep, offset: int = Query(0, ge=0), limit: int = Query(10, ge=1, le=50)
+    ) -> dict[str, Any]:
+        return principles.history(actor, offset, limit)
 
     @app.get("/api/v1/agent-memory/profiles")
     def memory_profiles(actor: ActorDep) -> dict[str, Any]:

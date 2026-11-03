@@ -108,3 +108,7 @@ Adding that confirmed scope returned the exact record and source. 284 tests pass
 An outdated local checkout or a top-k miss is not evidence that the record/implementation does not exist.
 
 Follow-up Claude end-to-end verification succeeded on 2026-11-03: with model tool calls disabled and the legacy cwd, Claude answered MCP_TOOL_PROFILE=memory and 22 tools, citing the injected source title and check_id. This supersedes the initial expiry-related pending status above.
+
+## User-approved principles
+
+The hook now requires principle resolution from the server even on Kev skip. Upgrade API/MCP and migrate vk0014 before upgrading this script. No extra MCP tools. See [principles](user-principles.md) / [English](user-principles.en.md).

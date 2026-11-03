@@ -104,3 +104,10 @@ input[type="checkbox"] { min-height: auto; accent-color: var(--accent); }
 .memory-sdk-details{font-size:12px;color:#666}.memory-sdk-details pre{overflow-wrap:anywhere;white-space:pre-wrap}
 .memory-overview{margin:12px 0}.memory-graph-legend li{padding:5px 0}.memory-overview svg{max-height:440px}
 @media(max-width:900px){.memory-relation-pair{grid-template-columns:minmax(0,1fr)}.memory-relation-label{padding:0;text-align:left;display:flex;gap:10px;align-items:center}.memory-relation-label span{transform:rotate(90deg)}}
+
+#principles-panel fieldset{margin:12px 0;padding:14px;border:1px solid var(--border,#ccd1d7)}
+#principles-panel label{display:block;margin:8px 0}
+#principles-panel textarea{display:block;width:100%;min-height:88px;box-sizing:border-box;font:inherit}
+#principles-panel input:not([type=checkbox]){display:block;max-width:100%;width:36rem;box-sizing:border-box}
+#principles-panel pre{white-space:pre-wrap;overflow-wrap:anywhere}
+#principles-panel button{margin:4px}

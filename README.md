@@ -476,3 +476,5 @@ MCP 연결만으로 활성화되지 않으며 Codex에서는 /hooks 신뢰 승�
 Codex 실제 요청의 컨텍스트 주입과 Claude의 원문 근거 기반 답변까지 확인했습니다. 프로젝트 범위 매핑과 각 머신의 활성화 검증은 별도로 필요합니다.
 
 [설치·활성화·검증·문제 해결·다른 머신 적용·제거 안내](docs/guides/required-memory-hook.md) · [English](docs/guides/required-memory-hook.en.md)
+
+사용자 원칙은 벡터 검색과 별도로 매 요청에 전달하고 웹에서 승인·관리할 수 있습니다. [사용자 원칙 설정](docs/guides/user-principles.md). 서버의 vk0014 마이그레이션 후 훅을 업데이트하세요.
