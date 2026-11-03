@@ -99,3 +99,7 @@ RDF·Property Graph와 정확한 근거·이력은 유지합니다.
 - [SDK 검색/저장 전략](https://docs.oracle.com/en/database/oracle/agent-memory/26.8/guide/api/agentmemory.html)
 - [Store의 본문·검색 텍스트·필터](https://docs.oracle.com/en/database/oracle/agent-memory/26.8/guide/api/stores.html)
 - [JSON 검증](agent-memory-json-evaluation.md) / [그래프 역할과 SQL](oracle-graph-examples.md)
+
+### v3 구현 진행
+
+[버전별 JSON 저장·그래프 연결 파일럿](v3-pilot.md)이 추가됐습니다. 운영 전환과 분리된 시험 경로입니다.

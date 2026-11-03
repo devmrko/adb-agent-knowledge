@@ -61,24 +61,31 @@ payload = {
     "summary": "Tasteby 배포 절차",
     "sections": [
         {"id": "precheck", "title": "사전 확인", "text": "..."},
-        {"id": "release", "title": "배포", "text": "..."}
+        {"id": "release", "title": "배포", "text": "..."},
     ],
-    "sources": [{"kind": "git", "location": "<원본 위치>", "version": "<commit>"}]
+    "sources": [{"kind": "git", "location": "<원본 위치>", "version": "<commit>"}],
 }
 metadata = {
-    "kind": "procedure", "project": "tasteby",
-    "knowledge_id": "<논리 지식 ID>", "revision_id": "<원문 버전 ID>",
-    "review": {"status": "confirmed"}, "schema_version": 1
+    "kind": "procedure",
+    "project": "tasteby",
+    "knowledge_id": "<논리 지식 ID>",
+    "revision_id": "<원문 버전 ID>",
+    "review": {"status": "confirmed"},
+    "schema_version": 1,
 }
 store.add(
-    record_type="memory", record_ids="<버전별 레코드 ID>",
+    record_type="memory",
+    record_ids="<버전별 레코드 ID>",
     user_ids="<인증 소유자 ID>",
     contents=[json.dumps(payload, ensure_ascii=False)],
     metadata=metadata,
     index_texts=[["Tasteby · 배포 절차 · 사전 확인 ...", "Tasteby · 배포 절차 · 배포 ..."]],
 )
-store.list("memory", user_id="<인증 소유자 ID>",
-           metadata_filter={"project": "tasteby", "review": {"status": "confirmed"}})
+store.list(
+    "memory",
+    user_id="<인증 소유자 ID>",
+    metadata_filter={"project": "tasteby", "review": {"status": "confirmed"}},
+)
 ```
 
 코드는 SDK 저장 수준 예제다. 현재 memory_save MCP가 이 필드를 받는다는 뜻이 아니다.

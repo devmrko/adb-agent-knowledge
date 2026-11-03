@@ -80,3 +80,7 @@ production data is changed by this proposal.
 Sources: current models/repository/agent_memory_repository/agent_memory_service code;
 [SDK API](https://docs.oracle.com/en/database/oracle/agent-memory/26.8/guide/api/agentmemory.html),
 [Store semantics](https://docs.oracle.com/en/database/oracle/agent-memory/26.8/guide/api/stores.html).
+
+### v3 implementation progress
+
+An isolated [versioned JSON and graph pilot (Korean)](v3-pilot.md) is implemented. Production routing remains v2; this is not a completed migration.
