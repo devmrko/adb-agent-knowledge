@@ -9,5 +9,6 @@
       "project:related-workspace",
       "project:your-confirmed-project-key"
     ]
-  }
+  },
+  "followup_context": true
 }

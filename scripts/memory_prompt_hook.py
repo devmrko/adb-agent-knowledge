@@ -1,4 +1,4 @@
-"""Synchronous UserPromptSubmit memory check; no knowledge writes or transcript reads."""
+"""Synchronous UserPromptSubmit memory check; no knowledge writes; bounded follow-up context only."""
 
 import argparse
 import asyncio
@@ -11,6 +11,12 @@ import sys
 import time
 import uuid
 from pathlib import Path
+
+# Direct script execution and package import are both supported.
+try:
+    from scripts.hook_context import followup_context
+except ModuleNotFoundError:
+    from hook_context import followup_context
 
 DEFAULT_CONFIG = Path.home() / ".config/adb-agent-knowledge/prompt-hook.json"
 MAX_INPUT = 200000
@@ -60,6 +66,8 @@ async def collect(session, event, config):
 
     async def call(name, arguments):
         calls.append(name)
+        if name == "knowledge_decide" and not config.get("_supports_context", True):
+            arguments.pop("resolve_context", None)
         result = data_of(await session.call_tool(name, arguments))
         if not isinstance(result, dict):
             raise ValueError("invalid tool result")
@@ -68,13 +76,17 @@ async def collect(session, event, config):
     prompt = event["prompt"]
     query, sensitive = query_text(prompt)
     scopes = scopes_for(event["cwd"], config)
+    context, context_status, context_count = (
+        ("", "sensitive", 0) if sensitive else followup_context(event, config, SECRET)
+    )
     explicit = not sensitive and bool(PAST.search(query))
     decision = await call(
         "knowledge_decide",
         {
             "operation": "lookup",
             "text": query,
-            "context": "Scopes: " + ", ".join(scopes),
+            "context": context,
+            "resolve_context": True,
             "explicit_request": explicit,
             "contains_sensitive": sensitive,
             "principle_scopes": scopes,
@@ -98,9 +110,19 @@ async def collect(session, event, config):
         "agent_memories": [],
         "sensitive_prompt_withheld": sensitive,
         "prompt_truncated": len(prompt) > 4000,
+        "followup_context": {"status": context_status, "messages": context_count},
     }
     if sensitive:
         return payload, calls
+    resolved = decision.get("retrieval_query")
+    if not isinstance(resolved, str) or not resolved.strip():
+        payload["decision"] = "agent_review" if action != "skip" else "skip"
+        payload["next_step"] = (
+            "Resolve this request from the active conversation before targeted retrieval; no unresolved query was searched."
+        )
+        return payload, calls
+    query = resolved
+    payload["query_context_used"] = decision.get("context_used", False)
     if action == "skip" and not explicit:
         return payload, calls
     recalled = await call(
@@ -180,6 +202,11 @@ async def worker(event, config):
         ) as (reader, writer):
             async with ClientSession(reader, writer) as session:
                 await session.initialize()
+                catalog = await session.list_tools()
+                config["_supports_context"] = any(
+                    t.name == "knowledge_decide" and "resolve_context" in t.inputSchema.get("properties", {})
+                    for t in catalog.tools
+                )
                 payload, calls = await collect(session, event, config)
                 return {"payload": payload, "calls": calls}
 
@@ -256,7 +283,7 @@ def main():
         timeout = float(config.get("timeout_seconds", 35))
         if not 1 <= timeout <= 45:
             raise ValueError("invalid timeout")
-        # Send only the prompt and cwd, never transcript_path or other host metadata.
+        # Pass the host session pointer locally; only bounded excerpts reach MCP.
         child = subprocess.Popen(
             [
                 sys.executable,
@@ -278,6 +305,8 @@ def main():
                         "hook_event_name": "UserPromptSubmit",
                         "prompt": event["prompt"],
                         "cwd": event["cwd"],
+                        "session_id": event.get("session_id"),
+                        "transcript_path": event.get("transcript_path"),
                     }
                 ),
                 timeout=timeout,

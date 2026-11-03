@@ -115,3 +115,19 @@ SDK 장애 시 새 저장은 READY가 되지 않고, 기존 SDK 원문 읽기는
 수정 전 `knowledge_history`에서 최신 `revision_id`를 확인해 `expected_revision_id`로 전달합니다.
 `knowledge_get_content`의 `source_storage.store_id`와 `source_storage.record_id`는
 해당 버전이 실제 저장된 Agent Memory 위치를 보여줍니다. 제목 변경으로 ID가 바뀌지는 않습니다.
+
+
+### 새 스키마에서 재현
+
+아래 명령은 ADMIN이 아닌, 운영 데이터가 없는 별도 테스트 계정에 사용합니다.
+`--require-empty`는 기존 테이블이 있으면 중단합니다. 자격 증명 파일은 Git에 넣지 않습니다.
+
+```sh
+./scripts/setup.sh --with-agent-memory
+./.venv/bin/python -m scripts.validate_oracle_installation \
+  --env-file /private/path/test.env --expected-schema YOUR_TEST_SCHEMA \
+  --apply --require-empty --v3 --graphs --models
+```
+
+기존 ADB 서비스에 빈 스키마를 만들어 2026-11-03 실제 실행을 완료했습니다. 신규 계정 생성은
+DB 관리자 작업이며 이 검증 도구는 관리자 계정에 앱 객체를 설치하지 않습니다.

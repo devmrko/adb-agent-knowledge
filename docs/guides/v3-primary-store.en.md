@@ -82,3 +82,13 @@ See the [deployment validation record](../reference/v3-production-validation.md)
 Clients do not construct SDK IDs. Keep the `knowledge_id` returned by save; read `knowledge_history`
 before revising and pass its latest `revision_id` as `expected_revision_id`. The content response exposes
 `source_storage.store_id` and `source_storage.record_id` for the selected version. Titles are not IDs.
+
+
+### Reproduce on an empty schema
+
+After `./scripts/setup.sh --with-agent-memory`, run
+`python -m scripts.validate_oracle_installation --env-file /private/test.env --expected-schema YOUR_TEST_SCHEMA --apply --require-empty --v3 --graphs --models`.
+Use an explicitly provisioned isolated non-admin account. The empty-schema guard rejects existing tables.
+This passed on 2026-11-03 using macOS and a fresh schema in an existing ADB service, including migrations,
+audit triggers, SDK store, RDF/Property Graph, actual Korean embeddings and owner isolation. Creating a
+new ADB service, every supported OS and large-scale performance were not tested by this run.

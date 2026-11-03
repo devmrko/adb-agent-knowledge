@@ -27,6 +27,7 @@ class RoutingSettings(BaseSettings):
     graph_extract_threshold: float = Field(default=0.6, ge=0, le=1)
     graph_review_threshold: float = Field(default=0.2, ge=0, le=1)
     lookup_threshold: float = Field(default=0.2, ge=0, le=1)
+    context_margin: float = Field(default=0.1, gt=0, le=1)
     save_threshold: float = Field(default=0.7, ge=0, le=1)
     save_skip_threshold: float = Field(default=0.25, ge=0, le=1)
 
@@ -51,6 +52,7 @@ class MemoryDecision(BaseModel):
     storage_allowed: bool = True
     contains_sensitive: bool = False
     verified: bool = False
+    resolve_context: bool = False
 
     @field_validator("text")
     @classmethod
@@ -129,6 +131,8 @@ class MemoryRouter:
             )
         if request.operation in {"save", "graph_extract"} and not request.storage_allowed:
             return result("skip", "storage_opt_out")
+        if request.operation == "lookup" and request.resolve_context:
+            return await self.contextual_lookup(request)
         if request.explicit_request:
             return result(request.operation, "explicit_request")
         if request.operation in {"save", "graph_extract"} and not request.verified:
@@ -187,3 +191,63 @@ class MemoryRouter:
             if request.operation.startswith("graph_")
             else "memory-routing-v1",
         )
+
+    async def contextual_lookup(self, request: MemoryDecision) -> dict[str, Any]:
+        """Score meaning and context together without generating or inventing a query."""
+        questions = {
+            "need_lookup": "Would retrieving this user's saved project decisions, preferences or work history help answer current_request? Use recent_dialogue only if the current request refers to it. General knowledge alone does not require memory lookup.",
+            "use_context": "Does current_request refer to or continue the task/topic in recent_dialogue, so that using that dialogue would clarify what the user wants? Answer no for a self-contained new topic or absent dialogue.",
+            "standalone_query": "Can current_request alone identify a specific search topic without resolving references to earlier dialogue? Answer no if its subject or requested task is only known from prior turns.",
+        }
+        started = time.perf_counter()
+        result: dict[str, Any] = {
+            "operation": "lookup",
+            "action": "agent_review",
+            "reason": "query_context_uncertain",
+            "retrieval_query": None,
+            "context_used": False,
+            "model_called": False,
+            "prompt_version": "context-routing-v1",
+        }
+        try:
+            scores = await self.provider.score(
+                {"current_request": request.text, "recent_dialogue": request.context}, questions
+            )
+            for key in questions:
+                value = scores[key]
+                if (
+                    isinstance(value, bool)
+                    or not isinstance(value, (int, float))
+                    or not math.isfinite(value)
+                    or not 0 <= value <= 1
+                ):
+                    raise ValueError("Invalid score")
+        except (httpx.HTTPError, ValueError, KeyError, TypeError, AttributeError):
+            result["reason"] = "kev_unavailable_or_invalid"
+            return result
+        result.update(
+            model_called=True,
+            model=self.settings.model,
+            scores=scores,
+            latency_ms=round((time.perf_counter() - started) * 1000, 1),
+        )
+        # Deliberate uncertainty band; a score is routing advice, never factual certainty.
+        if (
+            request.context
+            and scores["use_context"] - scores["standalone_query"] >= self.settings.context_margin
+        ):
+            result["retrieval_query"] = (
+                request.text + "\nRecent dialogue (reference only):\n" + request.context
+            )
+            result["context_used"] = True
+        elif scores["standalone_query"] - scores["use_context"] >= self.settings.context_margin:
+            result["retrieval_query"] = request.text
+        else:
+            return result
+        result["action"] = (
+            "lookup"
+            if request.explicit_request or scores["need_lookup"] >= self.settings.lookup_threshold
+            else "skip"
+        )
+        result["reason"] = "explicit_request" if request.explicit_request else "kev_context_score"
+        return result

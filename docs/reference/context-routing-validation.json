@@ -1,0 +1,197 @@
+{
+  "date": "2026-11-03",
+  "kind": "synthetic holdout after prompt development",
+  "cases": [
+    {
+      "prompt": "이 중에서 끝나지 않은 항목을 이어서 부탁드립니다.",
+      "context": "user: Oracle v3 설치를 검증해줘. assistant: 이력과 새 계정 검증이 남았습니다.",
+      "expected_context": true,
+      "operation": "lookup",
+      "action": "lookup",
+      "reason": "kev_context_score",
+      "retrieval_query": "이 중에서 끝나지 않은 항목을 이어서 부탁드립니다.\nRecent dialogue (reference only):\nuser: Oracle v3 설치를 검증해줘. assistant: 이력과 새 계정 검증이 남았습니다.",
+      "context_used": true,
+      "model_called": true,
+      "prompt_version": "context-routing-v1",
+      "model": "kev-latest",
+      "scores": {
+        "need_lookup": 0.4184,
+        "use_context": 0.5991,
+        "standalone_query": 0.2869
+      },
+      "latency_ms": 175.4
+    },
+    {
+      "prompt": "What still needs testing?",
+      "context": "user: Validate the Oracle memory deployment. assistant: New-schema setup is pending.",
+      "expected_context": true,
+      "operation": "lookup",
+      "action": "lookup",
+      "reason": "kev_context_score",
+      "retrieval_query": "What still needs testing?\nRecent dialogue (reference only):\nuser: Validate the Oracle memory deployment. assistant: New-schema setup is pending.",
+      "context_used": true,
+      "model_called": true,
+      "prompt_version": "context-routing-v1",
+      "model": "kev-latest",
+      "scores": {
+        "need_lookup": 0.4366,
+        "use_context": 0.6178,
+        "standalone_query": 0.371
+      },
+      "latency_ms": 124.9
+    },
+    {
+      "prompt": "그 방식이면 신규 입사자는 언제 제출해야 하죠?",
+      "context": "user: HR 온보딩 절차를 정리해줘. assistant: 복지 선택과 제출 기한을 확인해야 합니다.",
+      "expected_context": true,
+      "operation": "lookup",
+      "action": "lookup",
+      "reason": "kev_context_score",
+      "retrieval_query": "그 방식이면 신규 입사자는 언제 제출해야 하죠?\nRecent dialogue (reference only):\nuser: HR 온보딩 절차를 정리해줘. assistant: 복지 선택과 제출 기한을 확인해야 합니다.",
+      "context_used": true,
+      "model_called": true,
+      "prompt_version": "context-routing-v1",
+      "model": "kev-latest",
+      "scores": {
+        "need_lookup": 0.4743,
+        "use_context": 0.6979,
+        "standalone_query": 0.5829
+      },
+      "latency_ms": 124.1
+    },
+    {
+      "prompt": "지난번 카페 원두 구매 기록을 찾아줘",
+      "context": "user: Oracle v3 설치를 검증해줘. assistant: 스키마 검증 중입니다.",
+      "expected_context": false,
+      "operation": "lookup",
+      "action": "lookup",
+      "reason": "kev_context_score",
+      "retrieval_query": "지난번 카페 원두 구매 기록을 찾아줘",
+      "context_used": false,
+      "model_called": true,
+      "prompt_version": "context-routing-v1",
+      "model": "kev-latest",
+      "scores": {
+        "need_lookup": 0.4245,
+        "use_context": 0.1021,
+        "standalone_query": 0.7809
+      },
+      "latency_ms": 123.8
+    },
+    {
+      "prompt": "다른 주제로 넘어가서 HTTP 캐시를 설명해줘",
+      "context": "user: HR 온보딩 절차를 정리해줘. assistant: 복지 제출 기록을 확인했습니다.",
+      "expected_context": false,
+      "operation": "lookup",
+      "action": "skip",
+      "reason": "kev_context_score",
+      "retrieval_query": "다른 주제로 넘어가서 HTTP 캐시를 설명해줘",
+      "context_used": false,
+      "model_called": true,
+      "prompt_version": "context-routing-v1",
+      "model": "kev-latest",
+      "scores": {
+        "need_lookup": 0.152,
+        "use_context": 0.0591,
+        "standalone_query": 0.877
+      },
+      "latency_ms": 123.5
+    },
+    {
+      "prompt": "이제 Cafesto 배포 환경을 찾아줘",
+      "context": "user: Oracle v3 설치를 검증해줘. assistant: 새 스키마 검증이 남았습니다.",
+      "expected_context": false,
+      "operation": "lookup",
+      "action": "lookup",
+      "reason": "kev_context_score",
+      "retrieval_query": "이제 Cafesto 배포 환경을 찾아줘",
+      "context_used": false,
+      "model_called": true,
+      "prompt_version": "context-routing-v1",
+      "model": "kev-latest",
+      "scores": {
+        "need_lookup": 0.2894,
+        "use_context": 0.2359,
+        "standalone_query": 0.8798
+      },
+      "latency_ms": 123.4
+    },
+    {
+      "prompt": "두 번째 것으로 하되 기존 조건을 그대로 유지해 주세요.",
+      "context": "user: 배포 방식을 비교해줘. assistant: 첫째 수동 배포, 둘째 승인 후 자동 배포입니다.",
+      "expected_context": true,
+      "operation": "lookup",
+      "action": "lookup",
+      "reason": "kev_context_score",
+      "retrieval_query": "두 번째 것으로 하되 기존 조건을 그대로 유지해 주세요.\nRecent dialogue (reference only):\nuser: 배포 방식을 비교해줘. assistant: 첫째 수동 배포, 둘째 승인 후 자동 배포입니다.",
+      "context_used": true,
+      "model_called": true,
+      "prompt_version": "context-routing-v1",
+      "model": "kev-latest",
+      "scores": {
+        "need_lookup": 0.4545,
+        "use_context": 0.5755,
+        "standalone_query": 0.3164
+      },
+      "latency_ms": 127.3
+    },
+    {
+      "prompt": "Show my saved espresso recipe.",
+      "context": "user: Validate Oracle memory. assistant: Migration validation is pending.",
+      "expected_context": false,
+      "operation": "lookup",
+      "action": "lookup",
+      "reason": "kev_context_score",
+      "retrieval_query": "Show my saved espresso recipe.",
+      "context_used": false,
+      "model_called": true,
+      "prompt_version": "context-routing-v1",
+      "model": "kev-latest",
+      "scores": {
+        "need_lookup": 0.5641,
+        "use_context": 0.0496,
+        "standalone_query": 0.9092
+      },
+      "latency_ms": 123.2
+    },
+    {
+      "prompt": "이제 그건 취소하고 새 프로젝트의 테스트 계획을 세워줘",
+      "context": "user: 기존 사이트 배포해줘. assistant: 기존 사이트 배포를 준비했습니다.",
+      "expected_context": false,
+      "operation": "lookup",
+      "action": "lookup",
+      "reason": "kev_context_score",
+      "retrieval_query": "이제 그건 취소하고 새 프로젝트의 테스트 계획을 세워줘",
+      "context_used": false,
+      "model_called": true,
+      "prompt_version": "context-routing-v1",
+      "model": "kev-latest",
+      "scores": {
+        "need_lookup": 0.359,
+        "use_context": 0.3062,
+        "standalone_query": 0.6029
+      },
+      "latency_ms": 122.9
+    },
+    {
+      "prompt": "그것과 반대인 경우는요?",
+      "context": "",
+      "expected_context": null,
+      "operation": "lookup",
+      "action": "agent_review",
+      "reason": "query_context_uncertain",
+      "retrieval_query": null,
+      "context_used": false,
+      "model_called": true,
+      "prompt_version": "context-routing-v1",
+      "model": "kev-latest",
+      "scores": {
+        "need_lookup": 0.2865,
+        "use_context": 0.3779,
+        "standalone_query": 0.295
+      },
+      "latency_ms": 123.3
+    }
+  ],
+  "limitations": "10 synthetic cases; manual labels; no universal quality guarantee. One unresolved reference was deferred to agent_review; no wrong context choices among resolved cases."
+}

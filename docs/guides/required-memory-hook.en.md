@@ -84,8 +84,7 @@ A later Claude run verified model consumption of the injected source; the earlie
   client error using its login guidance, then verify a fresh prompt.
 - skip means the mandatory MCP routing call completed; additional retrieval was skipped.
 - COMPLETE does not guarantee relevant retrieval. Exclude irrelevant matches; check explicit scope mappings.
-- Brief follow-ups such as “Claude too?” lack standalone context. The hook does not read the transcript;
-  the agent must interpret the live conversation and perform additional focused retrieval when necessary.
+- Every request uses generic Kev context resolution, not a list of follow-up phrases. Recent dialogue is included only when relevant; uncertain requests return agent_review for focused agent retrieval.
 - For another machine, configure that machine's own absolute launcher and confirmed scope_roots,
   install per client, review trust locally, then test both script and real prompt execution.
 - After source/path/command updates, rerun the installer as needed and review any renewed Codex trust prompt.
@@ -110,3 +109,23 @@ Follow-up Claude end-to-end verification succeeded on 2026-11-03: with model too
 ## User-approved principles
 
 The hook now requires principle resolution from the server even on Kev skip. Upgrade API/MCP and migrate vk0014 before upgrading this script. No extra MCP tools. See [principles](user-principles.md) / [English](user-principles.en.md).
+
+
+## Context-aware routing
+
+The hook reads a bounded tail (256 KiB) of the current host-provided transcript, extracting at most two
+recent user/final-assistant excerpts (1200 characters). Tools, reasoning and system messages are excluded.
+No dialogue cache is written. Standard Codex sessions and Claude projects roots are allowed; configure
+`transcript_roots` for custom locations or set `followup_context=false` to disable reading.
+
+`knowledge_decide(resolve_context=true)` scores lookup need, dialogue dependence and standalone query
+sufficiency in one Kev call. It returns `retrieval_query` and `context_used`. The query combines selected
+input; no generation model rewrites it. `KEV_CONTEXT_MARGIN=0.1` leaves close scores for agent_review.
+Scores are not calibrated confidence. Topic changes should use the current request alone. The agent
+must still reject unrelated results. Old servers retain principle resolution but unresolved queries
+are not searched blindly. Update server and client together.
+
+[Codex](https://learn.chatgpt.com/docs/hooks#common-input-fields) documents the transcript format as
+unstable. [Claude hook inputs](https://code.claude.com/docs/en/hooks) also supply the session path.
+Missing/unsupported data can require agent review. Verify real hook execution after client updates.
+Run synthetic evaluation with `python -m scripts.evaluate_context_routing --output .run/context-routing.json`.

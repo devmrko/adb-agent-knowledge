@@ -170,6 +170,14 @@ def main() -> None:
         action="store_true",
         help="Requires --graphs; persist fictional source/graph using configured embeddings",
     )
+    parser.add_argument(
+        "--v3", action="store_true", help="Initialize the separate Agent Memory source store and test v3"
+    )
+    parser.add_argument(
+        "--require-empty",
+        action="store_true",
+        help="Reject schemas with any existing user tables before migration",
+    )
     args = parser.parse_args()
     if args.models and not args.graphs:
         parser.error("--models requires --graphs")
@@ -189,16 +197,22 @@ def main() -> None:
         GRAPH_EXTRACTION_MODE="agent",
         GRAPH_AUTO_ENABLED="false",
     )
+    if args.v3:
+        config["KNOWLEDGE_SOURCE_BACKEND"] = "v3"
     os.environ.update(config)
     settings = Settings(_env_file=None)
     engine = database(settings)
     try:
         with engine.connect() as con:
             guard_schema(str(con.scalar(text("SELECT USER FROM DUAL"))), args.expected_schema)
+            if args.require_empty and con.scalar(text("SELECT count(*) FROM user_tables")):
+                raise ValueError("Fresh installation requires an empty schema")
     finally:
         engine.dispose()
     run_entrypoint("-m", "alembic", "-c", str(ROOT / "alembic.ini"), "upgrade", "head")
     audit_probe(settings)
+    if args.v3:
+        run_entrypoint("-m", "scripts.source_transfer", "init")
     if args.graphs:
         run_entrypoint("-m", "scripts.prepare_knowledge_rdf")
         run_entrypoint("-m", "scripts.setup_property_graph", "--apply")

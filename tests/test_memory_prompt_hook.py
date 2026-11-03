@@ -9,7 +9,8 @@ from scripts.memory_prompt_hook import collect, query_text, scopes_for
 
 
 class Session:
-    def __init__(self, decision="lookup", fail=False):
+    def __init__(self, decision="lookup", fail=False, context_used=False, unresolved=False):
+        self.context_used, self.unresolved = context_used, unresolved
         self.calls = []
         self.decision, self.fail = decision, fail
 
@@ -18,6 +19,10 @@ class Session:
         result = {
             "knowledge_decide": {
                 "action": self.decision,
+                "retrieval_query": None
+                if self.unresolved
+                else args.get("text", "") + ("\n" + args.get("context", "") if self.context_used else ""),
+                "context_used": self.context_used,
                 "user_principles": {
                     "status": "READY",
                     "version": 2,
@@ -127,3 +132,117 @@ def test_explicit_related_scopes_and_validation():
     for value in [[], [None], ["global"], ["project:"], ["project:has space"], ["project:x"] * 11]:
         with pytest.raises(ValueError):
             scopes_for("/work", {"scope_roots": {"/work": value}})
+
+
+def transcript(tmp_path, rows):
+    path = tmp_path / "session-12345678.jsonl"
+    path.write_text("\n".join(json.dumps(r, ensure_ascii=False) for r in rows))
+    return {"prompt": "남은건?", "cwd": "/work", "session_id": "12345678", "transcript_path": str(path)}, {
+        "transcript_roots": [str(tmp_path)]
+    }
+
+
+def test_followup_uses_resolved_session_context(tmp_path):
+    event, config = transcript(
+        tmp_path,
+        [
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "user",
+                    "content": [{"type": "input_text", "text": "v3 신규 Oracle 스키마 설치 검증해줘"}],
+                },
+            },
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "assistant",
+                    "channel": "analysis",
+                    "content": [{"type": "output_text", "text": "DO_NOT_SEND_THINKING"}],
+                },
+            },
+            {
+                "type": "response_item",
+                "payload": {"type": "function_call_output", "output": "DO_NOT_SEND_TOOL"},
+            },
+            {
+                "type": "response_item",
+                "payload": {
+                    "type": "message",
+                    "role": "assistant",
+                    "channel": "final",
+                    "content": [{"type": "output_text", "text": "v3 전환 완료. 새 설치 검증이 남았습니다."}],
+                },
+            },
+        ],
+    )
+    session = Session("lookup", context_used=True)
+    result, calls = asyncio.run(collect(session, event, config))
+    assert len(calls) == 3
+    assert result["decision"] == "lookup"
+    assert result["followup_context"] == {"status": "used", "messages": 2}
+    query = session.calls[1][1]["request"]["text"]
+    assert "신규 Oracle" in query and "남은건?" in query
+    assert "DO_NOT_SEND" not in json.dumps(session.calls)
+
+
+def test_claude_followup_and_secret_boundary(tmp_path):
+    event, config = transcript(
+        tmp_path,
+        [
+            {
+                "type": "user",
+                "sessionId": "12345678",
+                "message": {"role": "user", "content": "v3 Oracle 설치 검증"},
+            },
+            {
+                "type": "assistant",
+                "message": {
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": "다음은 이력 검증입니다."}],
+                },
+            },
+        ],
+    )
+    session = Session()
+    result, _ = asyncio.run(collect(session, event, config))
+    assert result["followup_context"]["status"] == "used"
+    path = __import__("pathlib").Path(event["transcript_path"])
+    with path.open("a") as f:
+        f.write(
+            "\n" + json.dumps({"type": "user", "message": {"role": "user", "content": "password=PRIVATE"}})
+        )
+    session = Session("agent_review", unresolved=True)
+    result, calls = asyncio.run(collect(session, event, config))
+    assert len(calls) == 1 and result["decision"] == "agent_review"
+    assert "PRIVATE" not in json.dumps(session.calls)
+
+
+def test_missing_wrong_session_root_and_disabled_context(tmp_path):
+    event, config = transcript(
+        tmp_path, [{"type": "user", "message": {"role": "user", "content": "v3 Oracle 새 스키마"}}]
+    )
+    variants = [
+        ({**event, "session_id": "87654321"}, config),
+        (event, {"transcript_roots": ["/different"]}),
+        (event, {**config, "followup_context": False}),
+        ({"prompt": "남은건?", "cwd": "/work"}, config),
+    ]
+    for e, c in variants:
+        session = Session("agent_review", unresolved=True)
+        result, calls = asyncio.run(collect(session, e, c))
+        assert len(calls) == 1 and result["decision"] == "agent_review"
+        assert result["user_principles"]["version"] == 2
+
+
+def test_independent_prompt_never_inherits_previous_topic(tmp_path):
+    event, config = transcript(
+        tmp_path, [{"type": "user", "message": {"role": "user", "content": "v3 Oracle 새 스키마"}}]
+    )
+    event["prompt"] = "HTTP 404와 410의 차이"
+    session = Session()
+    result, _ = asyncio.run(collect(session, event, config))
+    assert result["followup_context"]["status"] == "used"
+    assert session.calls[1][1]["request"]["text"] == event["prompt"]

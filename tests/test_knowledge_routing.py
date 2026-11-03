@@ -83,3 +83,55 @@ def test_timeout_and_local_url_boundary():
     for url in ["https://example.com", "http://127.0.0.1@evil.test", "http://localhost/?token=x"]:
         with pytest.raises(ValidationError):
             RoutingSettings(_env_file=None, url=url)
+
+
+def test_context_resolution_uses_scores_not_phrase_rules():
+    from knowledge_app.routing import MemoryDecision, MemoryRouter, RoutingSettings
+
+    class Provider:
+        def __init__(self, scores):
+            self.scores = scores
+
+        async def score(self, state, questions):
+            assert set(questions) == {"need_lookup", "use_context", "standalone_query"}
+            return self.scores
+
+    for prompt in [
+        "남은건?",
+        "그 부분은 앞서 정한 방식으로 끝까지 처리해 주시겠어요?",
+        "Please finish the remaining work.",
+    ]:
+        router = MemoryRouter(
+            RoutingSettings(_env_file=None),
+            provider=Provider({"need_lookup": 0.9, "use_context": 0.9, "standalone_query": 0.1}),
+        )
+        out = asyncio.run(
+            router.decide(
+                MemoryDecision(
+                    operation="lookup", text=prompt, context="Oracle v3 설치 검증", resolve_context=True
+                )
+            )
+        )
+        assert out["action"] == "lookup" and out["context_used"]
+        assert "Oracle v3" in out["retrieval_query"]
+    router = MemoryRouter(
+        RoutingSettings(_env_file=None),
+        provider=Provider({"need_lookup": 0.9, "use_context": 0.1, "standalone_query": 0.9}),
+    )
+    out = asyncio.run(
+        router.decide(
+            MemoryDecision(
+                operation="lookup",
+                text="내 커피 추출 기록 찾아줘",
+                context="Oracle v3 설치 검증",
+                resolve_context=True,
+            )
+        )
+    )
+    assert out["retrieval_query"] == "내 커피 추출 기록 찾아줘"
+    router = MemoryRouter(
+        RoutingSettings(_env_file=None),
+        provider=Provider({"need_lookup": 0.9, "use_context": 0.5, "standalone_query": 0.5}),
+    )
+    out = asyncio.run(router.decide(MemoryDecision(operation="lookup", text="그건?", resolve_context=True)))
+    assert out["action"] == "agent_review" and out["retrieval_query"] is None
