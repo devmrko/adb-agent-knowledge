@@ -7,6 +7,48 @@ MCP 저장·검색·프로필 이름 변경, 웹의 전체/에이전트 메모�
 기존 지식은 자동 이전되지 않으며 memory_kind 분류만으로 에이전트 기억으로 간주하지 않는다.
 
 
+## Agent Memory는 무엇을 검색하나요?
+
+예를 들어 ‘Tasteby 배포 절차’를 저장할 때 **보관할 내용**, **의미 검색에 사용할 문장**,
+**조건으로 고를 키**를 구분할 수 있습니다. 이것은 SDK 저장 기능이며 현재 MCP가 모든 입력을 노출하는 것은 아닙니다.
+
+| 구분 | 예 | 검색에서 하는 일 |
+|---|---|---|
+| content | 요약·상세·출처를 담은 JSON 문자열 | 조회 결과로 돌려주는 원본 내용 |
+| index_texts | ‘Tasteby 배포 전 확인…’, ‘배포 실패 시 복구…’ | 임베딩해서 의미가 가까운 항목을 찾는 검색 청크 |
+| metadata | project=tasteby, review.status=confirmed, tags=[배포] | 키·값 조건으로 대상을 제한 |
+
+**키·값 필터는 의미 검색과 다릅니다.** `project=tasteby`는 그 값에 맞는 항목을 고르는 조건이고,
+‘배포가 실패하면 어떻게 하지?’는 임베딩한 검색 문장과 의미를 비교하는 질문입니다.
+metadata에 키를 추가했다고 그 값이 자동으로 벡터 검색되는 것은 아닙니다.
+검색용 텍스트를 별도로 지정하면 그 텍스트가 검색을 결정합니다. 요약만 색인하면 상세에만 있는 내용을
+놓칠 수 있으므로 필요한 상세도 청크에 포함해야 합니다. 검색 결과는 청크 자체가 아니라 원래 레코드를
+반환할 수 있어 큰 본문은 앱에서 분량 제한·부분 읽기를 설계해야 합니다.
+
+현재 앱은 `add_memory(text, ...)`로 본문을 넣고, 동일 임베딩 제공자로 벡터 검색합니다.
+질의 없이 조회하면 목록을 보여줍니다. 검색에서 사용자 소유권과 선택한 프로젝트·에이전트·대화 조건을
+적용하며, 관계는 별도 제한 탐색으로 확인합니다. 기억 결과와 업무 지식 결과의 점수는 합치지 않습니다.
+
+### 현재 앱 / SDK 기능 / 검증 결과 구분
+
+- **현재 MCP:** 본문 최대12,000자, 제목 최대120자. 임의 metadata JSON이나 index_texts 입력은 미노출입니다.
+- **SDK26.8:** JSON metadata의 중첩 키·배열 필터, 별도 검색 텍스트/청크 지정이 가능합니다.
+  memory 본문은 JSON 문자열로 직렬화해야 하며 Python dict 직접 입력은 이번 시험에서 거부됐습니다.
+- **용량 실측:** 한글·이모지 JSON 본문과 metadata 각각 약4MiB까지 왕복 성공했습니다.
+  이는 성공한 시험 크기이며 최대 한도나 권장 운영 크기가 아닙니다. 합성 벡터 시험으로 검색 품질은 미측정입니다.
+- **Oracle 한도:** native JSON은32MB, CLOB 본문은 별도 한도입니다. 모델 토큰 한도·HTTP/SDK 제한과 구분하세요.
+- **갱신:** metadata는 전체 교체이며 자동 깊은 병합/재임베딩이 아닙니다. 본문+index_text 갱신은
+  새 청크·벡터로 교체되는 것을 실제 DB에서 확인했습니다. 이전 본문 버전을 자동 보존하는 앱 기능과는 다릅니다.
+- **하이브리드 검색:** SDK의 HYBRID는 OracleDBEmbedder가 필요합니다. 현재 외부 한국어 모델 구성에
+  그대로 켜는 옵션이 아닙니다. 업무 지식의 벡터+LIKE 방식과도 구분합니다.
+
+업무 지식을 담을 수 있으나 원문 버전·정확한 인용·RDF 관계까지 자동으로 이전되는 것은 아닙니다.
+[JSON 실험과 통합 판단](agent-memory-json-evaluation.md)에 크기·한계·재현 명령을 정리했습니다.
+공식 근거: [SDK 저장/검색](https://docs.oracle.com/en/database/oracle/agent-memory/26.8/guide/api/stores.html),
+[Agent Memory 검색 설정](https://docs.oracle.com/en/database/oracle/agent-memory/26.8/guide/api/agentmemory.html),
+[Oracle 자료형 한도](https://docs.oracle.com/en/database/oracle/oracle-database/26/refrn/datatype-limits.html).
+
+
 ## Oracle SDK와 임베딩 구현의 역할
 
 **Oracle Agent Memory SDK가 이 한국어 임베딩 모델을 기본 제공하는 것은 아니다.**

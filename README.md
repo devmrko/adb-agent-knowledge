@@ -514,6 +514,17 @@ AGENTS.md·CLAUDE.md는 개발 에이전트 지침이며 지식 데이터 사본
 SDK가 한국어 임베딩 모델을 내장한 것은 아닙니다. 이 프로젝트의 `IEmbedder` 연결부가 앱의 임베딩 제공자를 SDK에 주입합니다. [에이전트 메모리·임베딩 역할과 실행 위치](docs/guides/agent-memory.md)를 확인하세요.
 
 
+### Agent Memory의 저장과 검색을 이해하기
+
+Agent Memory는 저장할 **본문**, 벡터 검색에 사용할 **검색용 텍스트**, 키·값 조건에 사용할
+**JSON metadata**를 구분할 수 있습니다. metadata에 값을 넣었다고 자동으로 의미 검색되는 것은 아닙니다.
+현재 MCP는 본문12,000자 제한이며 임의 metadata/검색 청크 지정은 아직 노출하지 않습니다.
+SDK 별도 시험에서는 JSON 본문·metadata 각각 약4MiB 왕복과 중첩/배열 조건, 실제 청크·벡터 갱신을 확인했습니다.
+최대 용량·검색 품질 검증이나 운영 이관 완료를 뜻하지 않습니다.
+
+[사용자 설명: 무엇을 어떻게 검색하나](docs/guides/agent-memory.md#agent-memory는-무엇을-검색하나요) ·
+[JSON 용량·갱신·이관 가능성 실측](docs/guides/agent-memory-json-evaluation.md)
+
 ## MCP 도구 묶음
 
 | 프로필 | 도구 수 | 용도 |

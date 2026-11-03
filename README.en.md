@@ -318,6 +318,17 @@ Agent memory stores experiences, preferences and previous work memories separate
 The Korean model is not an Oracle SDK default: our `IEmbedder` bridge injects the application embedding provider. See [Agent memory and embedding responsibilities](docs/guides/agent-memory.en.md).
 
 
+### Understanding Agent Memory storage and retrieval
+
+Agent Memory can separate stored **content**, embedded **retrieval text**, and structured **JSON metadata filters**.
+Metadata values are not automatically part of semantic search. The current MCP limits text to 12,000 characters
+and does not expose arbitrary metadata or custom retrieval chunks. An isolated SDK experiment round-tripped
+about 4MiB each of JSON content and metadata and verified nested/array filters and persisted chunk/vector updates.
+This does not establish maximum capacity, semantic quality, or a completed production migration.
+
+[What does Agent Memory search?](docs/guides/agent-memory.en.md#what-does-agent-memory-search) ·
+[JSON feasibility results (Korean)](docs/guides/agent-memory-json-evaluation.md)
+
 ## MCP tool profiles
 
 Default core exposes **17 tools**: 16 everyday tools plus knowledge_tools.
