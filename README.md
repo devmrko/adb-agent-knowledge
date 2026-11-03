@@ -468,4 +468,11 @@ still applies; changing the tool catalog neither writes knowledge nor grants per
 Do not register all profiles at once. Existing tool names, HTTP endpoints and stored records are unchanged.
 
 
-[Required pre-response memory MCP hook / 답변 전 기억 확인 훅](docs/guides/required-memory-hook.md) — optional client-side installation; Codex requires hook trust.
+## 답변 전에 기억을 확인하게 하기
+
+에이전트가 MCP 호출을 생략하지 않도록 Codex·Claude의 UserPromptSubmit 훅을 선택적으로 설치할 수 있습니다.
+훅이 실제 MCP의 Kev 판단과 필요한 기억 조회를 실행한 뒤 답변 전에 결과를 전달합니다.
+MCP 연결만으로 활성화되지 않으며 Codex에서는 /hooks 신뢰 승인이 필요합니다.
+현재 Codex 실제 요청의 컨텍스트 주입을 확인했고, Claude는 훅 호출까지 확인했으나 답변 반영 검증은 남아 있습니다.
+
+[설치·활성화·검증·문제 해결·다른 머신 적용·제거 안내](docs/guides/required-memory-hook.md) · [English](docs/guides/required-memory-hook.en.md)

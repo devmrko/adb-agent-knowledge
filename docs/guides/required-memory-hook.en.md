@@ -41,5 +41,27 @@ Official references: [Codex](https://learn.chatgpt.com/docs/hooks), [Claude](htt
 
 283 tests passed. A direct real-MCP hook invocation returned exact memory sources in about 4.3 seconds.
 Claude Code dispatched the hook and completed four read calls, but the client returned an expiry error,
-so model consumption was not verified. Codex returned HOOK_MISSING; the new hook has no trusted hash yet.
-User /hooks approval and another actual prompt are required. This is installed, not universally activated.
+so Claude model consumption was not verified. Codex initially returned HOOK_MISSING while untrusted.
+Subsequent real user prompts in this installation delivered Memory check completed before the answer:
+both a Kev skip and a lookup with exact source revision excerpts were observed. Other installations still
+require their own trust and end-to-end checks.
+
+
+## Troubleshooting and other machines
+
+- MCP connected is not hook activation. Install the hook on the agent client machine.
+- Codex: review the exact memory_prompt_hook.py UserPromptSubmit command in /hooks. Start a new session
+  if the app has not loaded the new configuration.
+- Claude: a COMPLETE hook audit and a client expiry/authentication error are separate. Resolve the
+  client error using its login guidance, then verify a fresh prompt.
+- skip means the mandatory MCP routing call completed; additional retrieval was skipped.
+- COMPLETE does not guarantee relevant retrieval. Exclude irrelevant matches; check explicit scope mappings.
+- Brief follow-ups such as “Claude too?” lack standalone context. The hook does not read the transcript;
+  the agent must interpret the live conversation and perform additional focused retrieval when necessary.
+- For another machine, configure that machine's own absolute launcher and confirmed scope_roots,
+  install per client, review trust locally, then test both script and real prompt execution.
+- After source/path/command updates, rerun the installer as needed and review any renewed Codex trust prompt.
+- These are global user hooks and add remote-call latency to every prompt. Hook MCP activity may not appear
+  as a model-selected tool bubble; verify the audit and injected check_id instead.
+
+Removal affects only the hook, not stored knowledge. Startup tool profiles and hook activation are independent.

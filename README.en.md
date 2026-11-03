@@ -255,4 +255,10 @@ still applies; changing the tool catalog neither writes knowledge nor grants per
 Do not register all profiles at once. Existing tool names, HTTP endpoints and stored records are unchanged.
 
 
-[Required pre-response memory MCP hook / 답변 전 기억 확인 훅](docs/guides/required-memory-hook.en.md) — optional client-side installation; Codex requires hook trust.
+## Check memory before responding
+
+An optional client-side UserPromptSubmit hook executes the MCP routing/lookup before the model responds.
+It is separate from MCP connection setup; Codex requires /hooks trust. Real Codex context injection has
+been observed. Claude hook dispatch was verified, but model consumption remains unverified after a client expiry error.
+
+[Install, activate, verify, troubleshoot and remove the hook](docs/guides/required-memory-hook.en.md) · [한국어](docs/guides/required-memory-hook.md)
