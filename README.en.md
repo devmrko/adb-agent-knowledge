@@ -257,7 +257,7 @@ Do not register all profiles at once. Existing tool names, HTTP endpoints and st
 
 ## Check memory before responding
 
-An optional client-side UserPromptSubmit hook executes the MCP routing/lookup before the model responds.
+Normal MCP calls can be omitted by the agent. Memory preserves ongoing working context, so checking it belongs at the start of every request. An optional client-side UserPromptSubmit hook executes that MCP routing/lookup before the model responds.
 It is separate from MCP connection setup; Codex requires /hooks trust. Real Codex context injection has
 been observed. Claude hook dispatch was verified, but model consumption remains unverified after a client expiry error.
 

@@ -470,7 +470,7 @@ Do not register all profiles at once. Existing tool names, HTTP endpoints and st
 
 ## 답변 전에 기억을 확인하게 하기
 
-에이전트가 MCP 호출을 생략하지 않도록 Codex·Claude의 UserPromptSubmit 훅을 선택적으로 설치할 수 있습니다.
+일반 MCP 도구는 상황에 따라 호출이 생략될 수 있습니다. 이 저장소의 기억은 이전 결정·작업 맥락을 이어받기 위한 것이므로 매 요청마다 확인 절차가 필요합니다. 이를 에이전트의 선택에만 맡기지 않도록 Codex·Claude의 UserPromptSubmit 훅을 설치할 수 있습니다.
 훅이 실제 MCP의 Kev 판단과 필요한 기억 조회를 실행한 뒤 답변 전에 결과를 전달합니다.
 MCP 연결만으로 활성화되지 않으며 Codex에서는 /hooks 신뢰 승인이 필요합니다.
 현재 Codex 실제 요청의 컨텍스트 주입을 확인했고, Claude는 훅 호출까지 확인했으나 답변 반영 검증은 남아 있습니다.

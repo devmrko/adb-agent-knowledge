@@ -47,6 +47,36 @@ both a Kev skip and a lookup with exact source revision excerpts were observed. 
 require their own trust and end-to-end checks.
 
 
+## Why use a hook instead of only registering MCP tools?
+
+A normal MCP tool is optional: the agent may invoke it or omit it based on the request.
+This store preserves working context—previous decisions, preferences, progress and failed approaches—
+so checking memory must be part of every request, not a tool call the agent can simply forget.
+
+The synchronous UserPromptSubmit hook performs that check before the model responds.
+The current implementation always calls knowledge_decide through MCP; Kev then decides whether retrieval
+is needed. Mandatory checking does not mean loading every memory or forcing irrelevant facts into the answer.
+It also does not mean unconditional vector search on every request: that would be a different policy.
+MCP provides storage/retrieval, while the hook establishes when the check must run.
+
+## Claude Code checklist
+
+After installation, open a fresh Claude session and use /hooks to inspect UserPromptSubmit for
+memory_prompt_hook.py. Claude's /hooks is a configuration browser, not Codex's hook-trust approval flow.
+Ask about a known prior project decision. Check the newest entries with:
+
+```sh
+tail -n 3 ~/.local/state/adb-agent-knowledge/prompt-hook.jsonl
+```
+
+Compare request time, COMPLETE status and tool names. Ask Claude for the injected check_id and source titles
+and compare with the audit; do not rely on its assertion alone. Avoid simultaneous Codex requests during
+this check because both clients share this audit file.
+
+For an expiry/login error use claude auth status, then claude auth login for Anthropic account authentication.
+For a separately configured API provider, resolve that provider's credentials instead. Restart and retry.
+Claude dispatch/MCP reads were observed; model consumption after the expiry error remains unverified.
+
 ## Troubleshooting and other machines
 
 - MCP connected is not hook activation. Install the hook on the agent client machine.
