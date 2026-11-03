@@ -1,5 +1,8 @@
 # Agent memory (Oracle AI Agent Memory)
 
+[Application-owned tables vs Agent Memory: storage, keys, search and proposed v3](storage-backends.en.md)
+
+
 The user-facing feature is **agent memory**: experiences, preferences and previous work memories. SDK refers to the development library used to connect it, not the name of a memory category.
 
 ## What does Agent Memory search?

@@ -320,6 +320,8 @@ The Korean model is not an Oracle SDK default: our `IEmbedder` bridge injects th
 
 ### Understanding Agent Memory storage and retrieval
 
+**Compared with application-owned tables:** both use Oracle tables. Current business knowledge uses vector+LIKE retrieval; the Agent Memory integration uses vector retrieval. See [tables, keys, search modes and the proposed v3](docs/guides/storage-backends.en.md). v3 is a unification proposal; the current release remains v2.
+
 Agent Memory can separate stored **content**, embedded **retrieval text**, and structured **JSON metadata filters**.
 Metadata values are not automatically part of semantic search. The current MCP limits text to 12,000 characters
 and does not expose arbitrary metadata or custom retrieval chunks. An isolated SDK experiment round-tripped

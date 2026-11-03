@@ -1,5 +1,8 @@
 # Agent Memory 연결과 웹 조회
 
+[직접 테이블 구현과 비교 · 저장 위치/키/검색 방식 · v3 제안](storage-backends.md)
+
+
 사용자에게 보여주는 기능명은 **에이전트 메모리 (Oracle AI Agent Memory)**입니다. SDK는 이 기능에 연결하는 개발 도구를 뜻하며, 아래 구현·설치 설명에서만 사용합니다.
 
 2026-11-02 구현 범위: 선택적 Oracle AI Agent Memory SDK 26.8.0 어댑터,
