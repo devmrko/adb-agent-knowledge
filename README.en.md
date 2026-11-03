@@ -16,12 +16,12 @@ MIT covers this project's code, not every model or dependency.
 
 ## Current setup at a glance (2026-11-03)
 
-Latest migration: **vk0014**. API/MCP + embeddings + Kev provide the base service. SDK agent memory, RDF and Property Graph require their own optional setup. MCP registration alone does not activate prompt hooks. Install the client hook separately, then manage approved principles in the web UI.
+Latest migration: **vk0014**. API/MCP + embeddings + Kev provide the base service. Agent Memory, RDF and Property Graph require their own optional setup. MCP registration alone does not activate prompt hooks. Install the client hook separately, then manage approved principles in the web UI.
 
 | Store / setting | Purpose | Update path |
 |---|---|---|
 | Knowledge | Documents, summaries, source revisions and relationships | MCP/API |
-| Optional SDK memory | Agent experiences and memory relationships | MCP/API |
+| Agent memory (Oracle AI Agent Memory, optional) | Agent experiences and memory relationships | MCP/API |
 | User principles | Approved behavior preferences on every enabled hook invocation | Authenticated web editor/API |
 
 [Memory hook](docs/guides/required-memory-hook.en.md) · [User principles](docs/guides/user-principles.en.md) · [Current status and rollout](docs/reference/current-status.md)
@@ -285,11 +285,11 @@ production JWT/HTTPS or Kev benchmark. [Detailed guide](docs/guides/runtime-inst
 
 The web displays knowledge, relations and clarification records read-only. Submit knowledge answers and data changes through MCP. User principles are a separate editable configuration in the web UI.
 
-### Optional Oracle Agent Memory
+### Agent memory (Oracle AI Agent Memory)
 
-An opt-in SDK adapter stores agent experiences separately from business knowledge. The web UI provides separate memory and knowledge views. Install the agent-memory extra, run Alembic and scripts.setup_agent_memory, then enable AGENT_MEMORY_ENABLED. No generation LLM or automatic migration of existing notes is required. Exact knowledge-revision references, stale-evidence review tasks and SDK memory graph visualization are supported. Links require semantic confirmation by the calling agent; there is no automatic truth resolution. See [setup and scope](docs/guides/agent-memory.en.md).
+Agent memory stores experiences, preferences and previous work memories separately from business knowledge. This optional feature connects through the Oracle AI Agent Memory SDK. The web UI provides separate memory and knowledge views. Install the agent-memory extra, run Alembic and scripts.setup_agent_memory, then enable AGENT_MEMORY_ENABLED. No generation LLM or automatic migration of existing notes is required. Exact knowledge-revision references, stale-evidence review tasks and memory graph visualization are supported. Links require semantic confirmation by the calling agent; there is no automatic truth resolution. See [setup and scope](docs/guides/agent-memory.en.md).
 
-The Korean model is not an Oracle SDK default: our `IEmbedder` bridge injects the application embedding provider. See [SDK vs. embedding responsibilities](docs/guides/agent-memory.en.md).
+The Korean model is not an Oracle SDK default: our `IEmbedder` bridge injects the application embedding provider. See [Agent memory and embedding responsibilities](docs/guides/agent-memory.en.md).
 
 
 ## MCP tool profiles
@@ -297,7 +297,7 @@ The Korean model is not an Oracle SDK default: our `IEmbedder` bridge injects th
 Default core exposes **17 tools**: 16 everyday tools plus knowledge_tools.
 Call knowledge_tools(profile="memory" | "graph" | "organize" | "operations") when a follow-up needs more tools.
 The selected group replaces the previous optional group; it does not accumulate. After a temporary switch, restore the profile active before the task unless the user chose a new default. Do not assume core: deployments may start in memory (22 tools). Explicitly pass the intended profile to knowledge_tools; its omitted argument defaults to core. The deployment setting and a temporary connection switch are distinct.
-- memory: SDK profiles, evidence attachment and memory relationships (22 tools total).
+- memory: agent profiles, evidence attachment and memory relationships (22 tools total).
 - graph: business relationship preparation, identities, authoring and review (31 total).
 - organize: indexes, guided capture and URL import (28 total).
 - operations: change reviews, retirement/restoration and service extraction operations (29 total).

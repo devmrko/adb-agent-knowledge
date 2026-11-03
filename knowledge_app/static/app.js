@@ -678,16 +678,16 @@ function renderMemoryGraph(graph){
   const pair=element("div","");pair.className="memory-relation-pair";
   const relation=element("div","");relation.className="memory-relation-label";
   relation.append(element("span","→"),element("strong",memoryRelationLabel(edge.relation)));
-  relation.title="SDK 관계: "+edge.relation+" · 방향과 상태는 SDK 기록을 그대로 표시합니다.";
+  relation.title="기억 간 관계: "+edge.relation+" · 방향과 상태는 에이전트 메모리 기록을 그대로 표시합니다.";
   pair.append(memoryNodeCard(a),relation,memoryNodeCard(b));row.append(pair);
   row.append(element("p","연결 이유: "+(edge.reason || "기록되지 않음")));
-  const raw=element("details","");raw.className="memory-sdk-details";raw.append(element("summary","SDK 기록"));
+  const raw=element("details","");raw.className="memory-sdk-details";raw.append(element("summary","메모리 기록 상세"));
   raw.append(element("pre",edge.source+" → "+edge.relation+" → "+edge.target+"\n"+a.status+" → "+b.status));row.append(raw);
   $("memory-edges").append(row);
  }
  const details=element("details","");details.className="memory-overview";
  details.append(element("summary","전체 연결 펼쳐 보기 · "+graph.nodes.length+"개 기억"));
- const help=element("p","번호는 아래의 전체 제목과 대응합니다. 화살표는 SDK에 저장된 관계 방향입니다.");details.append(help);
+ const help=element("p","번호는 아래의 전체 제목과 대응합니다. 화살표는 에이전트 메모리에 저장된 관계 방향입니다.");details.append(help);
  const ns="http://www.w3.org/2000/svg",svg=document.createElementNS(ns,"svg"),height=Math.max(160,graph.nodes.length*65);
  svg.setAttribute("viewBox","0 0 560 "+height);svg.setAttribute("role","img");svg.setAttribute("aria-label","기억 관계 전체 지도. 번호별 제목은 아래 목록에 표시합니다.");
  const defs=document.createElementNS(ns,"defs"),marker=document.createElementNS(ns,"marker"),arrow=document.createElementNS(ns,"path");

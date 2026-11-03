@@ -9,12 +9,12 @@
 | 기본 관계 추출 | agent 모드: Codex·Claude가 추출. 선택적 service 모드만 별도 생성 모델 사용 |
 | 임베딩 | 기본 한국어 1024차원 모델을 API/worker 머신에서 실행. 원격 OpenAI 호환 제공자 선택 가능 |
 | Kev | 별도 로컬/원격 판단 서비스. 조회·저장·탐색 경로 판단, 사실 확정/벡터 생성 아님 |
-| DB 마이그레이션 | 최신 vk0014. RDF·Property Graph·SDK 저장소는 선택 기능별 별도 초기화 |
+| DB 마이그레이션 | 최신 vk0014. RDF·Property Graph·Agent Memory 저장소는 선택 기능별 별도 초기화 |
 | MCP 도구 | core17 / memory22 / graph31 / organize28 / operations29 / full64 |
 | 매 요청 훅 | 클라이언트별 설치 필요. 원칙 정확 조회 + Kev 판단 + 필요한 기억 조회, 쓰기 없음 |
 | 사용자 원칙 | Oracle의 별도 사용자 설정·이력. 웹에서 승인·관리, Kev skip에도 훅이 전달 |
 | 웹 지식/메모리 | 조회 전용. 원문·관계 변경은 MCP/API. 원칙 설정만 웹 편집 허용 |
-| SDK 메모리 | 선택적 Oracle Agent Memory. 업무 문서·사용자 원칙과 구분 |
+| 에이전트 메모리 | 선택적 Oracle Agent Memory. 업무 문서·사용자 원칙과 구분 |
 
 ## 새 설치·업데이트
 
@@ -22,7 +22,7 @@
 2. 기존 운영 DB는 쓰기 프로세스와 적용 범위를 확인한 뒤 `./.venv/bin/alembic upgrade head`를 실행합니다.
    신규 시작은 `./scripts/run_knowledge.sh --migrate`도 지원합니다. Oracle DDL은 자동 커밋입니다.
 3. 같은 버전의 API·worker를 시작하고 MCP 연결을 새 코드로 재연결합니다.
-4. 사용하는 기능만 RDF / Property Graph / SDK 초기화와 설정을 적용합니다. 이미 있는 네임스페이스를 무조건 재생성하지 않습니다.
+4. 사용하는 기능만 RDF / Property Graph / Agent Memory 초기화와 설정을 적용합니다. 이미 있는 네임스페이스를 무조건 재생성하지 않습니다.
 5. 에이전트 클라이언트에서 스킬과 훅을 업데이트합니다. 서버가 먼저 원칙 응답을 지원해야 합니다.
 6. 클라이언트별 신뢰/활성화를 확인하고 실제 요청의 check_id와 principle_version을 검사합니다.
 7. 웹에서 원칙을 불러와 승인·수정합니다. 새 계정은 빈 목록이며 기본 6개도 초안 추가 후 승인해야 합니다.
@@ -43,7 +43,7 @@
 
 ## English summary
 
-Current schema head is vk0014; product version remains v2 preview 0.2.0. Knowledge, optional SDK memories,
+Current schema head is vk0014; product version remains v2 preview 0.2.0. Knowledge, optional agent memories,
 and user-approved principles have distinct purposes. Principles are exact owner configuration, not vector
 hits. The client hook always resolves them, including on Kev skip; MCP registration alone does not install
 or activate hooks. Update the server/migrations first, restart API and reconnect MCP, then update client

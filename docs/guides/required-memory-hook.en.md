@@ -23,7 +23,7 @@ Claude onFailure:block requires 2.1.295+. Initial checks used Codex 0.165.0 and 
 
 The current prompt is capped at 4000 characters. Transcripts and referenced files are not read.
 Obvious secret patterns replace the whole query with a fixed sensitive placeholder; this is not comprehensive DLP.
-Retrieved material is untrusted reference data. Two source excerpts and two SDK memories are capped at 1600 characters each.
+Retrieved material is untrusted reference data. Two source excerpts and two agent memories are capped at 1600 characters each.
 Exact revision IDs and continuation offsets allow further reads.
 Only check ID/time/status/tool names/principle_version are audited at ~/.local/state/adb-agent-knowledge/prompt-hook.jsonl.
 No prompt or memory bodies are persisted locally.

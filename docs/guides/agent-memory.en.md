@@ -1,4 +1,8 @@
-# Oracle Agent Memory SDK and embedding responsibilities
+# Agent memory (Oracle AI Agent Memory)
+
+The user-facing feature is **agent memory**: experiences, preferences and previous work memories. SDK refers to the development library used to connect it, not the name of a memory category.
+
+## SDK integration and embedding responsibilities
 
 The Korean embedding model is **not a built-in default supplied by Oracle Agent Memory SDK**.
 This project implements the SDK's `IEmbedder` interface as `Bridge`, passes it to
@@ -20,7 +24,7 @@ Verified deployment on 2026-11-02: local provider,
 `dragonkue/snowflake-arctic-embed-l-v2.0-ko`, 1024 dimensions, CPU in the Knowledge API
 process on A10, SDK store `AKMEMORY`. These are **our deployment settings**, not fixed SDK defaults.
 The model does not run inside Oracle or automatically on the Codex/Claude client.
-SDK-memory embedding is synchronous in the API; existing business-document ingestion uses its
+Agent-memory embedding is synchronous in the API; existing business-document ingestion uses its
 separate asynchronous worker. Sharing embedding configuration does not merge their storage.
 
 The adapter preserves SDK `is_query` as the application embedder's `query` flag.
@@ -39,4 +43,4 @@ For setup, tools and limits, see [the detailed guide](agent-memory.md).
 
 memory_rename corrects title metadata only, with memory_id, expected_title, title and reason. It preserves SDK content, embeddings, relationships and validity. Ownership is checked; conflicting titles return a conflict. The last 20 title changes are kept in metadata, not as full content revisions. Same-target retries are idempotent.
 
-The read-only web shows full wrapping titles in relationship cards. Expand the numbered overview for topology and SDK details for raw relation/state values. This does not change Oracle SDK semantics.
+The read-only web shows full wrapping titles in relationship cards. Expand the numbered overview for topology and memory record details for raw relation/state values. This does not change Oracle SDK semantics.

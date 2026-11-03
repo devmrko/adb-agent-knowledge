@@ -1,8 +1,10 @@
 # Agent Memory 연결과 웹 조회
 
+사용자에게 보여주는 기능명은 **에이전트 메모리 (Oracle AI Agent Memory)**입니다. SDK는 이 기능에 연결하는 개발 도구를 뜻하며, 아래 구현·설치 설명에서만 사용합니다.
+
 2026-11-02 구현 범위: 선택적 Oracle AI Agent Memory SDK 26.8.0 어댑터,
 MCP 저장·검색·프로필 이름 변경, 웹의 전체/에이전트 메모리/업무 지식/관계 그래프 구분.
-기존 지식은 자동 이전되지 않으며 memory_kind 분류만으로 SDK 기억으로 간주하지 않는다.
+기존 지식은 자동 이전되지 않으며 memory_kind 분류만으로 에이전트 기억으로 간주하지 않는다.
 
 
 ## Oracle SDK와 임베딩 구현의 역할
@@ -48,7 +50,7 @@ SDK 자동 생성형 기억 추출은 `extract_memories=False`로 꺼져 있다.
 - SDK 저장소: `AGENT_MEMORY_STORE_ID=AKMEMORY`
 
 이는 **우리 배포 설정**이며 Oracle SDK의 고정 모델·기본 실행 위치가 아니다.
-SDK 기억 임베딩은 현재 API 요청에서 동기 처리된다. 기존 업무 지식의 비동기 임베딩
+에이전트 기억 임베딩은 현재 API 요청에서 동기 처리된다. 기존 업무 지식의 비동기 임베딩
 워커와 구분해야 한다. 두 경로가 모델 설정을 공유해도 본문·벡터 저장소는 별도다.
 모델은 Oracle DB 내부나 Codex·Claude 클라이언트에서 자동 실행되지 않는다.
 
@@ -132,7 +134,7 @@ memory_references는 기억→지식 또는 지식→기억을 페이지 조회�
 원문 변경·은퇴는 조회 시 REVIEW_REQUIRED로 즉시 구분되고 기존 outbox가
 MEMORY_EVIDENCE 재검토 항목을 생성한다. 예전 연결은 지우지 않는다.
 새 원문을 확인해 새 근거 연결을 추가하고 기존 검토 항목을 이유와 함께 해결한다.
-이 과정은 SDK 기억의 내용을 자동 수정하거나 상충 주장의 승자를 결정하지 않는다.
+이 과정은 에이전트 기억의 내용을 자동 수정하거나 상충 주장의 승자를 결정하지 않는다.
 재검토 항목 해결만으로 오래된 근거가 CURRENT가 되지 않는다.
 
 memory_link로 두 기억을 supports/contradicts/supersedes/refines/duplicates로 연결한다.
@@ -148,7 +150,7 @@ knowledge_recall도 graph_mode=always 또는 Kev가 그래프를 선택했을 �
 이 기능의 자동 연결은 MCP 호출 에이전트가 후보를 검토하고 도구를 실행하는 방식이며,
 별도 서비스 LLM이나 무조건적인 유사도 병합을 추가하지 않았다.
 
-추가 마이그레이션: vk0013 (vk_memory_evidence). SDK 기억 본문은 복사하지 않는다.
+추가 마이그레이션: vk0013 (vk_memory_evidence). 에이전트 기억 본문은 복사하지 않는다.
 SDK 스키마의 직접 수정·외부 삭제를 자동 복구하는 기능은 제공하지 않는다.
 
 ### SDK 통합 테스트 재현
@@ -167,4 +169,4 @@ SDK 스키마의 직접 수정·외부 삭제를 자동 복구하는 기능은 �
 
 memory_rename corrects title metadata only, with memory_id, expected_title, title and reason. It preserves SDK content, embeddings, relationships and validity. Ownership is checked; conflicting titles return a conflict. The last 20 title changes are kept in metadata, not as full content revisions. Same-target retries are idempotent.
 
-The read-only web shows full wrapping titles in relationship cards. Expand the numbered overview for topology and SDK details for raw relation/state values. This does not change Oracle SDK semantics.
+The read-only web shows full wrapping titles in relationship cards. Expand the numbered overview for topology and memory record details for raw relation/state values. This does not change Oracle SDK semantics.

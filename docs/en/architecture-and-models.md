@@ -154,4 +154,4 @@ source READY alone does not create relationships or complete the review ledger.
 
 ## Approved user principles
 
-The API stores owner-approved configuration and revisions in Oracle, separately from vectors and SDK memories. The web edits it with existing session/CSRF authentication. A client hook always resolves active scoped rules, even on Kev skip, and presents them separately from untrusted sources. No extra inference model or MCP tool is required. See [user principles](../guides/user-principles.en.md).
+The API stores owner-approved configuration and revisions in Oracle, separately from vectors and agent memories. The web edits it with existing session/CSRF authentication. A client hook always resolves active scoped rules, even on Kev skip, and presents them separately from untrusted sources. No extra inference model or MCP tool is required. See [user principles](../guides/user-principles.en.md).

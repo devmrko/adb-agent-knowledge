@@ -5,7 +5,7 @@
 Default core exposes **17 tools**: 16 everyday tools plus knowledge_tools.
 Call knowledge_tools(profile="memory" | "graph" | "organize" | "operations") when a follow-up needs more tools.
 The selected group replaces the previous optional group; it does not accumulate. After a temporary switch, restore the profile active before the task unless the user chose a new default. Do not assume core: deployments may start in memory (22 tools). Explicitly pass the intended profile to knowledge_tools; its omitted argument defaults to core. The deployment setting and a temporary connection switch are distinct.
-- memory: SDK profiles, evidence attachment and memory relationships (22 tools total).
+- memory: agent profiles, evidence attachment and memory relationships (22 tools total).
 - graph: business relationship preparation, identities, authoring and review (31 total).
 - organize: indexes, guided capture and URL import (28 total).
 - operations: change reviews, retirement/restoration and service extraction operations (29 total).

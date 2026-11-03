@@ -2,7 +2,7 @@
 
 ## 현재 상태와 최근 기능
 
-[현재 구성·배포·검증 범위](reference/current-status.md) · [매 요청 기억 확인 훅](guides/required-memory-hook.md) · [웹 사용자 원칙](guides/user-principles.md) · [SDK 에이전트 메모리](guides/agent-memory.md) · [MCP 도구 묶음](guides/mcp-tool-profiles.md)
+[현재 구성·배포·검증 범위](reference/current-status.md) · [매 요청 기억 확인 훅](guides/required-memory-hook.md) · [웹 사용자 원칙](guides/user-principles.md) · [에이전트 메모리](guides/agent-memory.md) · [MCP 도구 묶음](guides/mcp-tool-profiles.md)
 
 [English documentation](en/README.md) · [English README](../README.en.md)
 
@@ -50,7 +50,7 @@ MCP 기본 등록명은 `adb_agent_knowledge`이고 설치 시 선택할 수 있
 
 ## 최근 설계
 
-- [SDK 에이전트 메모리](design/0034-agent-memory-integration/design.md)
+- [에이전트 메모리](design/0034-agent-memory-integration/design.md)
 - [기억 근거와 관계](design/0035-memory-evidence-graph/design.md)
 - [필수 기억 확인 훅](design/0038-required-memory-hook/design.md)
 - [사용자 원칙](design/0039-user-principles/design.md)

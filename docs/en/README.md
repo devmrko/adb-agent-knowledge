@@ -2,7 +2,7 @@
 
 ## Current status and recent capabilities
 
-[Status and rollout](../reference/current-status.md) · [Prompt hook](../guides/required-memory-hook.en.md) · [User principles](../guides/user-principles.en.md) · [SDK agent memory](../guides/agent-memory.en.md) · [Tool profiles](../guides/mcp-tool-profiles.md)
+[Status and rollout](../reference/current-status.md) · [Prompt hook](../guides/required-memory-hook.en.md) · [User principles](../guides/user-principles.en.md) · [Agent Memory](../guides/agent-memory.en.md) · [Tool profiles](../guides/mcp-tool-profiles.md)
 
 [Project README](../../README.en.md) · [한국어 문서](../README.md)
 
