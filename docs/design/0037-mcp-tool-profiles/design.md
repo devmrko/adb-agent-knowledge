@@ -21,3 +21,6 @@ Preserve annotations/schemas on re-registration. Switching back to core removes 
 Tests cover switch/restore, notification, repeated requests, invalid profiles and real stdio handshake.
 
 Validation outcome: 278 tests passed; ruff/format/mypy passed. Real stdio initialization advertised listChanged; six task-profile switches sent six notifications and exposed expected tool counts. Codex/Claude UI refresh remains client-dependent and unverified.
+
+## 2026-11-03: Preserve the selected working profile
+Guidance now restores the pre-task profile after temporary tool selection, unless the user selected a new default. Core is not a universal return target. Explicitly pass the target; the existing omitted-argument default remains core. The a10-test deployment uses memory (22) as its startup configuration. No tool schemas or profile-switch behavior change in this documentation correction.

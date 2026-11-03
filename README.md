@@ -448,7 +448,7 @@ SDK가 한국어 임베딩 모델을 내장한 것은 아닙니다. 이 프로�
 
 Default core exposes **17 tools**: 16 everyday tools plus knowledge_tools.
 Call knowledge_tools(profile="memory" | "graph" | "organize" | "operations") when a follow-up needs more tools.
-The selected group replaces the previous optional group; it does not accumulate. Return to core after the task.
+The selected group replaces the previous optional group; it does not accumulate. After a temporary switch, restore the profile active before the task unless the user chose a new default. Do not assume core: deployments may start in memory (22 tools). Explicitly pass the intended profile to knowledge_tools; its omitted argument defaults to core. The deployment setting and a temporary connection switch are distinct.
 - memory: SDK profiles, evidence attachment and memory relationships (22 tools total).
 - graph: business relationship preparation, identities, authoring and review (31 total).
 - organize: indexes, guided capture and URL import (28 total).
