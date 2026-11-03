@@ -111,3 +111,9 @@ input[type="checkbox"] { min-height: auto; accent-color: var(--accent); }
 #principles-panel input:not([type=checkbox]){display:block;max-width:100%;width:36rem;box-sizing:border-box}
 #principles-panel pre{white-space:pre-wrap;overflow-wrap:anywhere}
 #principles-panel button{margin:4px}
+
+.sql-guide { scroll-margin-top: 1rem; }
+.sql-guide details { margin: .8rem 0; padding: .7rem; border: 1px solid #d5d9dc; border-radius: 4px; }
+.sql-guide summary { cursor: pointer; font-weight: 600; }
+.sql-guide pre { overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 1rem; background: #f4f5f6; color: #20252a; line-height: 1.6; }
+.sql-guide p { line-height: 1.7; }

@@ -800,3 +800,10 @@ $("principles-preview-scope").addEventListener("input",principlePreview);
 $("principles-history-load").addEventListener("click",()=>principleHistory(true));
 $("principles-history-more").addEventListener("click",()=>principleHistory(false));
 window.addEventListener("beforeunload",event=>{if(principleDirty){event.preventDefault();event.returnValue="";}});
+
+$("sql-guide-toggle").addEventListener("click",()=>{
+ const panel=$("sql-guide"), open=panel.hidden;
+ panel.hidden=!open;
+ $("sql-guide-toggle").setAttribute("aria-expanded",String(open));
+ if(open)panel.scrollIntoView({block:"start"});
+});

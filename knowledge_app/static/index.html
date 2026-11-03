@@ -2,7 +2,7 @@
 <html lang="ko">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Agent Knowledge for Oracle ADB · 지식 노트</title><link rel="stylesheet" href="/knowledge-assets/common.css"><link rel="stylesheet" href="/knowledge-assets/style.css"><script defer src="/knowledge-assets/app.js"></script></head>
 <body>
-<header class="app-header"><a class="brand" href="/knowledge">지식 노트</a><div class="header-tools"><span id="connection">연결 전</span><div id="connected" hidden><button id="disconnect">로그아웃</button></div></div></header>
+<header class="app-header"><a class="brand" href="/knowledge">지식 노트</a><div class="header-tools"><button id="sql-guide-toggle" type="button" aria-expanded="false" aria-controls="sql-guide">SQL · 처리 흐름</button><span id="connection">연결 전</span><div id="connected" hidden><button id="disconnect">로그아웃</button></div></div></header>
 <main class="page-content">
 <div class="breadcrumb">작업공간 / 지식 노트</div>
 <form id="connect-form"><label for="token">API 키</label><input id="token" type="password" autocomplete="off" required><button>연결</button></form>
@@ -16,6 +16,115 @@
 <details><summary>적용 문구 미리보기</summary><label>프로젝트 범위<input id="principles-preview-scope" placeholder="project:example"></label><pre id="principles-preview"></pre></details>
 <details><summary>변경 이력</summary><button id="principles-history-load" type="button">이력 불러오기</button><div id="principles-history"></div><button id="principles-history-more" type="button" hidden>다음 이력</button></details>
 </details>
+<section id="sql-guide" class="panel sql-guide" hidden aria-labelledby="sql-guide-title">
+<h2 id="sql-guide-title">SQL · 처리 흐름</h2>
+<p>각 기능이 어디에서 실행되고 무엇을 저장·조회하는지 설명합니다. SQL은 설명용 예제이며 방금 실행한 요청의 SQL 로그가 아닙니다. 이 화면은 SQL을 실행하지 않습니다.</p>
+<p>SQL은 권한 있는 DB 도구(SQLcl·Database Actions 등)에서 바인드 값을 지정해 사용합니다. DB 직접 접근에는 앱의 사용자 인증이 자동 적용되지 않습니다. 실제 사용자 ID·비밀번호·벡터를 이 안내에 표시하지 않습니다.</p>
+<details><summary>업무 지식 · 목록과 원문 조회</summary><p>Oracle에서 실행하는 설명용 SQL입니다. :owner_id는 앱이 인증 주체에서 계산한 소유자 ID이며 API 키나 DB 사용자명이 아닙니다. :scope는 project:example 같은 범위입니다.</p><pre><code>SELECT i.id, i.title, i.scope, r.id AS revision_id,
+       r.summary_text, r.content_text
+FROM vk_item i
+JOIN vk_revision r
+  ON r.id = i.active_revision_id AND r.owner_id = i.owner_id
+WHERE i.owner_id = :owner_id AND i.scope = :scope
+  AND i.lifecycle_status = &#x27;ACTIVE&#x27;
+ORDER BY i.created_at DESC
+FETCH FIRST 20 ROWS ONLY;</code></pre><p class="flow-help">구현 근거: knowledge_app/models.py · repository.py</p></details>
+<details><summary>업무 지식 · 벡터 검색</summary><p>API/임베딩 서버가 질의를 벡터로 만든 뒤 Oracle이 거리를 계산합니다. :query_vector는 같은 임베딩 프로필의 VECTOR 바인드입니다. 아래는 벡터 후보 조회만 보여줍니다. 실제 하이브리드 검색은 키워드 후보도 조회하고 API에서 순위를 합칩니다. Oracle Text/BM25가 아닙니다.</p><pre><code>SELECT i.id, i.title, c.id AS chunk_id,
+       VECTOR_DISTANCE(c.embedding, :query_vector, COSINE) AS distance
+FROM vk_chunk c
+JOIN vk_revision r ON r.id = c.revision_id AND r.owner_id = c.owner_id
+JOIN vk_item i ON i.id = r.item_id AND i.owner_id = r.owner_id
+WHERE c.owner_id = :owner_id AND c.profile_id = :profile_id
+  AND i.active_revision_id = r.id AND i.lifecycle_status = &#x27;ACTIVE&#x27;
+  AND i.scope = :scope
+ORDER BY distance, c.id
+FETCH FIRST 100 ROWS ONLY;
+
+-- MCP 호출 예시 (SQL이 아닙니다)
+knowledge_recall(request={&quot;text&quot;:&quot;배포 절차&quot;, &quot;scopes&quot;:[&quot;project:example&quot;], &quot;top_k&quot;:5})</code></pre><p class="flow-help">구현 근거: knowledge_app/repository.py:candidates · embedding.py · navigation.py</p></details>
+<details><summary>업무 지식 · 저장과 변경</summary><p>Codex·Claude가 저장 대상을 선택하고 MCP → API로 요청합니다. API는 원문·버전·작업을 기록하고 워커가 청크와 벡터를 저장합니다. QUEUED는 접수이며 READY를 확인해야 합니다. 직접 INSERT 한 번으로 이 흐름을 대신할 수 없습니다.</p><pre><code># MCP 호출 예시 — 실행하면 데이터가 저장됩니다
+knowledge_save(title=&quot;배포 절차&quot;, text=&quot;확인한 원문 내용&quot;,
+  scope=&quot;project:example&quot;, memory_kind=&quot;PROCEDURE&quot;,
+  idempotency_key=&quot;example-deploy-v1&quot;)
+knowledge_job_status(job_id=&quot;&lt;반환된 job_id&gt;&quot;)
+
+# 수정 전 knowledge_get_content / knowledge_history로 원문과 버전 확인
+knowledge_revise(knowledge_id=&quot;&lt;지식 ID&gt;&quot;,
+  expected_revision_id=&quot;&lt;최신 버전 ID&gt;&quot;,
+  text=&quot;기존 유효 내용까지 포함한 전체 수정 원문&quot;, change_note=&quot;변경 이유&quot;)
+
+API: POST /api/v1/knowledge
+Oracle: vk_item → vk_revision → vk_job
+임베딩 워커: 원문 청크 → 임베딩 → vk_chunk
+이력: 원문 버전 보존 + 설정된 변경 추적/후속 검토</code></pre><p class="flow-help">구현 근거: knowledge_app/mcp_server.py · service.py · worker.py · migrations/</p></details>
+<details><summary>에이전트 메모리 · SQL 조회</summary><p>SQL로 조회할 수 있습니다. 아래 AKMEMORY는 AGENT_MEMORY_STORE_ID=AKMEMORY인 설치 예입니다. 다른 설치는 접두사를 확인하세요. :owner_id는 앱의 인증 소유자 ID입니다. 상태를 임의로 현재 사실로 해석하지 않도록 함께 표시합니다.</p><pre><code>SELECT record_id, memory_type, content, status,
+       JSON_VALUE(metadata, &#x27;$.title&#x27;) AS title,
+       JSON_VALUE(metadata, &#x27;$.scope&#x27;) AS scope,
+       agent_id, thread_id, created_at
+FROM AKMEMORY_MEMORY
+WHERE user_id = :owner_id
+ORDER BY created_at DESC
+FETCH FIRST 20 ROWS ONLY;
+
+SELECT relation_id, source_memory_id, relation_type, target_memory_id
+FROM AKMEMORY_MEMORY_LINK
+WHERE source_memory_user_id = :owner_id
+  AND target_memory_user_id = :owner_id
+FETCH FIRST 50 ROWS ONLY;
+
+-- 벡터는 AKMEMORY_RECORD_CHUNKS.EMBEDDING에 있습니다.
+-- 객체 구조 확인 (앱 스키마로 접속)
+SELECT table_name, column_name, data_type
+FROM user_tab_columns
+WHERE table_name LIKE &#x27;AKMEMORY%&#x27;
+ORDER BY table_name, column_id;</code></pre><p class="flow-help">구현 근거: Oracle Agent Memory 26.8.0 운영 스키마 확인 · agent_memory_repository.py</p></details>
+<details><summary>에이전트 메모리 · 저장과 검색 호출</summary><p>MCP → API → Oracle Agent Memory → Oracle 순서입니다. API가 연결한 임베딩 모델을 Agent Memory도 사용합니다. SDK는 구현 라이브러리이고 저장 장소는 Oracle입니다. SQL DML 자체는 DB 권한으로 가능하지만 본문만 수정하면 임베딩·관계·앱 근거가 어긋날 수 있습니다. 현재 앱은 본문 수정·삭제 도구를 제공하지 않습니다.</p><pre><code># MCP: memory_save(memory=...) / memory_search(request=...)
+# 아래는 API 내부 Python 호출의 핵심 발췌이며 독립 실행 예제는 아닙니다.
+client.add_memory(text, memory_type=memory_type,
+  memory_id=record_id, user_id=owner_id, metadata=metadata,
+  autonomous_linking=False)
+client.search(query, user_id=owner_id,
+  max_results=100, record_types=record_types,
+  include_invalid_results=False, num_hops=0)
+
+Oracle 객체:
+AKMEMORY_MEMORY        기억 본문·상태·메타데이터
+AKMEMORY_RECORD_CHUNKS 청크·임베딩
+AKMEMORY_MEMORY_LINK   기억 간 관계
+vk_memory_evidence    업무 지식의 정확한 원문 버전과 연결</code></pre><p class="flow-help">구현 근거: knowledge_app/agent_memory_service.py · agent_memory_repository.py</p></details>
+<details><summary>업무 관계 · SQL Property Graph와 RDF</summary><p>업무 관계 기준은 vk_g_* 테이블입니다. Property Graph는 그 테이블의 View 위에서 후보를 찾습니다. 아래 SQL 결과만으로 현재 유효한 관계를 확정하지 않습니다. API가 소유권·범위·업무/기록 시점·원문 근거와 RDF 표현을 추가 확인합니다. Agent Memory의 기억 관계 그래프와 별개입니다.</p><pre><code>SELECT version_id, source_id, target_id
+FROM GRAPH_TABLE (VK_KNOWLEDGE_GRAPH
+  MATCH (s IS entity)-[e IS relation]-&gt;(t IS entity)
+  WHERE e.owner_id = :owner_id
+  COLUMNS (e.id AS version_id, s.id AS source_id, t.id AS target_id)
+)
+WHERE source_id = :entity_id OR target_id = :entity_id;
+
+-- RDF: :g는 해당 소유자·관계 버전으로 만든 정확한 named graph 식별자
+SELECT t.TRIPLE.GET_SUBJECT(USER,&#x27;VK_FLOW_RDF&#x27;) AS subject,
+       t.TRIPLE.GET_PROPERTY(USER,&#x27;VK_FLOW_RDF&#x27;) AS predicate,
+       t.TRIPLE.GET_OBJ_VALUE(USER,&#x27;VK_FLOW_RDF&#x27;) AS object_value
+FROM &quot;VK_FLOW_RDF#RDFT_VK_SHARED&quot; t
+WHERE t.TRIPLE.GET_MODEL(USER,&#x27;VK_FLOW_RDF&#x27;) = :g
+FETCH FIRST 301 ROWS ONLY;
+
+-- 관계 등록은 MCP knowledge_graph_assert(assertion=...) 사용
+-- API가 기준 테이블과 RDF를 함께 기록합니다.
+-- 초기화: python -m scripts.prepare_knowledge_rdf
+-- 선택적 Graph 생성: python -m scripts.setup_property_graph --apply</code></pre><p class="flow-help">구현 근거: knowledge_app/graph_repository.py · shared_rdf.py · docs/guides/oracle-graph-examples.md</p></details>
+<details><summary>사용자 원칙 · 항상 읽는 설정</summary><p>원칙은 벡터 검색 결과가 아니라 사용자 승인 설정입니다. 프롬프트 훅 → API가 범위에 맞는 원칙을 읽습니다. 웹에서 승인 저장하면 버전 검사와 이력 저장을 함께 수행합니다.</p><pre><code>SELECT version, rules_json, updated_at
+FROM vk_principle_bundle
+WHERE owner_id = :owner_id;
+
+SELECT version, change_note, created_at
+FROM vk_principle_revision
+WHERE owner_id = :owner_id
+ORDER BY version DESC;
+
+GET  /api/v1/principles          현재 설정
+PUT  /api/v1/principles          승인된 변경 + expected_version
+POST /api/v1/principles/resolve  요청 범위에 맞는 활성 원칙
+GET  /api/v1/principles/history  변경 이력</code></pre><p class="flow-help">구현 근거: knowledge_app/principles.py · scripts/memory_prompt_hook.py</p></details></section>
 <nav id="store-tabs" class="note-tabs" aria-label="저장소 종류"><button data-store="all" aria-pressed="false">전체</button><button data-store="memory" aria-pressed="false">에이전트 메모리</button><button data-store="knowledge" aria-pressed="true">업무 지식</button><button data-store="graph" aria-pressed="false">관계 그래프</button></nav>
 <form id="search-form" class="panel"><label class="sr-only" for="query">지식 검색</label><input id="query" type="search" maxlength="2000" placeholder="저장된 지식 검색"><button id="search-button" class="primary">검색</button><button id="browse" type="button">전체 목록</button><button id="search-graph" type="button">관련 그래프</button><details><summary>검색 조건</summary><div class="filters"><label>범위<input id="scope" placeholder="전체 · project:vector_knowledge" maxlength="108"></label><label>종류<select id="kind"><option value="">전체</option><option value="DOCUMENT">문서</option><option value="DECISION">결정</option><option value="PREFERENCE">선호</option><option value="FACT">사실</option><option value="PROCEDURE">절차</option><option value="EPISODE">경험</option></select></label></div></details></form>
 <p id="status" role="status" aria-live="polite">저장소에 연결하는 중…</p>
