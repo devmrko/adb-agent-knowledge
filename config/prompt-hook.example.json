@@ -1,0 +1,9 @@
+{
+  "mcp_command": [
+    "/absolute/path/to/adb-agent-knowledge/scripts/run_configured_knowledge_mcp.sh"
+  ],
+  "timeout_seconds": 35,
+  "scope_roots": {
+    "/absolute/path/to/your/project": "project:your-confirmed-project-key"
+  }
+}

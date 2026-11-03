@@ -466,3 +466,6 @@ Core recall still returns bounded graph/memory results. Switch to the relevant p
 or index memberships; never claim unavailable follow-up work completed. Selective automatic storage permission
 still applies; changing the tool catalog neither writes knowledge nor grants permissions.
 Do not register all profiles at once. Existing tool names, HTTP endpoints and stored records are unchanged.
+
+
+[Required pre-response memory MCP hook / 답변 전 기억 확인 훅](docs/guides/required-memory-hook.md) — optional client-side installation; Codex requires hook trust.
