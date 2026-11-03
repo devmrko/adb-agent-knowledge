@@ -225,7 +225,7 @@ project:adb-agent-knowledge에 저장된 '22개 도구 설정'을 놓쳤습니�
 `knowledge_decide(resolve_context=true)`는 한 번의 Kev 호출로 조회 필요성·대화 참조 필요성·독립 검색 가능성을 점수화합니다.
 `retrieval_query`는 선택된 입력의 조합이며 생성형 모델이 새로 작성한 문장이 아닙니다. `context_used`로 맥락 사용 여부를 확인합니다.
 맥락/독립 점수 차이가 `KEV_CONTEXT_MARGIN`(기본 0.1)보다 작으면 검색어를 억지로 정하지 않고 검토로 넘깁니다.
-점수는 보정된 확률이 아니며 모든 표현에 대한 정확도를 보장하지 않습니다. 에이전트는 무관한 검색 결과를 배제해야 합니다.
+noul은 예일 확률이고 Kev는 체크포인트별 temperature 보정을 제공합니다. 다만 우리 한국어 요청에서의 확률 보정·정확도는 별도로 검증해야 하며 모든 표현의 정확도를 보장하지 않습니다. 에이전트는 무관한 검색 결과를 배제해야 합니다.
 
 표준 `~/.codex/sessions`, `~/.claude/projects` 안의 현재 session_id 파일만 읽습니다.
 다른 위치는 훅 설정 `transcript_roots` 배열로 명시합니다. `followup_context=false`로 대화 읽기를 끌 수 있습니다.

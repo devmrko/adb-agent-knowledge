@@ -121,7 +121,7 @@ No dialogue cache is written. Standard Codex sessions and Claude projects roots 
 `knowledge_decide(resolve_context=true)` scores lookup need, dialogue dependence and standalone query
 sufficiency in one Kev call. It returns `retrieval_query` and `context_used`. The query combines selected
 input; no generation model rewrites it. `KEV_CONTEXT_MARGIN=0.1` leaves close scores for agent_review.
-Scores are not calibrated confidence. Topic changes should use the current request alone. The agent
+noul represents the probability of yes; Kev provides checkpoint temperature calibration. Calibration on our own Korean routing distribution has not been established. Topic changes should use the current request alone. The agent
 must still reject unrelated results. Old servers retain principle resolution but unresolved queries
 are not searched blindly. Update server and client together.
 

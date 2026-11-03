@@ -88,3 +88,5 @@ vk0016 전체 migration, 16 감사 트리거와 변경 전후/append-only/rollba
 Property Graph 및 실제 한국어 임베딩 저장/검색·관계·사용자 격리를 확인했습니다. 기존 운영 스키마를
 초기화한 것이 아닙니다. 이 시험은 macOS 클라이언트+기존 Oracle ADB 서비스의 빈 스키마 기준이며,
 새 ADB 서비스 생성·모든 OS·대규모 성능까지 검증하지는 않았습니다.
+
+별도 clean checkout과 새 .venv에서 `setup.sh --with-agent-memory`도 완료했습니다(109개 패키지 설치, Python 3.12, macOS arm64). 모델 가중치는 기존 로컬 캐시를 재사용한 DB 검증과 구분합니다. 실제 설정된 원격 MCP를 사용하는 훅의 합성 세션 시험에서 “남은건?”이 v3 전환 기록 두 건을 반환했습니다. 현재 세션의 사용자 메시지에서도 새 `followup_context` 표시가 전달됨을 확인했습니다. 전체 Python 테스트 343개와 ruff/format/mypy 통과. 새 클라이언트·모든 표현에서의 정확도를 뜻하지 않습니다.

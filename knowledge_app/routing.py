@@ -231,7 +231,8 @@ class MemoryRouter:
             scores=scores,
             latency_ms=round((time.perf_counter() - started) * 1000, 1),
         )
-        # Deliberate uncertainty band; a score is routing advice, never factual certainty.
+        # Temperature-calibrated noul values still need domain validation.
+        # Comparing two independent questions is a routing heuristic, not a posterior.
         if (
             request.context
             and scores["use_context"] - scores["standalone_query"] >= self.settings.context_margin
