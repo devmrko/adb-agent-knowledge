@@ -20,3 +20,5 @@ These guides cover the current public implementation. The remaining detailed ope
 are primarily Korean and are indexed in the Korean documentation home. A translated description does not
 imply that new deployment combinations have been tested. Code, migrations, and recorded test limits remain
 part of the implementation contract.
+
+- [v3 source transfer](../guides/v3-source-transfer.md#english-summary)

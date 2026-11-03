@@ -1,5 +1,6 @@
 import hashlib
 import json
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -40,6 +41,7 @@ def entity_view(entity: GraphEntity) -> dict[str, Any]:
 
 class GraphService:
     def __init__(self, factory: sessionmaker[Session], settings: Settings):
+        self.source_reader: Callable[[str, str, str], dict[str, Any] | None] | None = None
         self.factory, self.settings = factory, settings
 
     def enabled(self) -> None:
@@ -123,7 +125,9 @@ class GraphService:
                     item, revision = source
                     if item.lifecycle_status != "ACTIVE" or item.active_revision_id != revision.id:
                         raise fail("GRAPH_SOURCE_NOT_ACTIVE", ErrorCategory.CONFLICT)
-                    if not evidence.quote.strip() or evidence.quote not in (revision.content_text or ""):
+                    routed = self.source_reader(owner, item.id, revision.id) if self.source_reader else None
+                    body = routed["text"] if routed is not None else (revision.content_text or "")
+                    if not evidence.quote.strip() or evidence.quote not in body:
                         raise fail("GRAPH_EVIDENCE_MISMATCH")
                 if (
                     command.temporal_basis

@@ -1,4 +1,4 @@
-"""Opt-in versioned SDK staging pilot; not wired into production routes."""
+"""Opt-in versioned SDK staging pilot; used by the opt-in source transfer path."""
 
 import hashlib
 import json
@@ -51,17 +51,21 @@ class VersionedMemoryPilot:
     def stage(self, actor: Actor, knowledge_id: str, revision_id: str) -> dict[str, Any]:
         owner = owner_id(actor)
         item = self.source.get(actor, knowledge_id)
-        original = self.source.content(actor, knowledge_id, revision_id)
+        original = self.source.legacy_content(actor, knowledge_id, revision_id)
         envelope = SourceEnvelope.model_validate(
             {key: value for key, value in original.items() if key in SourceEnvelope.model_fields}
         )
+        return self.stage_owned(owner, envelope, item["scope"])
+
+    def stage_owned(self, owner: str, envelope: SourceEnvelope, scope: str) -> dict[str, Any]:
+        knowledge_id, revision_id = str(envelope.knowledge_id), str(envelope.revision_id)
         body = serialized(envelope)
         key = record_key(owner, knowledge_id, revision_id)
         metadata = {
             "schema": "knowledge-source-v3-pilot",
             "knowledge_id": str(envelope.knowledge_id),
             "revision_id": str(envelope.revision_id),
-            "scope": item["scope"],
+            "scope": scope,
             "content_digest": digest(body),
             "embedding_profile": self.source.embedder.profile_id,
         }
@@ -80,7 +84,7 @@ class VersionedMemoryPilot:
                 metadata=metadata,
                 index_texts=[chunks],
             )
-            self.read(actor, knowledge_id, revision_id)
+            self.read_owned(owner, knowledge_id, revision_id)
             return {"record_id": key, "status": "READY", "reused": False}
         except BusinessError:
             raise
@@ -88,7 +92,9 @@ class VersionedMemoryPilot:
             raise fail("V3_STAGE_UNCERTAIN", ErrorCategory.UNAVAILABLE) from None
 
     def read(self, actor: Actor, knowledge_id: str, revision_id: str) -> SourceEnvelope:
-        owner = owner_id(actor)
+        return self.read_owned(owner_id(actor), knowledge_id, revision_id)
+
+    def read_owned(self, owner: str, knowledge_id: str, revision_id: str) -> SourceEnvelope:
         try:
             row = self.sdk.store.get("memory", record_key(owner, knowledge_id, revision_id))
             if row is None or row.user_id != owner:
@@ -97,6 +103,7 @@ class VersionedMemoryPilot:
             envelope = SourceEnvelope.model_validate_json(row.content)
             if (
                 metadata.get("schema") != "knowledge-source-v3-pilot"
+                or metadata.get("embedding_profile") != self.source.embedder.profile_id
                 or str(envelope.knowledge_id) != str(UUID(knowledge_id))
                 or str(envelope.revision_id) != str(UUID(revision_id))
                 or metadata.get("knowledge_id") != str(envelope.knowledge_id)

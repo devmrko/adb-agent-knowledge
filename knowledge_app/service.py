@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+from collections.abc import Callable
 from typing import Any
 
 from sqlalchemy import delete, update
@@ -90,6 +91,7 @@ class KnowledgeService:
         *,
         reranker: Reranker | None = None,
     ) -> None:
+        self.content_reader: Callable[[str, str, str], dict[str, Any] | None] | None = None
         self.factory, self.embedder, self.settings = factory, embedder, settings
         self.reranker = (reranker or CrossEncoderReranker(settings)) if settings.reranker_enabled else None
 
@@ -334,6 +336,13 @@ class KnowledgeService:
             return item_view(item)
 
     def content(self, actor: Actor, item_id: str, revision_id: str) -> dict[str, Any]:
+        if self.content_reader is not None:
+            result = self.content_reader(owner_id(actor), item_id, revision_id)
+            if result is not None:
+                return result
+        return self.legacy_content(actor, item_id, revision_id)
+
+    def legacy_content(self, actor: Actor, item_id: str, revision_id: str) -> dict[str, Any]:
         with SqlAlchemyUnitOfWork(self.factory, read_only=True) as uow:
             revision = Repository(uow.session).revision(owner_id(actor), revision_id)
             if revision is None or revision.item_id != item_id:

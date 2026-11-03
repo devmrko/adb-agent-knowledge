@@ -9,7 +9,7 @@
 | 기본 관계 추출 | agent 모드: Codex·Claude가 추출. 선택적 service 모드만 별도 생성 모델 사용 |
 | 임베딩 | 기본 한국어 1024차원 모델을 API/worker 머신에서 실행. 원격 OpenAI 호환 제공자 선택 가능 |
 | Kev | 별도 로컬/원격 판단 서비스. 조회·저장·탐색 경로 판단, 사실 확정/벡터 생성 아님 |
-| DB 마이그레이션 | 최신 vk0014. RDF·Property Graph·Agent Memory 저장소는 선택 기능별 별도 초기화 |
+| DB 마이그레이션 | 최신 vk0015. RDF·Property Graph·Agent Memory 저장소는 선택 기능별 별도 초기화 |
 | MCP 도구 | core17 / memory22 / graph31 / organize28 / operations29 / full64 |
 | 매 요청 훅 | 클라이언트별 설치 필요. 원칙 정확 조회 + Kev 판단 + 필요한 기억 조회, 쓰기 없음 |
 | 사용자 원칙 | Oracle의 별도 사용자 설정·이력. 웹에서 승인·관리, Kev skip에도 훅이 전달 |
@@ -43,7 +43,7 @@
 
 ## English summary
 
-Current schema head is vk0014; product version remains v2 preview 0.2.0. Knowledge, optional agent memories,
+Current schema head is vk0015; product version remains v2 preview 0.2.0. Knowledge, optional agent memories,
 and user-approved principles have distinct purposes. Principles are exact owner configuration, not vector
 hits. The client hook always resolves them, including on Kev skip; MCP registration alone does not install
 or activate hooks. Update the server/migrations first, restart API and reconnect MCP, then update client
@@ -62,3 +62,7 @@ automation failure. Historical validation records describe their dates, not curr
 ## 이번 문서 점검
 
 README·설치·화면·훅·흐름·모델 위치·이력·한영 문서 색인을 코드와 대조했습니다. SQL 참조는 vk0014의 ORM/SDK lock 27개 테이블 기준으로 재생성했습니다(실제 업그레이드된 컬럼 형식은 migration 이력 기준). Markdown 90개와 상대 링크 319개를 검사했습니다. 과거 스냅샷은 보존하고 현재 안내와 분리했습니다. Oracle 설치 검증 도구의 vk0011 고정값은 Alembic 최신 head 조회로 수정했습니다. 이번 문서 점검에서 별도의 Oracle 초기화나 부하 시험을 재실행하지 않았습니다.
+
+## v3 원문 이관 준비
+
+vk0015는 버전별 이관 작업 상태를 추가합니다. 선택적 SDK 원문 읽기·그래프 인용 검증, 명시적 활성화/복구를 제공합니다. 기본 운영 경로·주 검색·쓰기는 v2입니다. [구성 및 검증 범위](../guides/v3-source-transfer.md). 운영 A10에 vk0015가 적용됐다는 의미는 아닙니다.

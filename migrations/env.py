@@ -11,7 +11,7 @@ from knowledge_app.database import database
 from knowledge_app.models import Base
 from knowledge_app.settings import Settings
 
-settings = Settings()
+settings = context.config.attributes.get("settings") or Settings()
 if context.is_offline_mode():
     context.configure(
         url=settings.database_url,

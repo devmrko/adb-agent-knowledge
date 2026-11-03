@@ -52,6 +52,8 @@ from knowledge_app.principles import PrincipleScopes, PrincipleService, Principl
 from knowledge_app.routing import MemoryRouter, RoutingSettings
 from knowledge_app.service import KnowledgeService, fail
 from knowledge_app.settings import Settings
+from knowledge_app.source_transfer import SourceTransferService
+from knowledge_app.v3_pilot import VersionedMemoryPilot
 from knowledge_app.workflow import WorkflowInput
 from python_foundation.database import sessions
 from python_foundation.errors import AuthenticationRequired, BusinessError
@@ -113,6 +115,18 @@ def create_app(
     memories = AgentMemoryService(memory_repo, engine, settings.agent_memory_enabled)
     connections = MemoryConnections(memories, service, sessions(engine))
     graph_service = GraphService(sessions(engine), settings)
+    transfer_repo = None
+    transfer = None
+    if settings.knowledge_source_backend == "v3":
+        if settings.knowledge_v3_store_id == settings.agent_memory_store_id:
+            raise ValueError("v3 source store must be separate from agent memory store")
+        transfer_repo = SDKRepository(
+            settings.model_copy(update={"agent_memory_store_id": settings.knowledge_v3_store_id}),
+            service.embedder,
+        )
+        transfer = SourceTransferService(VersionedMemoryPilot(service, transfer_repo, graph_service))
+        service.content_reader = transfer.content_owned
+        graph_service.source_reader = transfer.content_owned
     graph_ops = GraphOpsService(sessions(engine), settings)
     audit = AuditService(sessions(engine), settings.workflow_rdf_enabled)
     auto_graph = AutoGraphService(sessions(engine), settings)
@@ -124,6 +138,8 @@ def create_app(
         try:
             yield
         finally:
+            if transfer_repo is not None:
+                transfer_repo.close()
             memory_repo.close()
             engine.dispose()
 
@@ -131,6 +147,7 @@ def create_app(
     install_web(app, Security(foundation, verifier=verifier))
     install_browser_sessions(app, settings)
     app.state.service, app.state.engine = service, engine
+    app.state.source_transfer = transfer
     app.state.auto_graph = auto_graph
     app.state.agent_memory = memories
     app.state.memory_connections = connections

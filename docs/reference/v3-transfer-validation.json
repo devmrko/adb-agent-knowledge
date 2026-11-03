@@ -1,0 +1,20 @@
+{
+  "stage": "isolated Oracle transfer; production unchanged",
+  "checks": [
+    "POST_WRITE_FAILURE_REOPEN_SDK_RETRY_REUSES_RECORD_AND_VERIFIES_CHUNKS",
+    "ACTIVE_SDK_SOURCE_READ_WITHOUT_LEGACY_CONTENT_ROUTE",
+    "ROUTED_SDK_QUOTE_TO_RDF_PROPERTY_GRAPH",
+    "SDK_OUTAGE_FAILS_CLOSED_EXPLICIT_ROLLBACK_USES_RETAINED_SOURCE",
+    "TRANSITION_EVENTS_AND_BOTH_SOURCE_COPIES_PRESERVED"
+  ],
+  "date": "2026-11-03",
+  "schema": "vk0015",
+  "sdk_store": "V3TRANSFER1103",
+  "embedding_model": "dragonkue/snowflake-arctic-embed-l-v2.0-ko",
+  "embedding_revision": "55ec6e9358a56d56af759bc8372e970caf8c305f",
+  "limits": [
+    "One synthetic source; service-level Oracle integration, not a deployment or retrieval-quality test",
+    "Failure injected after SDK write; recreated SDK connection, not an OS-level process kill",
+    "Lease and stale completion covered by unit tests, not actual multiprocess contention"
+  ]
+}

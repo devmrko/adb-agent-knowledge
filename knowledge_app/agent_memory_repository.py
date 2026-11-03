@@ -84,6 +84,33 @@ class SDKRepository:
         self.connect()
         return self._client
 
+    def verify_source_index(self, record_id: str, owner: str, chunks: list[str]) -> bool:
+        """Read-only exact chunk and vector-shape check for a staged source."""
+        import math
+
+        self.connect()
+        prefix = self.settings.agent_memory_store_id
+        with self._pool.acquire() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    f"SELECT chunk_text, embedding FROM {prefix}_RECORD_CHUNKS WHERE source_id=:id AND user_id=:owner AND source_record_type='memory' ORDER BY chunk_seq",
+                    id=record_id,
+                    owner=owner,
+                )
+                rows = cursor.fetchall()
+                texts = [v.read() if hasattr(v, "read") else v for v, _ in rows]
+                return (
+                    texts == chunks
+                    and all(
+                        vector is not None
+                        and len(vector) == self.settings.embedding_dimensions
+                        and all(math.isfinite(v) for v in vector)
+                        and any(vector)
+                        for _, vector in rows
+                    )
+                    and bool(rows)
+                )
+
     def close(self) -> None:
         if self._client is not None:
             self._client.close()

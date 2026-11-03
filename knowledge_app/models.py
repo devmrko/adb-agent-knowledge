@@ -307,3 +307,24 @@ class NavigationSnapshot(Base):
     owner_id: Mapped[str] = mapped_column(String(64), index=True)
     payload_json: Mapped[str] = mapped_column(Text)
     native_stored: Mapped[int] = mapped_column(default=0)
+
+
+class SourceTransfer(Base):
+    __tablename__ = "vk_source_transfer"
+    owner_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    revision_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    knowledge_id: Mapped[str] = mapped_column(String(36))
+    store_id: Mapped[str] = mapped_column(String(16))
+    profile_id: Mapped[str] = mapped_column(String(64))
+    content_digest: Mapped[str] = mapped_column(String(64))
+    status: Mapped[str] = mapped_column(String(16), default="QUEUED")
+    generation: Mapped[int] = mapped_column(default=1)
+    attempts: Mapped[int] = mapped_column(default=0)
+    lease_token: Mapped[str | None] = mapped_column(String(36))
+    lease_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    __table_args__ = (
+        ForeignKeyConstraint(["owner_id", "revision_id"], ["vk_revision.owner_id", "vk_revision.id"]),
+        ForeignKeyConstraint(["owner_id", "knowledge_id"], ["vk_item.owner_id", "vk_item.id"]),
+    )
