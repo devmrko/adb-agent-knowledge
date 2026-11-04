@@ -2,7 +2,7 @@
 
 [English](v3-primary-store.en.md)
 
-v3 preview 0.3.0은 업무 지식의 **원문과 검색 벡터를 Oracle Agent Memory에 저장**하고,
+v0.3.0-alpha.1은 업무 지식의 **원문과 검색 벡터를 Oracle Agent Memory에 저장**하고,
 기존 API/MCP의 저장·수정·검색·이력·그래프 기능을 유지합니다. Agent Memory만 설치하면
 업무 버전·감사가 저절로 생기는 구조는 아닙니다. 아래 역할을 함께 운영합니다.
 

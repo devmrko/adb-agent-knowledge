@@ -143,7 +143,7 @@ def create_app(
             memory_repo.close()
             engine.dispose()
 
-    app = FastAPI(title="Agent Knowledge for Oracle ADB", version="0.3.0", lifespan=lifespan)
+    app = FastAPI(title="Agent Knowledge for Oracle ADB", version="0.3.0-alpha.1", lifespan=lifespan)
     install_web(app, Security(foundation, verifier=verifier))
     install_browser_sessions(app, settings)
     app.state.service, app.state.engine = service, engine

@@ -45,7 +45,7 @@ relationships use separate bounded traversal. Memory scores are not merged with 
   current external Korean embedder, and differs from the business knowledge vector+LIKE implementation.
 
 Business knowledge can be represented here, but exact source versions, quotations and RDF relationships
-still require application contracts. Production data has not been migrated.
+still require application contracts. That feasibility experiment did not migrate production data. The later [v3 implementation](v3-primary-store.en.md) and [deployment record](../reference/v3-production-validation.md) describe the completed migration.
 See the [JSON feasibility report (Korean)](agent-memory-json-evaluation.md) and
 [machine-readable experiment results](../reference/agent-memory-json-probe.json).
 Official references: [store semantics](https://docs.oracle.com/en/database/oracle/agent-memory/26.8/guide/api/stores.html),

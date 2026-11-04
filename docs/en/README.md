@@ -1,5 +1,15 @@
 # English documentation
 
+## Start with your goal
+
+| Goal | Entry point |
+|---|---|
+| Understand the project and benefits | [Project introduction](../../README.en.md) |
+| Start a new v3 installation | [Setup and storage](../guides/v3-primary-store.en.md) |
+| Complete a specific task | [Hooks](../guides/required-memory-hook.en.md), [Oracle graph examples](oracle-graph-examples.md) |
+| Look up behavior or configuration | [Architecture/models](architecture-and-models.md), [Agent Memory storage](../guides/storage-backends.en.md) |
+| Review alpha status and limits | [v0.3.0-alpha.1](../releases/v0.3.0-alpha.1.md) |
+
 ## Current status and recent capabilities
 
 [Status and rollout](../reference/current-status.md) · [Prompt hook](../guides/required-memory-hook.en.md) · [User principles](../guides/user-principles.en.md) · [Agent Memory](../guides/agent-memory.en.md) · [Tool profiles](../guides/mcp-tool-profiles.md)

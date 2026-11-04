@@ -1,368 +1,161 @@
 # adb-agent-knowledge
 
-Agent Knowledge for Oracle ADB
+**An open-source knowledge service that uses Oracle Autonomous AI Database to help AI agents retrieve previous knowledge and work context with evidence.**
 
-English · [한국어](README.md)
+English · [한국어](README.md) · [Alpha release](docs/releases/v0.3.0-alpha.1.md) · [Documentation](docs/en/README.md)
 
-An open-source knowledge service for AI agents that makes practical use of Oracle Autonomous AI
-Database: source documents, vectors, shared relationships, evidence, and revision history in one database.
-Connect Codex or Claude through MCP, or use the notes web interface. Docker is not required.
+Connect Codex or Claude through MCP (Model Context Protocol) to store and retrieve project decisions,
+solutions and business documents. Korean-capable vector search finds related content even when wording changes;
+indexes and graphs lead to connected knowledge and its source evidence. The project is also a practical example
+of combining Oracle relational data, vectors, RDF, SQL Property Graph and Agent Memory.
 
-**Status: v2 preview.** Oracle ADB is the intended production database; SQLite is a test backend,
-not a supported production replacement. A fresh isolated schema in an existing ADB has passed migrations,
-audit/RDF/Property Graph setup and real embedding retrieval. This does not certify new ADB provisioning
-or all operating systems. [Live validation](docs/reference/oracle-installation-validation.md).
-MIT covers this project's code, not every model or dependency.
+**Current version: `v0.3.0-alpha.1`.** This alpha is for evaluation and feedback in personal/development environments.
+Oracle ADB is required; adapters for other production databases are not provided. Docker is optional.
+Read the [validation scope and remaining work](docs/releases/v0.3.0-alpha.1.md).
 
-## Current setup at a glance (2026-11-03)
+## What problem does it solve?
 
-Latest migration: **vk0016**. API/MCP + embeddings + Kev provide the base service. Agent Memory, RDF and Property Graph require their own optional setup. MCP registration alone does not activate prompt hooks. Install the client hook separately, then manage approved principles in the web UI.
+An agent may lose earlier decisions or solutions from another project when a conversation changes.
+This service keeps that information outside the conversation and retrieves it when it can help the next task.
 
-**v3 primary storage:** [Agent Memory writes, revisions, search and retained history](docs/guides/v3-primary-store.en.md). Existing installations are not switched automatically. In v3, new revisions must pass SDK validation before READY; public source IDs, RDF/Property Graph and audit history remain intact.
+For example, ask **“How did we deploy this project last time?”** The agent can find a deployment note,
+read the exact source revision behind its summary and, if relationships have been recorded, inspect the services,
+environments and projects connected to it. Corrections create new knowledge revisions while preserving old records.
 
-| Store / setting | Purpose | Update path |
+| Situation | What this helps improve | Mechanism |
 |---|---|---|
-| Knowledge | Documents, summaries, source revisions and relationships | MCP/API |
-| Agent memory (Oracle AI Agent Memory, optional) | Agent experiences and memory relationships | MCP/API |
-| User principles | Approved behavior preferences on every enabled hook invocation | Authenticated web editor/API |
+| You cannot remember the original wording | Find related decisions with different words | Vector + keyword retrieval |
+| Work spans sessions or machines | Reuse one knowledge store as the same authenticated user | Remote API/MCP, ownership and project scopes |
+| There are too many documents to read fully | Move from summaries to relevant detail and evidence | Indexes, source locations, relationship paths |
+| An agent repeats outdated advice | Check memory before answering and deliver approved principles | Client hooks + Kev |
+| Content changes or needs justification | Inspect previous revisions and supporting sources | Version history, audit records and evidence links |
 
-[Memory hook](docs/guides/required-memory-hook.en.md) · [User principles](docs/guides/user-principles.en.md) · [Current status and rollout](docs/reference/current-status.md)
+The aim is to reduce repeated explanations and unnecessary full-document reading. Token use, latency and answer
+accuracy are not guaranteed to improve on every request. Results depend on the stored data and retrieval quality.
+Organization-wide sharing controls and automated business-condition evaluation are not complete features.
 
-## Where models run
+## Which technologies do what?
 
-**`EMBEDDING_PROVIDER=local` means local to the Knowledge API and ingestion worker processes.**
-It does not mean inside Oracle or automatically on the laptop running Codex/Claude. The MCP adapter
-forwards tool calls to the API; it does not compute embeddings. MCP and API can run on different machines.
+| Component | Responsibility | Execution / setup |
+|---|---|---|
+| Codex / Claude | Tool calls, source review, new-vs-revise decisions, default relationship extraction and answers | Your agent client |
+| MCP + Python API/workers | Authentication, ingestion/search, asynchronous indexing and evidence/version checks | Local machine or remote server |
+| **Kev** (`jaredpalmer/kev-4b`) | Scores lookup/capture need and direct/index/graph navigation choices | Separate local or remote decision service |
+| **Korean embeddings** (`dragonkue/snowflake-arctic-embed-l-v2.0-ko`) | Converts source chunks and queries into 1024-dimensional vectors | API/worker hosts by default; remote provider supported |
+| **Oracle Autonomous AI Database** | Compares vectors and stores ownership, knowledge, revisions, audit and relationships | Your ADB instance |
+| **Oracle AI Agent Memory** | v3 source/chunk/vector storage; separate agent experience memories | Storage in ADB, accessed through a Python library; initialize separately |
+| **RDF / SQL Property Graph** | RDF represents and validates relationships/evidence; Property Graph traverses relational graph data | Optional database setup |
+| Notes web UI | Browse knowledge, memories and relationships; manage approved principles | API route `/knowledge` |
 
-| Component | Responsibility and execution location |
-|---|---|
-| Codex / Claude | Uses MCP tools; extracts relationships in default agent mode |
-| MCP adapter | Calls the Knowledge API and Kev routing endpoint |
-| Knowledge API | Embeds search queries using the configured embedding provider |
-| Ingestion worker | Splits sources, embeds chunks, and activates indexed revisions |
-| Oracle ADB | Stores sources/vectors and evaluates vector-distance queries; stores relationships/evidence/history |
-| Kev service | Separately served decision model for lookup, save, and navigation choices |
-| Optional graph worker | Calls a separate generative model only in service mode |
+**Embedding models do not run inside Oracle.** API/workers compute embeddings or obtain them from a remote
+provider, then send vectors to Oracle for storage and comparison. Hosting these processes remotely keeps models
+off the agent user's laptop. Retrieval combines vectors with substring keyword candidates, not Oracle Text/BM25.
 
-With local embeddings, API and worker each load a model in their own process. Hosting them remotely
-keeps embedding computation off the agent user's laptop. With `EMBEDDING_PROVIDER=openai`, both call
-an OpenAI-compatible `/embeddings` endpoint instead; Oracle still stores and compares the returned vectors.
-This project does not currently configure database-side embedding inference.
+Default `GRAPH_EXTRACTION_MODE=agent` uses the Codex/Claude model you already run for relationship extraction.
+Only optional unattended `service` mode calls a separate generative model endpoint. Kev does not create embeddings,
+write answers or verify facts; its scores are not probabilities that a stored claim is true.
+
+[Model settings and execution boundaries](docs/en/architecture-and-models.md) · [v3 storage and search](docs/guides/v3-primary-store.en.md) · [Oracle graph examples](docs/en/oracle-graph-examples.md)
+
+## How do storage and retrieval work?
 
 ```mermaid
 flowchart LR
-    Agent[Codex / Claude] --> MCP[MCP adapter]
-    MCP <--> Kev[Kev decision endpoint]
-    MCP --> API[Knowledge API: query embedding]
-    API --> DB[(Oracle ADB: sources, vectors, graph, history)]
-    Worker[Ingestion worker: document embedding] --> DB
-    API -. remote provider option .-> Model[Embedding endpoint]
-    Worker -. remote provider option .-> Model
+    User["User request"] --> Agent["Codex / Claude"]
+    Agent --> MCP["MCP / Knowledge API"]
+    MCP <--> Kev["Kev: need and navigation decisions"]
+    MCP --> Search["Query embedding · search · indexes"]
+    Search --> DB[("Oracle ADB / Agent Memory")]
+    MCP --> Save["Save/revise request → worker embedding"]
+    Save --> DB
+    DB --> Evidence["Summary · exact source revision · optional relationships/evidence"]
+    Evidence --> Agent
 ```
 
-## Features and decision flow
+- **Retrieve:** assess memory need → search or browse indexes → expand relationships when useful → inspect exact sources/evidence → answer or work.
+- **Store:** check value and similar items → inspect originals/history → choose a new item or revision → worker indexes it → confirm `READY`. Similarity alone does not merge documents.
+- **Keep purposes distinct:** business knowledge holds documents/procedures/decisions; agent memories hold experiences and memory links; user principles are approved behavior settings. v3 uses Agent Memory storage while preserving these distinctions and existing knowledge IDs/history.
+- **Connect:** notes share entities and relationships backed by exact source revisions and quotations. A graph path establishes connectivity, not causality or satisfaction of a business rule.
 
-- Store text, permitted URLs, PDF/PPTX sources, summaries, and source locations with revision history.
-- Search using vectors plus literal substring keyword candidates; this is not Oracle Text/BM25.
-- Navigate indexes and evidence-backed relationships; read exact revisions before relying on summaries.
-- Record confirmed aliases/external identifiers and review progress for each active source revision.
-- Keep source ownership, project scope, temporal evidence, and update conflicts separate.
+With MCP alone, the agent chooses whether to call a tool. **Install the client hook if memory checks should run
+before every request.** An enabled hook delivers approved user principles and retrieves memory according to Kev.
+The hook does not save knowledge and cannot guarantee model compliance.
 
-With the client hook enabled, every request resolves approved user principles and asks Kev whether
-memory lookup is needed. A skip still delivers principles. Without the hook, the agent chooses whether
-to call MCP. Explicit past-context requests override mistaken skips; Kev failures return agent_review.
+[Detailed storage/retrieval flow (Korean)](docs/guides/storage-retrieval-flow.md) · [Why and how to install hooks](docs/guides/required-memory-hook.en.md) · [User principles](docs/guides/user-principles.en.md)
 
-```mermaid
-flowchart TD
-    Request[User request] --> Hook[Enabled UserPromptSubmit hook]
-    Hook --> Principles[Exact lookup of approved user principles]
-    Hook --> Kev{Memory lookup needed?}
-    Kev -->|skip| Answer[Answer and work with approved principles]
-    Kev -->|lookup or agent_review| Recall[knowledge_recall]
-    Recall --> Memory[Agent memory: experiences and previous work]
-    Recall --> Knowledge[Business knowledge: search and indexes]
-    Memory --> Evidence[Check relevant sources and bounded relationships]
-    Knowledge --> Evidence
-    Evidence --> Answer
-    Principles --> Answer
-```
+## Get started
 
-Agent memory is included only when configured and requested; its results remain separate from business
-knowledge. Graph expansion depends on settings, Kev routing or explicit requests. Scores do not prove truth.
-
-For storage, choose the appropriate destination before writing:
-
-| Destination | Workflow |
-|---|---|
-| User principles | Explicit web approval, versioned configuration; never auto-promote retrieved text |
-| Agent memory | Check memory_search, then authorized memory_save; synchronous embedding/save returns READY |
-| Business knowledge | knowledge_prepare_save, inspect originals/history, choose knowledge_save or knowledge_revise; QUEUED → embedding worker → READY |
-
-Agent-memory body editing/deletion tools are not currently available; memory_rename corrects only titles.
-Business-knowledge revisions preserve prior versions. Avoid duplicate bodies across stores; connect exact
-source evidence through references. The hook does not save knowledge. Similarity alone never authorizes merging.
-
-### v1 and v2
-
-| Mode | Relationship extraction | Separate generative model required? |
-|---|---|---|
-| v2 default: `GRAPH_EXTRACTION_MODE=agent` | Codex/Claude reads the source and submits relationships | No; agent model usage still applies |
-| Optional: `GRAPH_EXTRACTION_MODE=service` | Graph worker calls the configured provider | Yes |
-
-The original service-based implementation is preserved under the `v1` Git tag. Kev and embeddings remain
-in both modes. In agent mode, a web/API upload alone does not perform relationship extraction: an agent
-must follow up. Service mode supports unattended extraction. Existing service extraction jobs are retained
-when switching to agent mode, but are not processed there. HTTP paths remain `/api/v1`.
-
-## Models
-
-**The v2 default is Kev + an embedding model + the Codex/Claude model you already use.** No separate
-generative model installation is required for agent-led relationship extraction.
-
-| Role | Model and settings | Where it runs and what it does |
-|---|---|---|
-| Lookup, capture and navigation decisions | `jaredpalmer/kev-4b`; `KEV_RUN` / `KEV_URL` | Separate Kev service scores choices |
-| Document and query embeddings | `dragonkue/snowflake-arctic-embed-l-v2.0-ko`; `EMBEDDING_MODEL` | API/ingestion worker hosts by default, or a remote embedding endpoint; produces 1024-dimensional vectors |
-| **Relationship extraction — default agent mode** | **Your Codex/Claude model**; `GRAPH_EXTRACTION_MODE=agent` | **The calling agent reads sources, extracts relationships and submits them through MCP for validation/storage** |
-
-Oracle stores and compares the generated vectors; the embedding model itself does not execute database searches.
-
-**Optional service mode:** only for extraction without an agent, set `GRAPH_EXTRACTION_MODE=service` and
-`GRAPH_AUTO_ENABLED=true`. The graph worker then calls a separate model endpoint using `GRAPH_AUTO_MODEL`.
-Gemma 4 E2B is an installation example for this mode, not a default or required v2 model.
-
-The database currently requires **1024-dimensional** embeddings. Local defaults are CPU, 384-token chunks,
-48-token overlap, and the model's query prompt. API and worker must use matching embedding profiles.
-Changing models, revisions, or preprocessing requires a migration/reindexing plan; automatic profile
-migration and zero-downtime re-embedding are not implemented.
-
-[Model architecture and configuration](docs/en/architecture-and-models.md) explains execution boundaries,
-remote providers, model sources, and limitations.
-
-## Install and start
-
-Use macOS/Linux with access to an existing Oracle ADB and its extracted Wallet. Windows/WSL fresh Oracle
-and model setup has not been verified. Setup does not create the database or grant administrative rights.
+This path starts **v3 in a new application schema**. For existing data, follow the [transfer and rollback guide](docs/guides/v3-primary-store.en.md) first.
+Prepare Git, Python 3/venv, an existing Oracle ADB, an application database account and an extracted Wallet.
+Installation uses macOS/Linux paths; native Windows and every CPU/GPU combination are not validated.
+[OS and model installation (with English summary)](docs/guides/runtime-installation.md).
 
 ```sh
-git clone https://github.com/devmrko/adb-agent-knowledge.git
+git clone --branch v0.3.0-alpha.1 https://github.com/devmrko/adb-agent-knowledge.git
 cd adb-agent-knowledge
-./scripts/setup.sh
+./scripts/setup.sh --with-agent-memory --with-models
 ```
 
-Setup installs the pinned Python environment and creates `.env` without overwriting an existing one.
-Set `USER_NAME`, `USER_PASSWORD`, `WALLET_PASSWORD`, `WALLET_DIR`, and `ORACLE_DSN`. The Wallet directory
-must contain `tnsnames.ora` and `ewallet.pem`; DB and Wallet passwords may differ. Retain the pinned embedding
-revision from `.env.example`. Never commit credentials or Wallet files.
+The installer prepares the project environment, not the ADB service or account. Fill `USER_NAME`, `USER_PASSWORD`,
+`WALLET_DIR`, `WALLET_PASSWORD` and `ORACLE_DSN` in the generated `.env`. Database and Wallet passwords may differ.
+First model use needs downloads, disk space and memory. For remote Kev/embedding services, omit `--with-models`
+and configure their [endpoints](docs/guides/portable-setup.md).
 
 ```sh
-./scripts/setup_kev.sh
-./scripts/run_knowledge.sh --migrate --kev
+./.venv/bin/alembic upgrade head
+./.venv/bin/python -m scripts.source_transfer init
 ```
 
-Omit `--kev` when using an already-running or remote Kev service. Migrations create/upgrade application
-tables **and audit triggers**, not the database or RDF network. vk0008 initializes core history/audit;
-vk0011 adds graph extraction, proposal, identity, review and operation auditing plus append-only operation
-history protection. New and existing schemas use the same migration command; CREATE TRIGGER is required. Oracle DDL commits implicitly: back up and review upgrades on
-existing databases, and stop incompatible writers while applying them.
-
-- Notes: http://127.0.0.1:8000/knowledge
-- API documentation: http://127.0.0.1:8000/docs
-- Development bearer token: generated `DEV_API_TOKEN` in `.env`.
-
-The default loopback development authentication represents one developer, not production multi-user
-isolation. Configure production authentication and HTTPS before exposing the service.
-
-### Enable Oracle graph capabilities
+Migrations prepare application tables, history and audit triggers (current head: `vk0016`). The second command
+initializes the separate v3 source store. Set `KNOWLEDGE_SOURCE_BACKEND=v3` in `.env`, then start the service.
+The configuration default remains `legacy` for compatibility; v3 is an explicit switch.
 
 ```sh
-./uvw run python -m scripts.prepare_knowledge_rdf
-./uvw run python -m scripts.setup_property_graph          # inspect only
-./uvw run python -m scripts.setup_property_graph --apply  # optional graph/view installation
+./scripts/run_knowledge.sh --kev
 ```
 
-After successful setup, set `WORKFLOW_RDF_ENABLED=true` and, if installed, `PROPERTY_GRAPH_ENABLED=true`.
-Restart API/worker with the updated configuration. Existing RDF namespaces are checked, not blindly replaced.
-[English Oracle graph examples](docs/en/oracle-graph-examples.md) cover creation and queries.
-
-### Connect an agent
+Omit `--kev` for a remote/already running Kev service. Open **http://127.0.0.1:8000/knowledge** for notes,
+`/docs` for API documentation and `/actuator/health` for service health. With API and worker running, connect your agent:
 
 ```sh
 ./.venv/bin/python scripts/install_agent.py codex --register-mcp
+# For Claude:
 ./.venv/bin/python scripts/install_agent.py claude --register-mcp
 ```
 
-Default MCP registration: `adb_agent_knowledge`; choose another with `--mcp-name`. Skill:
-`adb-agent-knowledge`. Configure SSH or the Knowledge API endpoint for remote deployments; this is separate
-from model endpoints. Reconnect the client after registration/tool changes. Installing a skill does not
-itself authorize automatic memory capture. [Detailed installation guide, Korean](docs/guides/agent-installation.md).
+The MCP registration name defaults to `adb_agent_knowledge`; change it with `--mcp-name`. In a new agent session,
+request a short test note, confirm `READY`, then retrieve it with different wording. Read the exact source to verify
+the round trip rather than treating a search preview as proof.
 
-### Register a hook for memory checks on every request
+**Optional capabilities need separate setup:** [RDF/Property Graph](docs/en/oracle-graph-examples.md),
+[agent experience memories](docs/guides/agent-memory.en.md), [Codex/Claude hook registration and trust](docs/guides/required-memory-hook.en.md).
+Oracle, agent and optional remote-model charges follow their own service terms. Keep keys, Wallets and `.env` private.
+Default startup is for personal local development; public remote hosting needs authentication and HTTPS.
 
-**Connecting MCP alone does not guarantee a memory check on every request.** The agent may omit a
-normal tool call. Register a `UserPromptSubmit` hook so previous decisions and working context are
-checked before answering, reducing repeated mistakes and forgotten context. Complete this step when
-using the service as ongoing agent memory.
+## Go deeper
 
-Install it on the **machine running Codex or Claude**, separately from MCP/skill registration.
-Update API/MCP server code and apply migration `vk0014` first. The current hook supports macOS/Linux.
+| Reader goal | Documentation |
+|---|---|
+| First installation and successful save/search | [Quickstart (Korean)](docs/guides/quickstart.md), [v3 setup](docs/guides/v3-primary-store.en.md) |
+| Choose models, hosts and multiple clients | [Architecture/models](docs/en/architecture-and-models.md), [multiple machines (Korean)](docs/guides/multi-machine-memory.md) |
+| Connect agents and check memory on every request | [MCP/skills (Korean)](docs/guides/agent-installation.md), [hooks](docs/guides/required-memory-hook.en.md) |
+| Create and query relationships | [Oracle graph examples](docs/en/oracle-graph-examples.md), [evidence retrieval (Korean)](docs/guides/related-retrieval.md) |
+| Understand storage, retrieval and identifiers | [Agent Memory comparison](docs/guides/storage-backends.en.md), [v3 sources](docs/guides/v3-primary-store.en.md) |
+| Operate and recover changes | [History (Korean)](docs/guides/change-history.md), [operations (Korean)](docs/guides/knowledge-development.md) |
+| Understand design and code layout | [Architecture/models](docs/en/architecture-and-models.md), [repository layout (Korean)](docs/guides/repository-layout.md) |
+| Review alpha validation and future work | [Release notes](docs/releases/v0.3.0-alpha.1.md), [documentation index](docs/en/README.md) |
 
-1. From the repository root, copy the configuration example:
+## Alpha scope and support
 
-   ```sh
-   mkdir -p ~/.config/adb-agent-knowledge
-   cp -n config/prompt-hook.example.json ~/.config/adb-agent-knowledge/prompt-hook.json
-   ```
+Validation includes empty-schema Oracle setup, real embedding search, source revisions/history, graph queries
+and isolated failure-recovery tests. The [release notes](docs/releases/v0.3.0-alpha.1.md) distinguish environments
+and measurement limits. Interrupted jobs still require operator recovery; automatic uninterrupted recovery is not provided.
+Oracle Text/BM25, OCR, automatic model replacement/re-embedding, complete organizational sharing ACLs and the proposed
+business-condition evaluator are outside this alpha.
 
-2. Replace example absolute paths in `prompt-hook.json`. `mcp_command` must launch a working MCP
-   connection on this machine; an existing SSH launcher can connect to a remote service. `scope_roots`
-   maps workspace paths to confirmed project scopes. Unmapped directories query `global` only.
-   Do not put passwords or API keys in this file.
+Report problems and suggestions in [GitHub Issues](https://github.com/devmrko/adb-agent-knowledge/issues) with your
+version and reproduction steps. Do not include secrets or private source data. Maintainer: [devmrko](https://github.com/devmrko).
+For contributions, see [structure and verification commands (Korean)](docs/guides/repository-layout.md).
 
-3. Register for each client you use; run both commands if you use both:
-
-   ```sh
-   ./.venv/bin/python scripts/install_memory_hook.py codex --config "$HOME/.config/adb-agent-knowledge/prompt-hook.json"
-   ./.venv/bin/python scripts/install_memory_hook.py claude --config "$HOME/.config/adb-agent-knowledge/prompt-hook.json"
-   ```
-
-   The installer adds `UserPromptSubmit` to `~/.codex/hooks.json` or `~/.claude/settings.json`, preserving
-   other hooks. **In Codex, review and trust the command in `/hooks`.** In Claude, open a fresh session
-   and inspect registration with `/hooks`.
-
-4. Submit a real request about a known previous project decision. Compare `COMPLETE`, `check_id`
-   and `principle_version` in the audit with the context actually delivered:
-
-   ```sh
-   tail -n 3 ~/.local/state/adb-agent-knowledge/prompt-hook.jsonl
-   ```
-
-**Always delivered:** approved active user principles and the result of the memory check.
-**Conditional:** memory search and exact-source reads according to Kev. A `skip` still delivers
-principles; explicit past-context requests override mistaken skips. Failed principle/memory checks
-block the request. The hook does not save knowledge or guarantee perfect model compliance.
-
-Manage principles in `/knowledge` under **사용자 원칙 · 매 요청에 적용**.
-[Troubleshooting, removal and other machines](docs/guides/required-memory-hook.en.md) ·
-[Principle management](docs/guides/user-principles.en.md)
-
-## Identity, graph review, and Oracle roles
-
-Resolve existing canonical keys and source-backed aliases/external identifiers before creating entities.
-Label similarity is only a hint. Conflicting external bindings require explicit versioned correction;
-ambiguous aliases never trigger automatic entity merging. Binding history remains available, and stale
-source evidence is excluded from confirmed matching until refreshed.
-
-Current source revisions enter a review backlog. Agents explicitly record REVIEWING, COMPLETE/RELATIONS,
-COMPLETE/NONE, or FAILED/UNRESOLVED. Older unreviewed sources are also discoverable. Completion records
-an agent's assessment, not a proof that every possible relationship was found. `vk0010` adds these tables.
-
-Canonical relational tables own identities and versions. RDF represents assertion versions and evidence;
-SQL Property Graph is an optional read projection used for traversal candidates. `knowledge_graph_explore`
-distinguishes evidence links and incoming dependency paths. Paths identify things to investigate, not proven
-impact. Arbitrary SPARQL and ontology inference are not implemented.
-
-## Documentation and validation
-
-- [English documentation index](docs/en/README.md)
-- [Korean documentation index](docs/README.md)
-- [Repository layout](docs/guides/repository-layout.md)
-- [Release validation limits](docs/reference/public-release-validation.md)
-- [Third-party licenses](THIRD_PARTY.md)
-
-```sh
-./uvw run ruff check .
-./uvw run ruff format --check .
-./uvw run mypy
-./uvw run pytest
-```
-
-Tests using SQLite validate application behavior, not native Oracle RDF execution or model quality.
-Source availability and configured providers must be checked in each deployment. Models and runtime licenses
-are separate from the [MIT project license](LICENSE).
-
-[Documentation audit and migration validation](docs/reference/documentation-audit.md).
-
-## Runtime installation and OS boundaries
-
-Run `./scripts/setup.sh --with-models --verify-models` to install the locked API environment, separately
-pinned Kev runtime, and test actual embedding/Kev inference. Existing .env is preserved. Model weights
-may download; checks run sequentially and stop the temporary Kev process. `--plan` prints commands only.
-Without these flags, setup installs the API environment without claiming model inference was tested.
-
-The installer supports macOS/Linux entrypoints, including Linux inside WSL. Apple Silicon Kev uses MLX;
-Linux NVIDIA uses compatible PyTorch/CUDA. Native Windows POSIX launchers are not supported; use WSL or
-remote services. Intel Mac, Linux CPU/ARM, AMD/ROCm and WSL model execution remain unverified combinations.
-Upstream PyTorch portability is not an end-to-end application guarantee. GPU drivers are not installed.
-
-The repository initializes tables, revision/history data and audit triggers through Alembic, with separate
-shipped RDF/Property Graph initialization commands. For an isolated account, use:
-
-```sh
-./.venv/bin/python -m scripts.validate_oracle_installation \
-  --env-file .run/oracle-test.env --expected-schema AK_TEST_01 --apply --graphs --models
-```
-
-ADMIN/SYS/SYSTEM are rejected. Supply your own private configuration and explicit expected schema.
-This invokes shipped setup code, then checks Oracle triggers/rollback and a synthetic source/graph using
-configured embeddings. Synthetic test notes persist; it does not delete existing data. This is not a
-production JWT/HTTPS or Kev benchmark. [Detailed guide](docs/guides/runtime-installation.md).
-
-
-[Guided knowledge capture](docs/guides/guided-capture.md): Existing review/history tables support agent-authored clarification questions, persistent answers and explicit reconciliation. No new tables or separate LLM required; not automatic ontology generation.
-
-The web displays knowledge, relations and clarification records read-only. Submit knowledge answers and data changes through MCP. User principles are a separate editable configuration in the web UI.
-
-### Agent memory (Oracle AI Agent Memory)
-
-Agent memory stores experiences, preferences and previous work memories separately from business knowledge. This optional feature connects through the Oracle AI Agent Memory SDK. The web UI provides separate memory and knowledge views. Install the agent-memory extra, run Alembic and scripts.setup_agent_memory, then enable AGENT_MEMORY_ENABLED. No generation LLM or automatic migration of existing notes is required. Exact knowledge-revision references, stale-evidence review tasks and memory graph visualization are supported. Links require semantic confirmation by the calling agent; there is no automatic truth resolution. See [setup and scope](docs/guides/agent-memory.en.md).
-
-The Korean model is not an Oracle SDK default: our `IEmbedder` bridge injects the application embedding provider. See [Agent memory and embedding responsibilities](docs/guides/agent-memory.en.md).
-
-
-### Understanding Agent Memory storage and retrieval
-
-**Compared with application-owned tables:** both use Oracle tables. Current business knowledge uses vector+LIKE retrieval; the Agent Memory integration uses vector retrieval. See [tables, keys, search modes and the proposed v3](docs/guides/storage-backends.en.md). v3 is a unification proposal; the current release remains v2.
-
-Agent Memory can separate stored **content**, embedded **retrieval text**, and structured **JSON metadata filters**.
-Metadata values are not automatically part of semantic search. The current MCP limits text to 12,000 characters
-and does not expose arbitrary metadata or custom retrieval chunks. An isolated SDK experiment round-tripped
-about 4MiB each of JSON content and metadata and verified nested/array filters and persisted chunk/vector updates.
-This does not establish maximum capacity, semantic quality, or a completed production migration.
-
-[What does Agent Memory search?](docs/guides/agent-memory.en.md#what-does-agent-memory-search) ·
-[JSON feasibility results (Korean)](docs/guides/agent-memory-json-evaluation.md)
-
-## MCP tool profiles
-
-Default core exposes **17 tools**: 16 everyday tools plus knowledge_tools.
-Call knowledge_tools(profile="memory" | "graph" | "organize" | "operations") when a follow-up needs more tools.
-The selected group replaces the previous optional group; it does not accumulate. After a temporary switch, restore the profile active before the task unless the user chose a new default. Do not assume core: deployments may start in memory (22 tools). Explicitly pass the intended profile to knowledge_tools; its omitted argument defaults to core. The deployment setting and a temporary connection switch are distinct.
-- memory: agent profiles, evidence attachment and memory relationships (22 tools total).
-- graph: business relationship preparation, identities, authoring and review (31 total).
-- organize: indexes, guided capture and URL import (28 total).
-- operations: change reviews, retirement/restoration and service extraction operations (29 total).
-- full: every tool, for explicit advanced workflows (64 total).
-
-The server advertises tools.listChanged and sends notifications/tools/list_changed after a change.
-This is implemented for one-client-per-process stdio. A client must refresh tools/list to expose new tools
-to its model. Protocol behavior is tested; automatic refresh in every Codex/Claude version is not guaranteed.
-If refresh does not work, set MCP_TOOL_PROFILE to the desired profile in the server checkout .env and reconnect,
-or launch scripts/run_knowledge_mcp.sh --tool-profile graph (replace graph as needed).
-SSH clients must configure the remote checkout; local env is not automatically forwarded.
-
-Core recall still returns bounded graph/memory results. Switch to the relevant profile for new relationships
-or index memberships; never claim unavailable follow-up work completed. Selective automatic storage permission
-still applies; changing the tool catalog neither writes knowledge nor grants permissions.
-Do not register all profiles at once. Existing tool names, HTTP endpoints and stored records are unchanged.
-
-
-## Check memory before responding
-
-Normal MCP calls can be omitted by the agent. Memory preserves ongoing working context, so checking it belongs at the start of every request. An optional client-side UserPromptSubmit hook executes that MCP routing/lookup before the model responds.
-It is separate from MCP connection setup; Codex requires /hooks trust. Real Codex context injection has
-been observed. A follow-up Claude test also verified an answer based on the injected source and check ID. Each installation still needs scope mapping and activation checks.
-
-[Install, activate, verify, troubleshoot and remove the hook](docs/guides/required-memory-hook.en.md) · [한국어](docs/guides/required-memory-hook.md)
-
-Manage approved user principles in the web UI and inject them independently of retrieval on every prompt-hook invocation. [User principles](docs/guides/user-principles.en.md). Upgrade the server to vk0014 before updating hooks.
+Project code is [MIT](LICENSE). Model weights, dependencies and external services retain their own terms.
+See [third-party components](THIRD_PARTY.md).

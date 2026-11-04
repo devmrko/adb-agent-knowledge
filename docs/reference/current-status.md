@@ -1,6 +1,6 @@
 # 현재 상태와 업데이트 순서 / Current status
 
-기준: 2026-11-03, v3 주 저장·검색 구현 `e1a0e91` 운영 전환 확인. 제품은 v3 preview 0.3.0입니다.
+기준: 2026-11-04, 공개 버전 `v0.3.0-alpha.1`. [알파 안내와 검증 범위](../releases/v0.3.0-alpha.1.md)를 먼저 확인하세요. 아래 날짜별 검증은 각 시점의 기록입니다.
 이 문서는 현재 계약을 요약하며, 날짜가 붙은 과거 검증 결과를 덮어쓰지 않습니다.
 
 | 구분 | 현재 동작 |
@@ -44,7 +44,7 @@
 
 ## English summary
 
-Current schema head is vk0016; product version is v3 preview 0.3.0. Knowledge, optional agent memories,
+Current schema head is vk0016; public release is v0.3.0-alpha.1. Knowledge, optional agent memories,
 and user-approved principles have distinct purposes. Principles are exact owner configuration, not vector
 hits. The client hook always resolves them, including on Kev skip; MCP registration alone does not install
 or activate hooks. Update the server/migrations first, restart API and reconnect MCP, then update client

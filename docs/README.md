@@ -1,5 +1,16 @@
 # adb-agent-knowledge 매뉴얼
 
+## 목적에 따라 시작하기
+
+| 목적 | 출발점 |
+|---|---|
+| 무엇을 위한 프로젝트인지 이해 | [프로젝트 소개](../README.md) |
+| 처음 따라 해보기 | [빠른 시작](guides/quickstart.md), [v3 설치](guides/v3-primary-store.md) |
+| 특정 작업 수행 | [훅 연결](guides/required-memory-hook.md), [그래프 실습](guides/oracle-graph-examples.md), [변경 이력](guides/change-history.md) |
+| 설정·계약 확인 | [모델 설정](guides/local-models.md), [스크립트](../scripts/README.md), [저장소 구조](guides/repository-layout.md) |
+| 구조와 이유 이해 | [저장·조회 흐름](guides/storage-retrieval-flow.md), [Agent Memory 비교](guides/storage-backends.md) |
+| 알파 검증과 한계 확인 | [v0.3.0-alpha.1](releases/v0.3.0-alpha.1.md) |
+
 ## 현재 상태와 최근 기능
 
 [현재 구성·배포·검증 범위](reference/current-status.md) · [매 요청 기억 확인 훅](guides/required-memory-hook.md) · [웹 사용자 원칙](guides/user-principles.md) · [에이전트 메모리](guides/agent-memory.md) · [MCP 도구 묶음](guides/mcp-tool-profiles.md)

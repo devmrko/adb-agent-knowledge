@@ -2,7 +2,7 @@
 
 [한국어](v3-primary-store.md)
 
-v3 preview 0.3.0 uses a separate Oracle Agent Memory store for business-source JSON and retrieval vectors.
+v0.3.0-alpha.1 uses a separate Oracle Agent Memory store for business-source JSON and retrieval vectors.
 Existing MCP/API behavior and domain history are preserved. This does not remove the application tables.
 
 | Responsibility | v3 storage/behavior |
