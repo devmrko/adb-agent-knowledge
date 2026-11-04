@@ -54,7 +54,7 @@ Oracle에 저장·질의합니다. 서버에 모델을 두면 에이전트 사�
 필수는 아닙니다. 무인 처리가 필요한 선택적 `service` 모드만 별도 모델 endpoint를 호출합니다.
 Kev는 임베딩·답변 생성·사실 확인을 대신하지 않으며 점수는 사실의 정답 확률이 아닙니다.
 
-[모델 설정·실행 위치](docs/guides/local-models.md) · [v3 저장·검색 구조](docs/guides/v3-primary-store.md) · [RDF·Property Graph 예제](docs/guides/oracle-graph-examples.md)
+[모델 설정·실행 위치](docs/guides/local-models.md) · [v3 저장·검색 구조](docs/guides/v3-primary-store.md) · [직접 벡터 테이블과 비교: 속도·임베딩·운영](docs/guides/storage-backends.md) · [RDF·Property Graph 예제](docs/guides/oracle-graph-examples.md)
 
 ## 어떻게 저장하고 조회하나요?
 

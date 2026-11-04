@@ -55,7 +55,7 @@ Default `GRAPH_EXTRACTION_MODE=agent` uses the Codex/Claude model you already ru
 Only optional unattended `service` mode calls a separate generative model endpoint. Kev does not create embeddings,
 write answers or verify facts; its scores are not probabilities that a stored claim is true.
 
-[Model settings and execution boundaries](docs/en/architecture-and-models.md) · [v3 storage and search](docs/guides/v3-primary-store.en.md) · [Oracle graph examples](docs/en/oracle-graph-examples.md)
+[Model settings and execution boundaries](docs/en/architecture-and-models.md) · [v3 storage and search](docs/guides/v3-primary-store.en.md) · [Custom tables vs Agent Memory: speed, embeddings and operations](docs/guides/storage-backends.en.md) · [Oracle graph examples](docs/en/oracle-graph-examples.md)
 
 ## How do storage and retrieval work?
 

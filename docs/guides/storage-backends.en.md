@@ -1,10 +1,87 @@
 # Application-owned tables versus Oracle Agent Memory
 
-[한국어](storage-backends.md) · 2026-11-03 · Legacy comparison; v3 primary path implemented
+[한국어](storage-backends.md) · 2026-11-04 · v3 alpha; legacy comparison is labeled below
 
 Current v3 implementation: [primary SDK source/search with retained domain history](v3-primary-store.en.md). The comparison below describes the legacy business store versus agent-experience integration.
 **Both store data in Oracle tables.** Agent Memory is a library managing schema, retrieval rows,
 search and memory relationships—not a separate cloud database. The distinction is who implements the behavior.
+
+## Trade-offs and the current v3 choice (2026-11-04)
+
+**Agent Memory mainly provides reusable memory infrastructure, not guaranteed speed or elimination of embedding work.**
+Distinguish the current v3 business-knowledge path from the separate agent-experience path.
+
+| Area | Custom vector tables | Agent Memory |
+|---|---|---|
+| Convenience | Build source/chunk/vector/metadata and retrieval plumbing | Reuse common storage, search, user/agent/thread and memory-link APIs |
+| Embeddings | Configure model calls and chunk alignment | Configure an embedder or provide precomputed vectors; computation still exists |
+| Search control | Direct SQL, ranking, filter and index control | Follow SDK strategy/schema contracts |
+| Domain behavior | Implement chosen version, evidence, authorization and audit rules | Our immutable source revisions, exact quotations and business graphs still require application code |
+| Maintenance | More custom code, direct control | Less generic plumbing, but SDK version/schema compatibility to manage |
+| Current v3 overhead | Original source/chunk path | SDK data plus compatibility/rollback copies add storage and write work |
+
+### Does it remove embedding setup?
+
+No. The SDK can invoke an embedder, but vector search still requires a configured model or precomputed vectors.
+Our Bridge calls the same Korean 1024-dimensional application embedder. It runs on API/worker hosts by default
+or at the chosen remote endpoint, not automatically inside Oracle. KEYWORD can run without an embedder, but
+that is not semantic vector retrieval.
+
+### Are we using SDK search unchanged?
+
+- **Business knowledge:** SDK source/chunk/vector storage with application SQL. Owner/current-revision/scope/lifecycle filters precede vector+LIKE rank fusion.
+- **Agent experiences:** SDK search API and separate memory relationships.
+- **Domain history/graphs:** existing vk_g_*, RDF, Property Graph, revisions, audit and jobs remain.
+
+SDK HYBRID requires OracleDBEmbedder; it is not a switch that works with the current external Korean embedder.
+The MCP does not expose every SDK capability. See [v3 behavior](v3-primary-store.en.md).
+
+### Measured retrieval latency and target retrieval
+
+Thirty queries compared on 2026-11-03 with the same model and target documents:
+
+| Metric | Custom tables (legacy) | Agent Memory-backed v3 |
+|---|---:|---:|
+| Median | 260.54ms | 283.49ms |
+| p95 | 289.52ms | 310.86ms |
+| Target in top5 | 22/30 | 22/30 |
+| Target in top20 | 28/30 | 28/30 |
+| Ranked results | Identical between backends | Identical between backends |
+
+Boundary: warm sequential in-process service calls including embedding and Oracle, excluding HTTP/MCP/Kev/graphs.
+One sample per query/backend with alternating backend order. Queries were normalized by the agent from conversation
+topics with manually assigned target documents; labels are neither independent nor exhaustive. There were 320 active
+owner items, not necessarily all within each selected scope. Both paths retained the same ranking and embeddings;
+this is not a comparison of SDK search-strategy quality. v3 was about 23ms slower at the median in this sample;
+statistical significance, large-scale performance and component-level causes were not measured.
+[Sanitized results](../reference/storage-backend-comparison.json) · [Comparison script](../../scripts/compare_search_backends.py).
+Reproduction requires your own authorized database, actor and query/target corpus. Private source IDs and content are omitted.
+
+### Remaining ingestion overhead
+
+Alpha code inspection shows `KnowledgeService.process_one` computes compatibility vectors before invoking v3 staging.
+For a new SDK record, `VersionedMemoryPilot.stage_owned` sends chunks without those vectors, causing another embedder
+call through Bridge. Existing-record reuse is a separate path. **New ingestion therefore has a duplicate embedding
+path.** This is a code observation, not a measured call-count or write-latency benchmark.
+
+Rollback source/vector copies coexist with SDK source/vector data. The v3 search SQL also converts stored FLOAT64
+vectors to FLOAT32. We have not established that this conversion caused the measured latency difference.
+The SDK accepts precomputed vectors, so candidate improvements are vector reuse, write/revision latency measurement
+and an explicit rollback-copy policy. This documentation update implements none of those optimizations or deletions.
+
+### When to choose each
+
+Custom tables are reasonable for focused document retrieval and direct SQL tuning. Agent Memory is attractive for
+reusing user/agent/thread/experience abstractions. It fits this project's Oracle agent-memory demonstration and
+extension goals, but current benefits are shared infrastructure and extensibility; speed and operational simplification
+remain limited by the retained application contracts.
+
+Implementation: [worker](../../knowledge_app/service.py), [SDK staging](../../knowledge_app/v3_pilot.py),
+[embedding Bridge](../../knowledge_app/agent_memory_repository.py), [search SQL](../../knowledge_app/repository.py).
+Official contracts: [store writes and precomputed vectors](https://docs.oracle.com/en/database/oracle/agent-memory/26.8/guide/api/stores.html),
+[search strategies and embedders](https://docs.oracle.com/en/database/oracle/agent-memory/26.8/guide/api/agentmemory.html).
+
+## Legacy business knowledge versus agent experiences
 
 | Area | Current business knowledge implementation | Current Agent Memory integration |
 |---|---|---|

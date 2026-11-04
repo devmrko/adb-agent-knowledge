@@ -1,0 +1,57 @@
+{
+  "date": "2026-11-03T06:52:29.785555+00:00",
+  "dataset_sha256": "17bf15b5cd2d9cd544bccfb1d34a6ef73fc4e4f2d3db4200d85782902b55d4bf",
+  "latency_boundary": "warm sequential in-process service, embedding + Oracle; excludes HTTP, MCP, Kev; one sample/query/backend",
+  "label_limits": "Conversation-derived normalized questions; exact target documents read; not blind or exhaustive relevance labels. Historical documents count as target retrieval, not current truth.",
+  "owner_active_items": 320,
+  "rankings_equal": true,
+  "results": {
+    "legacy": {
+      "quality": {
+        "cases": 30,
+        "metrics": {
+          "hit_at_5": 0.7333333333333333,
+          "mrr_at_5": 0.5361111111111111,
+          "ndcg_at_5": 0.586177510864356,
+          "recall_at_20": 0.9333333333333333,
+          "recall_at_5": 0.7333333333333333
+        },
+        "denominators": {
+          "hit_at_5": 30,
+          "mrr_at_5": 30,
+          "ndcg_at_5": 30,
+          "recall_at_20": 30,
+          "recall_at_5": 30
+        }
+      },
+      "latency_ms": {
+        "p50": 260.5409221723676,
+        "p95": 289.52427273616195
+      }
+    },
+    "v3": {
+      "quality": {
+        "cases": 30,
+        "metrics": {
+          "hit_at_5": 0.7333333333333333,
+          "mrr_at_5": 0.5361111111111111,
+          "ndcg_at_5": 0.586177510864356,
+          "recall_at_20": 0.9333333333333333,
+          "recall_at_5": 0.7333333333333333
+        },
+        "denominators": {
+          "hit_at_5": 30,
+          "mrr_at_5": 30,
+          "ndcg_at_5": 30,
+          "recall_at_20": 30,
+          "recall_at_5": 30
+        }
+      },
+      "latency_ms": {
+        "p50": 283.49025920033455,
+        "p95": 310.8648487366736
+      }
+    }
+  },
+  "privacy": "Source IDs, ranked results and private query/document bodies omitted."
+}
