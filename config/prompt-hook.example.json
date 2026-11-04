@@ -10,5 +10,6 @@
       "project:your-confirmed-project-key"
     ]
   },
-  "followup_context": true
+  "followup_context": true,
+  "graph_mode": "auto"
 }

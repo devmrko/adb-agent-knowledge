@@ -76,6 +76,9 @@ async def collect(session, event, config):
     prompt = event["prompt"]
     query, sensitive = query_text(prompt)
     scopes = scopes_for(event["cwd"], config)
+    graph_mode = config.get("graph_mode", "auto")
+    if graph_mode not in {"auto", "always", "never"}:
+        raise ValueError("invalid hook graph mode")
     context, context_status, context_count = (
         ("", "sensitive", 0) if sensitive else followup_context(event, config, SECRET)
     )
@@ -106,6 +109,7 @@ async def collect(session, event, config):
         "user_principles": principles,
         "decision": action,
         "scopes": scopes,
+        "graph_expansion": "deferred_to_agent" if graph_mode == "never" else graph_mode,
         "sources": [],
         "agent_memories": [],
         "sensitive_prompt_withheld": sensitive,
@@ -134,7 +138,7 @@ async def collect(session, event, config):
                 "top_k": 3,
                 "include_agent_memory": True,
                 "explicit_request": explicit,
-                "graph_mode": "auto",
+                "graph_mode": graph_mode,
             }
         },
     )
@@ -224,7 +228,8 @@ def render_context(payload, check_id):
         "Use relevant evidence only; stale/missing/partial results do not prove absence. "
         "For follow-up retrieval preserve the explicit scopes below, including related project scopes; "
         "do not silently narrow them to the cwd basename. Read exact revisions through MCP when needed. "
-        "A Kev skip is a routing result, not an empty database.\n"
+        "A Kev skip is a routing result, not an empty database. "
+        "When graph_expansion is deferred_to_agent, use the graph-capable MCP retrieval tools if relationships are needed; this preflight did not expand them.\n"
         + json.dumps(references, ensure_ascii=False)
     )
 

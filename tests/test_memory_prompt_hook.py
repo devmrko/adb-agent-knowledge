@@ -41,6 +41,8 @@ def test_routing_and_exact_content():
     result, calls = asyncio.run(collect(session, event, {"scope_roots": {"/work/project": "project:test"}}))
     assert calls == ["knowledge_decide", "knowledge_recall", "knowledge_get_content"]
     assert result["sources"][0]["text"] == "exact source"
+    assert session.calls[1][1]["request"]["graph_mode"] == "auto"
+    assert result["graph_expansion"] == "auto"
     assert session.calls[1][1]["request"]["scopes"] == ["global", "project:test"]
     assert scopes_for("/work/project-other", {"scope_roots": {"/work/project": "project:test"}}) == ["global"]
 

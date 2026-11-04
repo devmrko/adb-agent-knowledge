@@ -129,3 +129,7 @@ are not searched blindly. Update server and client together.
 unstable. [Claude hook inputs](https://code.claude.com/docs/en/hooks) also supply the session path.
 Missing/unsupported data can require agent review. Verify real hook execution after client updates.
 Run synthetic evaluation with `python -m scripts.evaluate_context_routing --output .run/context-routing.json`.
+
+### Graph retrieval configuration
+
+The hook defaults to `graph_mode=auto`, retaining Kev graph routing. Set `always` for explicit expansion or `never` to defer graph retrieval to the agent. `graph_expansion=deferred_to_agent` does not mean no relationships exist. The native RDF G_ID query restoration is documented in [validation](../design/0046-v3-recovery/design.md).

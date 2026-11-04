@@ -235,3 +235,7 @@ Codex는 transcript 형식을 안정적인 계약으로 보장하지 않으므�
 공식 입력 설명: [Codex](https://learn.chatgpt.com/docs/hooks#common-input-fields), [Claude](https://code.claude.com/docs/en/hooks).
 
 합성 평가: `python -m scripts.evaluate_context_routing --output .run/context-routing.json` (설정된 Kev 필요, 지식 쓰기 없음).
+
+### Graph retrieval configuration
+
+The hook defaults to `graph_mode=auto`, retaining Kev graph routing. Set `always` for explicit expansion or `never` to defer graph retrieval to the agent. `graph_expansion=deferred_to_agent` does not mean no relationships exist. The native RDF G_ID query restoration is documented in [validation](../design/0046-v3-recovery/design.md).

@@ -205,6 +205,8 @@ def test_router_failure_fallback_and_save_guards(knowledge_fixture):  # noqa: F8
     actor = TestVerifier().verify("alice")
     result = asyncio.run(nav.execute(actor, NavigationRequest(text="Oracle")))
     assert result["plan"]["route"] == "agent_review" and result["items"]
+    assert result["plan"]["index_ids"] == [] and result["indexes"] == []
+    assert result["catalog"]["items"]
     result = asyncio.run(
         nav.execute(actor, NavigationRequest(text="Oracle", mode="index", index_ids=[idx["id"]]))
     )

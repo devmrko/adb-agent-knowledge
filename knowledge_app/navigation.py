@@ -103,7 +103,7 @@ class NavigationService:
                 "route": "agent_review",
                 "reason": "kev_unavailable_or_invalid",
                 "model_called": False,
-                "index_ids": [i["id"] for i in catalog["items"][:2]],
+                "index_ids": [],
                 "graph": False,
             }
         direct, index = scores["direct"] >= 0.3, scores["index"] >= 0.3
@@ -198,12 +198,8 @@ class NavigationService:
             ]
             if not result["items"] and not result["indexes"]:
                 result["fallbacks"].append("direct_empty_browse_catalog")
-                # Return the catalog even without a model-selected index; the caller can page it deterministically.
-                for index in catalog["items"][:2]:
-                    page = await asyncio.to_thread(
-                        self.indexes.entries, actor, index["id"], command.scopes, 0, 8
-                    )
-                    result["indexes"].append({"index": index, **page})
+                # The catalog is already returned. Its first entries are not evidence
+                # of relevance, so leave index selection to the caller.
         if (
             (command.graph_mode == "always" or (command.graph_mode == "auto" and plan.get("graph")))
             and not save
