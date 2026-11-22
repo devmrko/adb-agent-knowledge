@@ -26,6 +26,8 @@ Read the [validation scope and remaining work](docs/releases/v0.3.0-alpha.1.md).
 An agent may lose earlier decisions or solutions from another project when a conversation changes.
 This service keeps that information outside the conversation and retrieves it when it can help the next task.
 
+As a conversation grows and earlier details are summarized or leave active context, the goal is to **preserve important decisions, rationale, conditions and evidence as separate records that can be retrieved when needed**. Capture useful details while they are available, then retrieve exact sources into the working context. Saving alone does not guarantee recall or retrieval. See [long-session memory preservation and its limits](docs/guides/memory-types.en.md).
+
 For example, ask **“How did we deploy this project last time?”** The agent can find a deployment note,
 read the exact source revision behind its summary and, if relationships have been recorded, inspect the services,
 environments and projects connected to it. Corrections create new knowledge revisions while preserving old records.

@@ -4,6 +4,20 @@
 
 **Oracle Agent Memory mainly provides long-term storage and retrieval here. Codex/Claude manage the active conversation; this application does not use SDK short-term conversation summaries or context cards.**
 
+## How does this reduce loss of detail during a long session?
+
+**When earlier conversation is summarized or leaves the active context, preserve important decisions, conditions and evidence outside the conversation so they can be retrieved later.** The goal is to reduce dependence on repeatedly summarized chat. A stored source revision remains independent of the current conversation summary.
+
+For example, an earlier condition might require a compatibility check before deployment and rollback on failure. A later conversation summary could retain only “proceed with deployment.” A separate record containing the decision, rationale, exceptions, observed checks and original evidence gives the next session a way to recover that condition. This is an illustrative example, not a measured loss-rate result.
+
+1. **Capture while the details are still available.** Record confirmed decisions and verified failures/fixes at the time they become useful. Waiting until after another summary or session change may leave omitted conditions unavailable.
+2. **Select useful information without stripping meaningful detail.** Preserve the conclusion, rationale, applicability/exceptions, failed attempts and observed results, date, project scope and source location. The goal is not one-line compression, nor storing complete chats, hidden reasoning, unnecessary personal data or secrets.
+3. **Retrieve into the current context when needed.** Use titles/body wording that future questions are likely to match, search the relevant scopes, and check exact source revisions, evidence and currency. Read the source for conditions missing from its summary. The hook helps avoid skipping memory checks; it does not guarantee retrieval of every relevant record.
+
+The accurate promise is **“keep important information available to check again after it leaves the current context,” not “the agent can never forget anything once it is saved.”** This cannot automatically recover details lost before capture, information never stored or exceptions omitted from the record. Persistence, retrieval success and correct use of retrieved information are separate concerns.
+
+Conceptual reference: [Oracle: Context Window vs Memory](https://blogs.oracle.com/developers/what-is-agent-memory-a-beginners-guide-for-ai-developers). The selective capture/retrieval path here follows the implementation and code evidence below.
+
 ## Two classification axes
 
 Short/long term describes **how long information is needed**. Semantic/episodic/procedural describes **what it contains**. These are not five sibling storage tiers. Oracle 26.8 documents short- and long-term pillars, while Oracle's conceptual material describes working, semantic, episodic and procedural memory. The following mapping describes our application, not a claim that each concept has a matching SDK enum or table.
