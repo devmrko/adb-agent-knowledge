@@ -2,7 +2,7 @@
 
 [Short/long-term and semantic/episodic/procedural memory: usage and rationale](memory-types.en.md)
 
-[Application-owned tables vs Agent Memory: storage, keys, search and proposed v3](storage-backends.en.md)
+[Application-owned tables vs Agent Memory: storage, keys, search and current v3](storage-backends.en.md)
 
 
 The user-facing feature is **agent memory**: experiences, preferences and previous work memories. SDK refers to the development library used to connect it, not the name of a memory category.

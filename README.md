@@ -8,7 +8,7 @@ Codex·Claude에 MCP(Model Context Protocol)로 연결해 프로젝트 결정, �
 한국어 벡터 검색으로 표현이 달라도 관련 내용을 찾고, 인덱스와 그래프로 연결된 지식의 근거까지 따라갑니다.
 Oracle의 관계형 데이터·벡터·RDF·SQL Property Graph와 Agent Memory를 함께 사용하는 실제 구현 예제이기도 합니다.
 
-**현재 버전: `v0.3.0-alpha.1`.** 개인·개발 환경에서 시험하고 피드백을 받는 알파입니다.
+**공개 릴리스 기준: `v0.3.0-alpha.1`.** 개인·개발 환경에서 시험하고 피드백을 받는 알파입니다.
 Oracle ADB가 필요하며 다른 운영 DB용 어댑터는 없습니다. Docker는 필수가 아닙니다.
 [검증 범위와 남은 일](docs/releases/v0.3.0-alpha.1.md)을 확인하세요.
 
@@ -17,6 +17,8 @@ Oracle ADB가 필요하며 다른 운영 DB용 어댑터는 없습니다. Docker
 
 - **RDF 조회 지연 수정:** 저장된 그래프 ID로 먼저 좁히지 않고 각 RDF 행에서 그래프 이름을 변환·비교하던 조회를 ID(`G_ID`) 기반으로 변경했습니다. 특정 인덱스 8개 항목 조회는 약 22초에서 0.1~0.2초로 줄었습니다. KEV 판단은 약 0.165초였으며 병목이 아니었습니다. 수치는 해당 환경·요청의 실측입니다.
 - **웹 화면 정리:** 저장소 탐색 → 목록 → 상세 흐름, 모바일 상세 전환, 별도 사용자 원칙 패널을 적용했습니다. 버튼·입력·목록·빈 상태는 Foundation의 공통 HTML 요소와 CSS 클래스로 재사용합니다.
+
+**이 hotfix 설명은 `hotfix/rdf-index-web-ui` 브랜치 기준입니다.** 기존 알파 태그에는 후속 수정이 없으며 아직 `main`에 병합하지 않았습니다. 수정본을 시험하려면 아래 복제 명령의 `--branch v0.3.0-alpha.1` 대신 `--branch hotfix/rdf-index-web-ui`를 사용하세요. [코드·문서·운영 설정 대조](docs/reference/memory-documentation-audit-2026-11-22.md).
 
 [변경 내용과 검증](docs/releases/hotfix-2026-11-22.md) · [공통 UI 요소 사용](packages/python-foundation/docs/ui-elements.md)
 

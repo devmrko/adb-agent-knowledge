@@ -4,6 +4,14 @@
 
 **Oracle Agent Memory mainly provides long-term storage and retrieval here. Codex/Claude manage the active conversation; this application does not use SDK short-term conversation summaries or context cards.**
 
+## Version and configuration boundary
+
+This guide targets `hotfix/rdf-index-web-ui` on public `v0.3.0-alpha.1`: package version `0.3.0a1`, source API version `0.3.0-alpha.1`, and locked Agent Memory dependency `26.8.0`. Cloning the release tag alone does not include later hotfix documentation/UI changes.
+
+Fresh-install defaults are `KNOWLEDGE_SOURCE_BACKEND=legacy` and `AGENT_MEMORY_ENABLED=false`. SDK durable-memory paths require SDK installation, store initialization and explicit enablement; business-knowledge SDK primary content/search requires `KNOWLEDGE_SOURCE_BACKEND=v3`. Supported roles do not mean every path is enabled by default.
+
+The remote configuration checked on 2026-11-22 enabled v3 and agent memory with SDK 26.8.0. Its API reported `0.3.0`, a deployment-metadata difference from the alpha source version, not evidence of a stable release. See [audit scope/results](../reference/memory-documentation-audit-2026-11-22.md).
+
 ## How does this reduce loss of detail during a long session?
 
 **When earlier conversation is summarized or leaves the active context, preserve important decisions, conditions and evidence outside the conversation so they can be retrieved later.** The goal is to reduce dependence on repeatedly summarized chat. A stored source revision remains independent of the current conversation summary.
