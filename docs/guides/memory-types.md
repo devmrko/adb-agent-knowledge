@@ -6,7 +6,7 @@
 
 ## 적용 버전과 기본 설정
 
-이 설명의 코드 기준은 공개 `v0.3.0-alpha.1` 위의 `hotfix/rdf-index-web-ui`입니다. 패키지 버전은 `0.3.0a1`, 소스 API 표기는 `0.3.0-alpha.1`, Agent Memory 의존성은 `26.8.0`으로 잠겨 있습니다. `v0.3.0-alpha.1` 태그를 받는 것만으로 후속 hotfix 문서·UI 변경까지 포함되지는 않습니다.
+이 설명의 코드 기준은 공개 `v0.3.0-alpha.1` 이후의 2026-11-22 hotfix입니다. 최신 개발 코드는 `main`에서 확인합니다. 패키지 버전은 `0.3.0a1`, 소스 API 표기는 `0.3.0-alpha.1`, Agent Memory 의존성은 `26.8.0`으로 잠겨 있습니다. `v0.3.0-alpha.1` 태그를 받는 것만으로 후속 hotfix 문서·UI 변경까지 포함되지는 않습니다.
 
 새 설치의 기본은 `KNOWLEDGE_SOURCE_BACKEND=legacy`, `AGENT_MEMORY_ENABLED=false`입니다. 아래 SDK 장기 기억 경로는 SDK 설치·저장소 초기화·명시적 활성화가 필요하고, 업무 지식의 SDK 주 저장·검색은 `KNOWLEDGE_SOURCE_BACKEND=v3`일 때 적용됩니다. 따라서 ‘지원하는 기억 구조’와 ‘새 설치에서 모두 켜져 있음’은 다릅니다.
 

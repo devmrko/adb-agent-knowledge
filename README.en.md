@@ -19,7 +19,7 @@ Read the [validation scope and remaining work](docs/releases/v0.3.0-alpha.1.md).
 - **RDF lookup latency:** replaced per-row graph-name conversion and comparison with a stored graph ID (`G_ID`) filter. In one measured deployment, an eight-member index read fell from about 22 seconds to 0.1–0.2 seconds. KEV routing took about 0.165 seconds and was not the bottleneck. These timings are observations for that environment and request.
 - **Web UI:** added a navigation → list → detail layout, mobile detail navigation and a separate principles panel. Shared HTML elements and CSS classes for controls, records and empty states are packaged in Python Foundation.
 
-**The hotfix descriptions target `hotfix/rdf-index-web-ui`.** They are not included in the earlier alpha tag or merged into `main`. To try the fixes, replace `--branch v0.3.0-alpha.1` in the clone command below with `--branch hotfix/rdf-index-web-ui`. [Code/documentation/deployment audit](docs/reference/memory-documentation-audit-2026-11-22.md).
+**This description includes the 2026-11-22 hotfix changes.** The earlier alpha tag does not include subsequent fixes. For current development code, replace `--branch v0.3.0-alpha.1` in the clone command below with `--branch main`; distinguish this from the fixed alpha release. [Code/documentation/deployment audit](docs/reference/memory-documentation-audit-2026-11-22.md).
 
 [Changes and validation](docs/releases/hotfix-2026-11-22.md) · [Shared UI elements](packages/python-foundation/docs/ui-elements.md)
 

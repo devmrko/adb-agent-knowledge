@@ -6,7 +6,7 @@
 
 ## Version and configuration boundary
 
-This guide targets `hotfix/rdf-index-web-ui` on public `v0.3.0-alpha.1`: package version `0.3.0a1`, source API version `0.3.0-alpha.1`, and locked Agent Memory dependency `26.8.0`. Cloning the release tag alone does not include later hotfix documentation/UI changes.
+This guide targets the 2026-11-22 hotfix after public `v0.3.0-alpha.1`; current development code is on `main`: package version `0.3.0a1`, source API version `0.3.0-alpha.1`, and locked Agent Memory dependency `26.8.0`. Cloning the release tag alone does not include later hotfix documentation/UI changes.
 
 Fresh-install defaults are `KNOWLEDGE_SOURCE_BACKEND=legacy` and `AGENT_MEMORY_ENABLED=false`. SDK durable-memory paths require SDK installation, store initialization and explicit enablement; business-knowledge SDK primary content/search requires `KNOWLEDGE_SOURCE_BACKEND=v3`. Supported roles do not mean every path is enabled by default.
 

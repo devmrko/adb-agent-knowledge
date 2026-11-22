@@ -7,7 +7,7 @@
 | 항목 | 소스·새 설치 기준 | 점검한 원격 설정·응답 | 해석 |
 |---|---|---|---|
 | 공개 릴리스 기준 | `v0.3.0-alpha.1`, 패키지 `0.3.0a1`, 소스 API `0.3.0-alpha.1` | OpenAPI `info.version=0.3.0` | 원격에 다른 버전 메타데이터가 남아 있습니다. 정식 릴리스/기능 동등성의 증거가 아닙니다. 이번에는 문서에서 차이를 공개했고 실행 버전을 임의 변경하지 않았습니다. |
-| 수정 문서·UI·RDF | `hotfix/rdf-index-web-ui` | 해당 UI·RDF는 앞선 hotfix에서 반영 | 기존 알파 태그와 main에는 이 브랜치가 아직 병합되지 않았습니다. 태그 복제와 hotfix 사용을 구분합니다. |
+| 수정 문서·UI·RDF | `hotfix/rdf-index-web-ui` | 해당 UI·RDF는 앞선 hotfix에서 반영 | 이 점검 시점에는 main 병합 전이었습니다. 이후 병합 상태는 GitHub main 이력을 따르며, 고정 알파 태그에는 후속 수정이 없습니다. |
 | Agent Memory SDK | `pyproject.toml`·`uv.lock`의 `26.8.0` 고정 | 설치 패키지 `26.8.0` | 최신 upstream 전체를 뜻하지 않고 이 프로젝트가 사용하는 버전입니다. 로컬 개발 가상환경에는 선택적 SDK가 설치되지 않았으며 그 사실도 실제 Oracle 실행과 구분합니다. |
 | 업무 지식 저장 경로 | `KNOWLEDGE_SOURCE_BACKEND=legacy` 기본 | `v3` | SDK 기반 업무 원문·검색 설명은 명시적으로 v3를 켠 경로입니다. |
 | SDK 에이전트 경험 기억 | `AGENT_MEMORY_ENABLED=false` 기본 | `true` | 지원 기능과 신규 설치의 기본 활성화를 혼동하면 안 됩니다. |
@@ -54,6 +54,6 @@ SDK 관련 다섯 파일(`agent_memory_contracts.py`, `agent_memory_service.py`,
 
 The new memory-type rationale matches the checked implementation. Fresh defaults remain legacy storage and disabled optional SDK agent memory; the checked remote configuration enables v3 and SDK memory, with SDK 26.8.0. Five relevant source files match remotely by hash. SDK extraction, automatic memory linking and thread summaries are disabled; no app message/context-card call path exists. These facts do not establish lossless capture or perfect retrieval.
 
-Corrected stale English hook transcript wording, pre-redesign web/principles instructions, unlabeled historical test counts and v3/version/default ambiguities. Release tag, unmerged hotfix branch and remote OpenAPI version 0.3.0 are now explicitly distinguished. The latter differs from source API metadata 0.3.0-alpha.1; no runtime version was changed by this documentation audit. This is a bounded code/configuration review, not a full historical-doc audit or new live Oracle lifecycle test.
+Corrected stale English hook transcript wording, pre-redesign web/principles instructions, unlabeled historical test counts and v3/version/default ambiguities. The release tag, hotfix branch before its main merge at this audit checkpoint, and remote OpenAPI version 0.3.0 are explicitly distinguished. Subsequent merge state follows GitHub main history. The latter differs from source API metadata 0.3.0-alpha.1; no runtime version was changed by this documentation audit. This is a bounded code/configuration review, not a full historical-doc audit or new live Oracle lifecycle test.
 
 Validation: code/configuration assertions, 222 links across 15 changed documents, Ruff, format and mypy passed; pytest passed 347 tests with one existing deprecation warning.
