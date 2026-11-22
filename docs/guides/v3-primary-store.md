@@ -1,8 +1,10 @@
 # v3: Agent Memory를 원문·검색의 주 저장소로 사용
 
+v3는 장기 기억의 저장 기술 선택입니다. [단기·장기와 내용별 기억 유형](memory-types.md)에서 현재 사용·미사용을 구분합니다.
+
 [English](v3-primary-store.en.md)
 
-v0.3.0-alpha.1은 업무 지식의 **원문과 검색 벡터를 Oracle Agent Memory에 저장**하고,
+`KNOWLEDGE_SOURCE_BACKEND=v3`로 활성화하면 업무 지식의 **원문과 검색 벡터를 Oracle Agent Memory에 저장**하고,
 기존 API/MCP의 저장·수정·검색·이력·그래프 기능을 유지합니다. Agent Memory만 설치하면
 업무 버전·감사가 저절로 생기는 구조는 아닙니다. 아래 역할을 함께 운영합니다.
 

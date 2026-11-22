@@ -51,3 +51,38 @@ def test_graph_overflow_is_not_hidden_by_set_comparison():
     session = RecordingSession((values * 151)[:301])
     with pytest.raises(ValueError, match="mismatch"):
         shared_rdf.verify(session, owner, version, claim, {}, start, None)
+
+
+class NavigationSession(RecordingSession):
+    def __init__(self, snapshot, values):
+        super().__init__(values)
+        self.snapshot = snapshot
+
+    def get(self, model, identity):
+        return self.snapshot
+
+
+def test_navigation_native_graph_is_filtered_and_fully_verified():
+    import json
+    from types import SimpleNamespace
+
+    from knowledge_app import navigation_rdf
+
+    owner, snapshot_id = "c" * 64, str(uuid4())
+    values = [("<subject>", "<urn:vk:navigation:member_of>", "<index>")]
+    snapshot = SimpleNamespace(owner_id=owner, payload_json=json.dumps(values), native_stored=1)
+    session = NavigationSession(snapshot, values)
+    assert navigation_rdf.read(session, owner, snapshot_id)["status"] == "READY"
+    sql, params = session.calls[0]
+    assert params == {"graph_uri": f"urn:vk:workflow:{owner}:{snapshot_id}"}
+    assert '"VK_FLOW_RDF#RDFM_VK_NAV"' in sql
+    assert "r.G_ID IN" in sql
+    assert "GET_MODEL" not in sql
+    assert "1001 ROWS" in sql
+    for invalid in [[], values + [("<unexpected>", "<p>", "<o>")], values * 1001]:
+        session.values = invalid
+        with pytest.raises(ValueError, match="mismatch"):
+            navigation_rdf.read(session, owner, snapshot_id)
+    session.calls.clear()
+    assert navigation_rdf.read(session, "d" * 64, snapshot_id)["status"] == "NOT_INDEXED"
+    assert not session.calls

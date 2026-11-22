@@ -1,5 +1,6 @@
 "use strict";
 const $ = id => document.getElementById(id);
+const UI = window.FoundationUI;
 const kinds = {DOCUMENT:"문서", DECISION:"결정", PREFERENCE:"선호", FACT:"사실", PROCEDURE:"절차", EPISODE:"경험"};
 const pageSize = 10;
 let originalSummary="", activeIndex=null, catalogOffset=0, referenceOffset=0, originalUri=null, originalFilename="source.txt";
@@ -16,6 +17,7 @@ function dirty() { return editing && ($("reader-body").value !== original || $("
 function mayLeave() { return !saving && (!dirty() || window.confirm("저장하지 않은 수정 내용을 버릴까요?")); }
 function editMode(value) { value=READ_ONLY?false:value; editing=value; $("reader-body").readOnly=!value; $("reader-summary").readOnly=!value; $("edit").hidden=READ_ONLY || value; $("save").hidden=!value; $("cancel").hidden=!value; }
 function clearReader() {
+ $("reader-empty").hidden=false; $("reader-content").hidden=true; document.querySelector(".workspace").dataset.detailOpen="false";
  clearSelectedSql(); $("note-sql").disabled=true;
  $("note-memories").replaceChildren(); $("note-memory-status").textContent=""; $("note-memories-more").hidden=true;
  $("capture-content").replaceChildren(); $("capture-count").textContent=""; $("capture-status").textContent="";
@@ -46,14 +48,15 @@ async function request(path, options={}) {
  return response.json();
 }
 function handleError(error) { if(error.name==="AbortError") return; if(error.message==="AUTH") { if(!dirty()) disconnect(); status("인증할 수 없습니다. 작성 중인 내용은 복사한 뒤 다시 연결해 주세요.",true); } else status(error instanceof TypeError ? "API에 연결할 수 없습니다." : error.message,true); }
-function element(tag,text) { const node=document.createElement(tag); node.textContent=text; return node; }
+function element(tag,text) { return UI.element(tag,text); }
 async function categories() {
  const version=generation;
  try { const data=await request("/api/v1/knowledge/categories"); if(version!==generation) return; $("category").replaceChildren(new Option("전체 카테고리",""),...data.categories.filter(Boolean).map(x=>new Option(x,x))); $("category").value=categoryValue; } catch(error) { if(version===generation) handleError(error); }
 }
 async function read(item) {
  if(!mayLeave()) return;
- clearReader(); selected=item; const version=contentGeneration, graphVersion=graphGeneration; contentController=new AbortController();
+ clearReader(); selected=item; $("reader-empty").hidden=true; $("reader-content").hidden=false; document.querySelector(".workspace").dataset.detailOpen="true"; if(matchMedia("(max-width:760px)").matches){$("reader-back").focus();}
+ const version=contentGeneration, graphVersion=graphGeneration; contentController=new AbortController();
  for(const row of $("results").children) row.setAttribute("aria-current",String(row.dataset.id===item.knowledge_id));
  $("reader-title").textContent=item.title; noteStatus("원문을 불러오는 중…");
  try {
@@ -71,10 +74,14 @@ async function read(item) {
 }
 function render(items) {
  $("results").replaceChildren();
+ if(!items.length) {
+  $("results").append(UI.emptyState("검색 결과가 없습니다","검색어를 바꾸거나 검색 조건을 줄여보세요.","search",{label:"검색 조건 초기화",run:()=>{$("query").value="";$("scope").value="";$("kind").value="";$("category").value="";categoryValue="";$("has-relations").checked=false;relationOnly=false;$("browse").click();}}));
+  return;
+ }
  for(const item of items) {
-  const row=element("button",""); row.className="note-row"; row.dataset.id=item.knowledge_id; row.disabled=!item.revision_id;
-  row.append(element("strong",item.title),element("small",[kinds[item.memory_kind],item.category,item.revision_id?"":"색인 중"].filter(Boolean).join(" · ")));
-  row.addEventListener("click",()=>read(item)); $("results").append(row);
+  const row=UI.record({title:item.title,meta:[UI.badge(kinds[item.memory_kind] || "지식",item.memory_kind==="DECISION"?"info":"neutral"),item.category,item.revision_id?"":"색인 중"],preview:item.summary || "",onSelect:()=>read(item)});
+  row.dataset.id=item.knowledge_id; row.disabled=!item.revision_id;
+  $("results").append(row);
  }
 }
 async function load() {
@@ -83,7 +90,7 @@ async function load() {
  if(!token) { status("먼저 API 토큰으로 연결해 주세요.",true); return; }
  controller?.abort(); controller=new AbortController(); const version=++generation; clearReader();
  searchGraph=null; $("search-result-graph").hidden=true;
- $("results").replaceChildren(); $("pagination").hidden=true; status("불러오는 중…");
+ $("results").replaceChildren(UI.emptyState("목록을 불러오는 중","저장된 지식을 확인하고 있습니다.","search")); $("pagination").hidden=true; status("불러오는 중…");
  const scope=$("scope").value.trim(), kind=$("kind").value, category=$("category").value;
  try {
   let data;
@@ -98,7 +105,7 @@ async function load() {
   $("results-title").textContent=activeIndex?activeIndex.title:(listMode?"노트":"검색 결과"); $("count").textContent=listMode?`${items.length}개`:`${data.items.length}개 · 최대 20개`;
   status(items.length?"":"해당하는 노트가 없습니다."); $("pagination").hidden=false; $("previous").disabled=offset===0;
   $("next").disabled=listMode?data.items.length<=pageSize:offset+pageSize>=data.items.length; $("page-number").textContent=`${offset/pageSize+1} 페이지`;
-  if(items[0]?.revision_id) await read(items[0]);
+  if(items[0]?.revision_id && !matchMedia("(max-width:760px)").matches) await read(items[0]);
  } catch(error) { if(version===generation) handleError(error); }
 }
 async function checkJob(attempt=0) {
@@ -217,6 +224,7 @@ $("reader-body").addEventListener("keydown",event=>{
 new ResizeObserver(updateLines).observe($("reader-body"));
 
 function showNoteView(view) {
+ if(view==="workflow"){$("reader-empty").hidden=true;$("reader-content").hidden=false;document.querySelector(".workspace").dataset.detailOpen="true";}
  for(const name of ["summary","source","references","workflow","capture"]) { $(name+"-view").hidden=view!==name; $("show-"+name).setAttribute("aria-pressed",String(view===name)); }
  if(view==="source") updateLines();
 }
@@ -426,7 +434,7 @@ async function loadProposals(reset=true) {
    card.append(reviewNode("h3",`${p.subject.label} · ${relationNames[p.predicate]||p.predicate}: ${p.object.label}`),reviewNode("p",`${row.status} · ${row.scope} · 원문 버전 ${row.revision_id}`),reviewNode("blockquote",p.quote));
    if(p.condition)card.append(reviewNode("p","조건: "+p.condition));
    const sourceButton=reviewNode("button","근거 원문 보기"); sourceButton.type="button";
-   sourceButton.addEventListener("click",async()=>{try{const data=await request(`/api/v1/knowledge/${row.knowledge_id}/revisions/${row.revision_id}/content`); const pre=reviewNode("pre",data.text);pre.style.whiteSpace="pre-wrap";pre.style.overflowWrap="anywhere";sourceButton.replaceWith(pre);}catch(e){reviewMessage(e.message);}});
+   sourceButton.addEventListener("click",async()=>{try{const data=await request(`/api/v1/knowledge/${row.knowledge_id}/revisions/${row.revision_id}/content`); const pre=reviewNode("pre",data.text);pre.classList.add("ui-prose");sourceButton.replaceWith(pre);}catch(e){reviewMessage(e.message);}});
    card.append(sourceButton);
    if(row.status==="LEGACY") {
     card.append(reviewNode("p","이전 추출 방식의 후보입니다. 기존 기록은 보존하며, 새 기준으로 다시 확인해야 합니다."));
@@ -546,6 +554,7 @@ async function loadMemoryProfiles() {
  $("memory-agent").value=agent; $("memory-thread").value=thread;
 }
 function readMemory(item) {
+ for(const row of $("memory-results").querySelectorAll("[data-id]"))row.setAttribute("aria-current",String(row.dataset.id===item.memory_id));
  clearSelectedSql(); $("memory-sql").disabled=false;
  memorySelection=item; memoryEvidenceOffset=0; const detailVersion=++memoryDetailGeneration;
  $("memory-evidence").replaceChildren(); $("memory-graph").replaceChildren(); $("memory-edges").replaceChildren(); $("memory-evidence-more").hidden=true;
@@ -577,17 +586,17 @@ async function loadMemories() {
   $("memory-page").textContent=(memoryOffset/10+1)+" 페이지";
   $("memory-status").textContent=data.status==="NOT_CONFIGURED"?"에이전트 메모리 연결이 필요합니다. 기존 업무 지식은 계속 조회할 수 있습니다.":data.truncated?"조회 상한에 도달했습니다. 검색어나 필터로 좁혀 주세요.":data.items.length?"":"저장된 메모리가 없습니다.";
   for(const item of data.items) {
-   const row=element("button",""); row.className="note-row";
-   row.append(element("strong",item.title),element("small","에이전트 메모리 · "+(item.agent_name || "공통")+" · "+item.status));
-   row.addEventListener("click",()=>readMemory(item)); $("memory-results").append(row);
+   const row=UI.record({title:item.title,meta:[UI.badge("메모리","info"),item.agent_name || "공통",item.status],preview:item.text?.slice(0,100) || "",iconName:"memory",onSelect:()=>readMemory(item)});
+   row.dataset.id=item.memory_id; $("memory-results").append(row);
   }
+  if(!data.items.length)$("memory-results").append(UI.emptyState("저장된 메모리가 없습니다","검색 조건을 바꾸거나 MCP에서 새 기억을 저장하세요.","memory"));
   if(data.items[0])readMemory(data.items[0]);
   status(storeView==="all"?"업무 지식과 에이전트 메모리를 각각 조회합니다.":"");
  } catch(error) {if(v===memoryGeneration){$("memory-status").textContent="메모리 조회에 실패했습니다. 기존 업무 지식 조회와는 별도입니다."; handleError(error);}}
 }
 for(const button of document.querySelectorAll("#store-tabs button"))button.addEventListener("click",async()=>{
  if(!mayLeave())return;
- storeView=button.dataset.store; memoryGeneration++; generation++; controller?.abort();
+ storeView=button.dataset.store; updateStoreHeading(); memoryGeneration++; generation++; controller?.abort();
  const tabGeneration=memoryGeneration;
  for(const b of document.querySelectorAll("#store-tabs button"))b.setAttribute("aria-pressed",String(b===button));
  $("memory-panel").hidden=!["memory","all"].includes(storeView);
@@ -610,7 +619,7 @@ $("browse").addEventListener("click",()=>{memoryOffset=0;});
 
 let memoryDetailGeneration=0,memorySelection=null,memoryEvidenceOffset=0,noteMemoryOffset=0;
 function chooseStore(view){
- storeView=view;generation++;controller?.abort();memoryGeneration++;
+ storeView=view;updateStoreHeading();generation++;controller?.abort();memoryGeneration++;
  for(const b of document.querySelectorAll("#store-tabs button"))b.setAttribute("aria-pressed",String(b.dataset.store===view));
  $("memory-panel").hidden=view!=="memory";document.querySelector(".workspace").hidden=view==="memory";
  $("graph-review-panel").hidden=view==="memory";$("search-graph").hidden=view==="memory";$("kind").closest("label").hidden=view==="memory";
@@ -923,3 +932,16 @@ $("sql-selected-download").addEventListener("click",()=>{
  a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  $("sql-selected-status").textContent="SQL 파일 다운로드를 요청했습니다.";
 });
+
+
+function updateStoreHeading() {
+ const titles={knowledge:["지식 라이브러리","업무 지식","저장한 지식을 찾고, 원문과 근거를 확인하세요."],memory:["에이전트 메모리","에이전트 메모리","경험과 선호를 살펴보고 연결된 근거를 확인하세요."],all:["전체 저장소","전체","업무 지식과 에이전트 메모리를 함께 찾아보세요."],graph:["관계 그래프","관계 그래프","지식 사이의 연결과 원문 근거를 확인하세요."]};
+ const [heading,crumb,description]=titles[storeView] || titles.knowledge;
+ $("page-heading").setAttribute("heading",heading);$("page-heading").setAttribute("description",description);$("breadcrumb-current").textContent=crumb;
+}
+$("reader-back").addEventListener("click",()=>{
+ document.querySelector(".workspace").dataset.detailOpen="false";
+ $("results").querySelector('[aria-current="true"]')?.focus();
+});
+$("principles-toggle").addEventListener("click",()=>{$("principles-dialog").showModal();});
+$("principles-close").addEventListener("click",()=>{$("principles-dialog").close();});

@@ -11,7 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from knowledge_app.rdf import NETWORK, graph
+from knowledge_app.rdf import NETWORK, graph, graph_read_sql
 
 MODEL = "VK_SHARED"
 VIEW = '"VK_FLOW_RDF#RDFT_VK_SHARED"'
@@ -22,29 +22,7 @@ P = "urn:vk:shared:"
 # Resolve a bound graph URI against stored dictionary keys, then filter native
 # triples by G_ID, instead of using GET_MODEL as the per-row filter.
 # Numeric construction only represents existing IDs; it does not insert data.
-READ_GRAPH_SQL = f"""
-SELECT t.TRIPLE.GET_SUBJECT(USER,'{NETWORK}'),
-       t.TRIPLE.GET_PROPERTY(USER,'{NETWORK}'),
-       t.TRIPLE.GET_OBJ_VALUE(USER,'{NETWORK}')
-FROM (
-    SELECT MDSYS.SDO_RDF_TRIPLE_S(
-        r.CANON_END_NODE_ID, r.MODEL_ID, r.START_NODE_ID,
-        r.P_VALUE_ID, r.END_NODE_ID
-    ) AS TRIPLE
-    FROM {READ_VIEW} r
-    WHERE r.G_ID IN (
-        SELECT v.VALUE_ID FROM {VALUE_VIEW} v
-        WHERE v.VALUE_TYPE = 'UR'
-          AND (v.VNAME_PREFIX = SEM_APIS.VALUE_NAME_PREFIX(:graph_uri, 'UR')
-               OR (v.VNAME_PREFIX IS NULL
-                   AND SEM_APIS.VALUE_NAME_PREFIX(:graph_uri, 'UR') IS NULL))
-          AND (v.VNAME_SUFFIX = SEM_APIS.VALUE_NAME_SUFFIX(:graph_uri, 'UR')
-               OR (v.VNAME_SUFFIX IS NULL
-                   AND SEM_APIS.VALUE_NAME_SUFFIX(:graph_uri, 'UR') IS NULL))
-    )
-) t
-FETCH FIRST 301 ROWS ONLY
-"""
+READ_GRAPH_SQL = graph_read_sql("VK_SHARED", max_rows=301)
 
 
 def stamp(value: datetime) -> str:

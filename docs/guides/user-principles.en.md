@@ -9,7 +9,7 @@ retrieved sources. They do not grant permissions or override higher-priority hos
 the current user's explicit request. Injection is not a guarantee of model compliance.
 
 ## Manage in the web UI
-Open `/knowledge`, sign in, expand **사용자 원칙 · 매 요청에 적용**, and load the current bundle.
+Open `/knowledge`, sign in, choose **사용자 원칙** in workspace navigation (the settings icon with the same accessible name on mobile), and load the bundle in its dialog. Escape or Close dismisses it and returns focus to the opener.
 Add the six starter drafts or write your own. Optional suggestions are selected individually.
 Edit title, instruction, enabled status, order and scope (`global` or `project:<key>`). Preview the
 effective instructions for a project, enter a change note, then explicitly approve and apply.

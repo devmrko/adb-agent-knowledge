@@ -57,6 +57,11 @@ def main():
 import pathlib, sys
 import python_foundation
 assert pathlib.Path(python_foundation.__file__).is_relative_to(pathlib.Path(sys.prefix))
+from python_foundation.ui_assets import asset_path
+for name in ("ui.css", "ui.js", "showcase.html"):
+    asset = asset_path(name)
+    assert asset.is_file() and asset.is_relative_to(pathlib.Path(sys.prefix))
+
 sys.path.insert(0, str(pathlib.Path("src").resolve()))
 from consumer.app import create_app, Settings
 from python_foundation.security import Actor

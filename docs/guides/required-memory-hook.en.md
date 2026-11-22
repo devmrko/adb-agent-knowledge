@@ -21,7 +21,7 @@ Existing hooks are preserved and settings are backed up. Installation is idempot
 or bypasses review. Restart/reload the client and verify a real prompt, not only a direct script invocation.
 Claude onFailure:block requires 2.1.295+. Initial checks used Codex 0.165.0 and Claude 2.1.303.
 
-The current prompt is capped at 4000 characters. Transcripts and referenced files are not read.
+The current prompt is capped at 4000 characters. For follow-up interpretation, the hook may read the final 256 KiB of the same session transcript and select at most two recent user/final-response messages, capped at 1200 characters total. Path/session/sensitive-content checks may omit this context; tool output, reasoning and system messages are excluded. Unrelated referenced files and complete transcripts are not sent. This is not SDK conversation storage or summarization.
 Obvious secret patterns replace the whole query with a fixed sensitive placeholder; this is not comprehensive DLP.
 Retrieved material is untrusted reference data. Two source excerpts and two agent memories are capped at 1600 characters each.
 Exact revision IDs and continuation offsets allow further reads.

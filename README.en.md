@@ -9,14 +9,26 @@ solutions and business documents. Korean-capable vector search finds related con
 indexes and graphs lead to connected knowledge and its source evidence. The project is also a practical example
 of combining Oracle relational data, vectors, RDF, SQL Property Graph and Agent Memory.
 
-**Current version: `v0.3.0-alpha.1`.** This alpha is for evaluation and feedback in personal/development environments.
+**Public release baseline: `v0.3.0-alpha.1`.** This alpha is for evaluation and feedback in personal/development environments.
 Oracle ADB is required; adapters for other production databases are not provided. Docker is optional.
 Read the [validation scope and remaining work](docs/releases/v0.3.0-alpha.1.md).
+
+
+## Latest fixes · 2026-11-22 hotfix
+
+- **RDF lookup latency:** replaced per-row graph-name conversion and comparison with a stored graph ID (`G_ID`) filter. In one measured deployment, an eight-member index read fell from about 22 seconds to 0.1–0.2 seconds. KEV routing took about 0.165 seconds and was not the bottleneck. These timings are observations for that environment and request.
+- **Web UI:** added a navigation → list → detail layout, mobile detail navigation and a separate principles panel. Shared HTML elements and CSS classes for controls, records and empty states are packaged in Python Foundation.
+
+**This description includes the 2026-11-22 hotfix changes.** The earlier alpha tag does not include subsequent fixes. For current development code, replace `--branch v0.3.0-alpha.1` in the clone command below with `--branch main`; distinguish this from the fixed alpha release. [Code/documentation/deployment audit](docs/reference/memory-documentation-audit-2026-11-22.md).
+
+[Changes and validation](docs/releases/hotfix-2026-11-22.md) · [Shared UI elements](packages/python-foundation/docs/ui-elements.md)
 
 ## What problem does it solve?
 
 An agent may lose earlier decisions or solutions from another project when a conversation changes.
 This service keeps that information outside the conversation and retrieves it when it can help the next task.
+
+As a conversation grows and earlier details are summarized or leave active context, the goal is to **preserve important decisions, rationale, conditions and evidence as separate records that can be retrieved when needed**. Capture useful details while they are available, then retrieve exact sources into the working context. Saving alone does not guarantee recall or retrieval. See [long-session memory preservation and its limits](docs/guides/memory-types.en.md).
 
 For example, ask **“How did we deploy this project last time?”** The agent can find a deployment note,
 read the exact source revision behind its summary and, if relationships have been recorded, inspect the services,
@@ -56,6 +68,24 @@ Only optional unattended `service` mode calls a separate generative model endpoi
 write answers or verify facts; its scores are not probabilities that a stored claim is true.
 
 [Model settings and execution boundaries](docs/en/architecture-and-models.md) · [v3 storage and search](docs/guides/v3-primary-store.en.md) · [Custom tables vs Agent Memory: speed, embeddings and operations](docs/guides/storage-backends.en.md) · [Oracle graph examples](docs/en/oracle-graph-examples.md)
+
+## How do short- and long-term memories differ here?
+
+Short/long term describes **lifetime**; semantic/episodic/procedural describes **content**. Oracle Agent Memory mainly provides durable storage/retrieval here; Codex/Claude manage active conversation context.
+
+| Memory type | Current use and reason |
+|---|---|
+| Short-term / working | The client manages the active conversation/task. Bounded recent-message excerpts help the hook interpret follow-ups. |
+| Long-term / semantic | Store facts, preferences and project knowledge for future sessions. |
+| Long-term / episodic | Retain attempts, failures, fixes and measured outcomes as evidence for later work. |
+| Long-term / procedural | Store/retrieve methods and guidelines; retrieved text does not authorize execution. |
+| SDK conversation summaries/context cards | Not integrated. A thread profile does not mean SDK short-term memory is in use. |
+
+Both business knowledge and agent memories can hold **long-term memory**. Automatic conversation extraction, promotion and semantic response caching are not provided. User principles remain separate approved configuration.
+
+This split keeps **conversation management with the existing client and reusable cross-session knowledge/experiences in a shared database**. Default agent mode reuses the calling agent for source review without requiring a separate generation-model deployment. The app retains revision/citation/audit contracts. This is not a claim that SDK short-term features were rejected for poor performance.
+
+[Memory types: implementation, rationale, unused capabilities and code evidence](docs/guides/memory-types.en.md)
 
 ## How do storage and retrieval work?
 

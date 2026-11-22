@@ -59,6 +59,7 @@ from python_foundation.database import sessions
 from python_foundation.errors import AuthenticationRequired, BusinessError
 from python_foundation.security import Actor, Security, TokenVerifier, current_actor
 from python_foundation.settings import FoundationSettings
+from python_foundation.ui_assets import asset_path
 from python_foundation.web import install_web
 
 bearer = HTTPBearer(auto_error=False)
@@ -171,6 +172,18 @@ def create_app(
     @app.get("/knowledge-assets/app.js", include_in_schema=False)
     def knowledge_script() -> FileResponse:
         return FileResponse(assets / "app.js", media_type="text/javascript", headers=ui_headers)
+
+    @app.get("/knowledge-assets/ui.css", include_in_schema=False)
+    def foundation_ui_style() -> FileResponse:
+        return FileResponse(asset_path("ui.css"), media_type="text/css", headers=ui_headers)
+
+    @app.get("/knowledge-assets/ui.js", include_in_schema=False)
+    def foundation_ui_script() -> FileResponse:
+        return FileResponse(asset_path("ui.js"), media_type="text/javascript", headers=ui_headers)
+
+    @app.get("/knowledge/components", include_in_schema=False)
+    def foundation_ui_showcase() -> FileResponse:
+        return FileResponse(asset_path("showcase.html"), headers=ui_headers)
 
     @app.get("/knowledge-assets/common.css", include_in_schema=False)
     def knowledge_common_style() -> FileResponse:

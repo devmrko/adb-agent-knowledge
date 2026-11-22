@@ -1,8 +1,10 @@
 # v3: Primary knowledge content and retrieval in Oracle Agent Memory
 
+v3 is a durable-storage choice. See [memory lifetimes and content categories](memory-types.en.md) for implemented and unused behavior.
+
 [한국어](v3-primary-store.md)
 
-v0.3.0-alpha.1 uses a separate Oracle Agent Memory store for business-source JSON and retrieval vectors.
+With `KNOWLEDGE_SOURCE_BACKEND=v3` enabled, a separate Oracle Agent Memory store holds business-source JSON and retrieval vectors. This is not the fresh-install default (`legacy`).
 Existing MCP/API behavior and domain history are preserved. This does not remove the application tables.
 
 | Responsibility | v3 storage/behavior |

@@ -564,6 +564,15 @@ def test_search_ui_is_public_but_knowledge_remains_authenticated(knowledge):
     assert client.get("/knowledge-assets/app.js").status_code == 200
     assert client.get("/knowledge-assets/style.css").status_code == 200
     assert client.get("/knowledge-assets/common.css").status_code == 200
+    for name in ("ui.css", "ui.js"):
+        asset = client.get("/knowledge-assets/" + name)
+        assert asset.status_code == 200
+        assert asset.headers["x-content-type-options"] == "nosniff"
+        assert "frame-ancestors 'none'" in asset.headers["content-security-policy"]
+    assert client.get("/knowledge/components").status_code == 200
+    assert "ui-page-header" in page.text
+    assert "ui-input" in page.text
+    assert '<dialog id="principles-dialog"' in page.text
     assert client.get("/knowledge-assets/.env").status_code == 404
     assert client.get("/api/v1/knowledge").status_code == 401
     assert client.post("/api/v1/knowledge/search", json={"query": "Oracle"}).status_code == 401

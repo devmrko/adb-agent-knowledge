@@ -1,5 +1,7 @@
 # 직접 만든 지식 테이블과 Oracle Agent Memory 비교
 
+기억의 단기·장기 구분은 저장소 선택과 다릅니다. [기억 유형과 현재 사용 범위](memory-types.md)를 먼저 확인하세요.
+
 [English](storage-backends.en.md) · 2026-11-04 · v3 알파 기준 / 아래 legacy 표는 별도 구분
 
 현재 v3 구현: [SDK 원문·검색과 기존 업무 이력을 함께 운영](v3-primary-store.md). 아래 표는 legacy 업무 지식과 에이전트 경험 메모리의 비교입니다.

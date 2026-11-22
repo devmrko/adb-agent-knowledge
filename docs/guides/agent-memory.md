@@ -1,6 +1,8 @@
 # Agent Memory 연결과 웹 조회
 
-[직접 테이블 구현과 비교 · 저장 위치/키/검색 방식 · v3 제안](storage-backends.md)
+[단기·장기·의미·일화·절차 기억의 사용 여부와 이유](memory-types.md)
+
+[직접 테이블 구현과 비교 · 저장 위치/키/검색 방식 · 현재 v3](storage-backends.md)
 
 
 사용자에게 보여주는 기능명은 **에이전트 메모리 (Oracle AI Agent Memory)**입니다. SDK는 이 기능에 연결하는 개발 도구를 뜻하며, 아래 구현·설치 설명에서만 사용합니다.
@@ -162,7 +164,7 @@ SDK 미설정·장애는 빈 저장소와 구분한다. 웹은 조회용이며 �
 
 ## 검증
 
-전체 275 tests, ruff, format, mypy 통과.
+초기 2026-11-02 통합 당시 275개 테스트와 ruff/format/mypy가 통과했습니다. 현재 전체 테스트 수와 코드 대조 범위는 [2026-11-22 점검](../reference/memory-documentation-audit-2026-11-22.md)을 참고하세요. 과거의 개수는 현재 테스트 수가 아닙니다.
 별도 Oracle 계정에서 scripts/smoke_agent_memory.py로 실제 MCP→API→SDK
 프로필 생성·이름 변경·저장·중복 방지·목록·한국어 벡터 검색을 검증했다.
 이는 모든 OS·대규모 성능 또는 조직 다중 사용자 운영 인증을 증명하지 않는다.

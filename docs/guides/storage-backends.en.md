@@ -1,5 +1,7 @@
 # Application-owned tables versus Oracle Agent Memory
 
+Short/long-term memory is distinct from the storage-backend choice. See [memory types and current use](memory-types.en.md).
+
 [한국어](storage-backends.md) · 2026-11-04 · v3 alpha; legacy comparison is labeled below
 
 Current v3 implementation: [primary SDK source/search with retained domain history](v3-primary-store.en.md). The comparison below describes the legacy business store versus agent-experience integration.
