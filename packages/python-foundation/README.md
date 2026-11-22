@@ -17,3 +17,5 @@ adb-agent-knowledge가 사용하는 공통 인증·DB·웹 계층이다. 서비�
 ```
 
 [서비스 README](../../README.md) · [기반 설계](docs/design/foundation.md) · [원본 프로젝트](https://github.com/devmrko/python-foundation)
+
+[공통 HTML 요소·CSS 클래스](docs/ui-elements.md): 로컬 정적 자산, light DOM 요소와 안전한 DOM 생성 함수.
