@@ -53,3 +53,26 @@ not an SQL-only benchmark or a cold-start latency guarantee. No data/DDL changes
 The temporary hook graph_mode=never default is superseded: default is auto again,
 with optional configuration. Kev still chooses whether relations are useful.
 Ruff, formatting, mypy and all 345 tests passed before this default restoration.
+
+
+## 2026-11-22 index navigation RDF hotfix
+
+Automatic recall took ~46–48s and exceeded the installed hook's 45s limit. A direct
+route was temporarily selected, but comparing auto/direct does not isolate KEV:
+auto also reads selected indexes. Phase measurements showed catalog 0.061s, KEV
+0.165s, document 0.022s and eight index members 22.339s and 22.538s. The earlier
+classifier attribution was incorrect.
+
+navigation_rdf.read repeated GET_MODEL string conversion across RDF rows for
+each member. Move the existing shared RDF G_ID query into a common builder and
+reuse it for VK_NAV and VK_SHARED. Bind the exact owner/snapshot graph URI,
+filter by stored dictionary IDs before rendering triples, and retain full-graph
+equality and overflow validation. No HTTP/MCP data contract or schema change.
+
+After the three source files were hash-checked, backed up and deployed and the API
+restarted, the same two native Oracle index reads took 0.195s and 0.099s; KEV
+remained 0.165s. The installed hook was restored to auto; a real hook process
+completed in 3.68s with decision, recall and two exact source reads. The first
+full request after restart was 18.71s, so the warm result is not a cold-start SLA.
+Ruff, formatting, mypy and 348 tests passed at this performance-fix checkpoint.
+Claude UI resubmission was not observed.

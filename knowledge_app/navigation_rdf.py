@@ -9,11 +9,12 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from knowledge_app.models import NavigationSnapshot, Revision
-from knowledge_app.rdf import NETWORK, graph
+from knowledge_app.rdf import NETWORK, graph, graph_read_sql
 
 MODEL = "VK_NAV"
 VIEW = '"VK_FLOW_RDF#RDFT_VK_NAV"'
 P = "urn:vk:navigation:"
+READ_GRAPH_SQL = graph_read_sql("VK_NAV", max_rows=1001)
 
 
 def node(kind: str, identity: str) -> str:
@@ -82,10 +83,8 @@ def read(session: Session, owner: str, snapshot_id: str) -> dict[str, Any]:
     expected = json.loads(snapshot.payload_json)
     if snapshot.native_stored:
         found = session.execute(
-            text(
-                f"SELECT t.TRIPLE.GET_SUBJECT(USER,'{NETWORK}'), t.TRIPLE.GET_PROPERTY(USER,'{NETWORK}'), t.TRIPLE.GET_OBJ_VALUE(USER,'{NETWORK}') FROM {VIEW} t WHERE t.TRIPLE.GET_MODEL(USER,'{NETWORK}')=:g FETCH FIRST 1001 ROWS ONLY"
-            ),
-            {"g": f"{MODEL}:<{graph(owner, snapshot_id)}>"},
+            text(READ_GRAPH_SQL),
+            {"graph_uri": graph(owner, snapshot_id)},
         ).all()
         normalized = []
         for s, p, o in found:

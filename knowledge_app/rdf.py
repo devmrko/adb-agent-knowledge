@@ -2,6 +2,7 @@
 
 import json
 import re
+from typing import Literal
 from uuid import UUID
 
 from sqlalchemy import text
@@ -13,6 +14,37 @@ NETWORK = "VK_FLOW_RDF"
 MODEL = "VK_FLOW"
 VIEW = '"VK_FLOW_RDF#RDFT_VK_FLOW"'
 P = "urn:vk:workflow:"
+
+
+def graph_read_sql(model: Literal["VK_SHARED", "VK_NAV"], *, max_rows: int) -> str:
+    """Select one native graph by stored ID before rendering its complete triples."""
+    if model not in {"VK_SHARED", "VK_NAV"} or not 1 <= max_rows <= 1001:
+        raise ValueError("Invalid native graph read")
+    read_view = f'"{NETWORK}#RDFM_{model}"'
+    value_view = f'"{NETWORK}#RDF_VALUE$"'
+    return f"""
+SELECT t.TRIPLE.GET_SUBJECT(USER,'{NETWORK}'),
+       t.TRIPLE.GET_PROPERTY(USER,'{NETWORK}'),
+       t.TRIPLE.GET_OBJ_VALUE(USER,'{NETWORK}')
+FROM (
+    SELECT MDSYS.SDO_RDF_TRIPLE_S(
+        r.CANON_END_NODE_ID, r.MODEL_ID, r.START_NODE_ID,
+        r.P_VALUE_ID, r.END_NODE_ID
+    ) AS TRIPLE
+    FROM {read_view} r
+    WHERE r.G_ID IN (
+        SELECT v.VALUE_ID FROM {value_view} v
+        WHERE v.VALUE_TYPE = 'UR'
+          AND (v.VNAME_PREFIX = SEM_APIS.VALUE_NAME_PREFIX(:graph_uri, 'UR')
+               OR (v.VNAME_PREFIX IS NULL
+                   AND SEM_APIS.VALUE_NAME_PREFIX(:graph_uri, 'UR') IS NULL))
+          AND (v.VNAME_SUFFIX = SEM_APIS.VALUE_NAME_SUFFIX(:graph_uri, 'UR')
+               OR (v.VNAME_SUFFIX IS NULL
+                   AND SEM_APIS.VALUE_NAME_SUFFIX(:graph_uri, 'UR') IS NULL))
+    )
+) t
+FETCH FIRST {max_rows} ROWS ONLY
+"""
 
 
 def graph(owner: str, revision: str) -> str:

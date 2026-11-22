@@ -239,3 +239,12 @@ Codex는 transcript 형식을 안정적인 계약으로 보장하지 않으므�
 ### Graph retrieval configuration
 
 The hook defaults to `graph_mode=auto`, retaining Kev graph routing. Set `always` for explicit expansion or `never` to defer graph retrieval to the agent. `graph_expansion=deferred_to_agent` does not mean no relationships exist. The native RDF G_ID query restoration is documented in [validation](../design/0046-v3-recovery/design.md).
+
+
+### 인덱스 탐색에서 시간 초과가 날 때
+
+KEV 점수 호출과 선택된 인덱스 항목 조회를 각각 측정하세요. 2026-11-22 사례에서
+KEV는 0.165초였고 각 인덱스의 RDF 확인은 22초씩 걸렸습니다. VK_NAV 조회가
+RDF 행마다 GET_MODEL 이름 변환을 반복하던 문제를 G_ID 선필터로 수정했습니다.
+KEV를 끄거나 훅 시간 제한을 늘리는 것으로 원인 수정을 대신하지 않습니다.
+측정·검증 한계는 [RDF 복구 설계](../design/0046-v3-recovery/design.md)를 참고하세요.
