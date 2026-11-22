@@ -4,6 +4,7 @@
 
 | Goal | Entry point |
 |---|---|
+| Understand short/long-term and content-based memory types | [Memory types and rationale](../guides/memory-types.en.md) |
 | Understand the project and benefits | [Project introduction](../../README.en.md) |
 | Start a new v3 installation | [Setup and storage](../guides/v3-primary-store.en.md) |
 | Complete a specific task | [Hooks](../guides/required-memory-hook.en.md), [Oracle graph examples](oracle-graph-examples.md) |

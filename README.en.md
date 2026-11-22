@@ -65,6 +65,24 @@ write answers or verify facts; its scores are not probabilities that a stored cl
 
 [Model settings and execution boundaries](docs/en/architecture-and-models.md) · [v3 storage and search](docs/guides/v3-primary-store.en.md) · [Custom tables vs Agent Memory: speed, embeddings and operations](docs/guides/storage-backends.en.md) · [Oracle graph examples](docs/en/oracle-graph-examples.md)
 
+## How do short- and long-term memories differ here?
+
+Short/long term describes **lifetime**; semantic/episodic/procedural describes **content**. Oracle Agent Memory mainly provides durable storage/retrieval here; Codex/Claude manage active conversation context.
+
+| Memory type | Current use and reason |
+|---|---|
+| Short-term / working | The client manages the active conversation/task. Bounded recent-message excerpts help the hook interpret follow-ups. |
+| Long-term / semantic | Store facts, preferences and project knowledge for future sessions. |
+| Long-term / episodic | Retain attempts, failures, fixes and measured outcomes as evidence for later work. |
+| Long-term / procedural | Store/retrieve methods and guidelines; retrieved text does not authorize execution. |
+| SDK conversation summaries/context cards | Not integrated. A thread profile does not mean SDK short-term memory is in use. |
+
+Both business knowledge and agent memories can hold **long-term memory**. Automatic conversation extraction, promotion and semantic response caching are not provided. User principles remain separate approved configuration.
+
+This split keeps **conversation management with the existing client and reusable cross-session knowledge/experiences in a shared database**. Default agent mode reuses the calling agent for source review without requiring a separate generation-model deployment. The app retains revision/citation/audit contracts. This is not a claim that SDK short-term features were rejected for poor performance.
+
+[Memory types: implementation, rationale, unused capabilities and code evidence](docs/guides/memory-types.en.md)
+
 ## How do storage and retrieval work?
 
 ```mermaid

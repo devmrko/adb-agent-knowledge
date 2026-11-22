@@ -1,5 +1,7 @@
 # v3: Agent Memory를 원문·검색의 주 저장소로 사용
 
+v3는 장기 기억의 저장 기술 선택입니다. [단기·장기와 내용별 기억 유형](memory-types.md)에서 현재 사용·미사용을 구분합니다.
+
 [English](v3-primary-store.en.md)
 
 v0.3.0-alpha.1은 업무 지식의 **원문과 검색 벡터를 Oracle Agent Memory에 저장**하고,

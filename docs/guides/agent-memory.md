@@ -1,5 +1,7 @@
 # Agent Memory 연결과 웹 조회
 
+[단기·장기·의미·일화·절차 기억의 사용 여부와 이유](memory-types.md)
+
 [직접 테이블 구현과 비교 · 저장 위치/키/검색 방식 · v3 제안](storage-backends.md)
 
 

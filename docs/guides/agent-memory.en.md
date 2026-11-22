@@ -1,5 +1,7 @@
 # Agent memory (Oracle AI Agent Memory)
 
+[Short/long-term and semantic/episodic/procedural memory: usage and rationale](memory-types.en.md)
+
 [Application-owned tables vs Agent Memory: storage, keys, search and proposed v3](storage-backends.en.md)
 
 
